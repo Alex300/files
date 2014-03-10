@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS `cot_files` (
 	`file_order` SMALLINT NOT NULL DEFAULT 0,
 	`file_updated` datetime DEFAULT NULL,
 	PRIMARY KEY(`file_id`),
-	KEY (`file_area`, `file_item`),
-	KEY (`file_area`, `file_item`, `file_field`)
+	KEY (`file_source`, `file_item`),
+	KEY (`file_source`, `file_item`, `file_field`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 
