@@ -83,7 +83,7 @@
 <!-- ENDIF -->
 
 <div class="well well-sm margintop20">
-    <h4 style="">{PHP.L.pfs_extallowed}:</h4>
+    <h4 style="">{PHP.L.files_extallowed}:</h4>
     <!-- BEGIN: ALLOWED_ROW -->
     <div class="small margin5 pull-left text-center" style="margin: 5px">
         <img src="{ALLOWED_ROW_ICON_URL}" /><br />{ALLOWED_ROW_EXT}<br />{ALLOWED_ROW_DESC}
@@ -95,9 +95,9 @@
 <!-- BEGIN: STANDALONE_FOOTER -->
 <div class="col-xs-12">
     <div class="well well-sm">
-        {PHP.R.files_icon_pastethumb} {PHP.L.pfs_pastethumb} &nbsp;
-        {PHP.R.files_icon_pasteimage} {PHP.L.pfs_pasteimage} &nbsp;
-        {PHP.R.files_icon_pastefile} {PHP.L.pfs_pastefile}
+        {PHP.R.files_icon_pastethumb} {PHP.L.files_pastethumb} &nbsp;
+        {PHP.R.files_icon_pasteimage} {PHP.L.files_pasteimage} &nbsp;
+        {PHP.R.files_icon_pastefile} {PHP.L.files_pastefile}
     </div>
 </div>
 </div>
