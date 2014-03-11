@@ -12,6 +12,8 @@ $L['info_desc'] = 'Personal file space and attach images and files and build gal
 $L['info_notes'] = 'DO NOT FORGET to create a writable folder for the files. Jquery must be on.';
 
 $L['files_add'] = 'Add files';
+$L['files_attach'] = 'Attach files';
+$L['files_attachments'] = 'Attachments';
 $L['files_cancel'] = 'Cancel upload';
 $L['files_downloads'] = 'Downloads';
 $L['files_draghere'] = 'Drag files here';

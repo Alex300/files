@@ -819,6 +819,7 @@ function cot_files_downloads($source, $item, $field = '', $tpl = 'files.download
  * @return string
  *
  * @todo no cache parameter for css
+ * @todo generate formUnikey
  */
 function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -1, $standalone = false)
 {
@@ -943,7 +944,7 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
         'UPLOAD_TYPE'    => $type,
         'UPLOAD_PARAM'   => $params,
         'UPLOAD_CHUNK'   => (int)cot::$cfg['files']['chunkSize'],
-        'UPLOAD_EXTS'    => preg_replace('#[^a-zA-Z0-9,]#', '', cot::$cfg['plugin']['attach2']['exts']),
+        'UPLOAD_EXTS'    => preg_replace('#[^a-zA-Z0-9,]#', '', cot::$cfg['files']['exts']),
 //        'UPLOAD_ACCEPT'  => preg_replace('#[^a-zA-Z0-9,*/-]#', '',cot::$cfg['plugin']['attach2']['accept']),
         'UPLOAD_MAXSIZE' => $limits['size_maxfile'],
         'UPLOAD_ACTION'  => $action,
@@ -966,4 +967,42 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
  */
 function cot_files_gallery($source, $item, $field = '', $tpl = 'files.gallery', $limit = 0, $order = ''){
     return cot_files_display($source, $item, $field, $tpl, 'images', $limit, $order);
+}
+
+/**
+ * Generates a file upload/edit widget.
+ * Use it as CoTemplate callback.
+ *
+ * @param  string $source Target module/plugin code.
+ * @param  integer $item Target item id.
+ * @param  string $field Target item field
+ * @param  string $tpl Template code
+ * @param string $width
+ * @param string $height
+ * @return string           Rendered widget
+ */
+function cot_files_widget($source, $item, $field = '', $tpl = 'files.widget', $width = '100%', $height = '200'){
+    global $files_widget_present;
+
+    $t = new XTemplate(cot_tplfile($tpl, 'module'));
+
+    // Metadata
+    $limits = cot_files_getLimits(cot::$usr['id'], $source, $item, $field);
+
+    $t->assign(array(
+        'FILES_SOURCE'  => $source,
+        'FILES_ITEM'    => $item,
+        'FILESH_FIELD'  => $field,
+        'FILES_EXTS'    => preg_replace('#[^a-zA-Z0-9,]#', '', cot::$cfg['files']['exts']),
+//        'FILES_ACCEPT'  => preg_replace('#[^a-zA-Z0-9,*/-]#', '',$cfg['plugin']['attach2']['accept']),
+        'FILES_MAXSIZE' => $limits['size_maxfile'],
+        'FILES_WIDTH'   => $width,
+        'FILES_HEIGHT'  => $height
+    ));
+
+    $t->parse();
+
+    $files_widget_present = true;
+
+    return $t->text();
 }
