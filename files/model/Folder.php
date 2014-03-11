@@ -200,7 +200,7 @@ class files_model_Folder extends Som_Model_Abstract
                 $item = files_model_Folder::getById($item);
             }
             /** @var files_model_Folder $item  */
-            if ($item && $item->ff_id > 0){
+            if ($item){
 
                 $itemUrl = cot_url('files', array('f' => $item->ff_id));
 

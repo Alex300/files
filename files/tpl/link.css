@@ -1,0 +1,30 @@
+@charset "UTF-8";
+
+#filesModalContent{
+    width:99%;
+    height:99%;
+    display: block;
+    clear:both;
+    margin:auto;
+    background:#fff;
+    border:1px dotted #444;
+    z-index: 3000;
+}
+#dlgFiles .modal-body{
+    height: 380px;
+    max-height: 80%;
+}
+
+.jqmWindow #filesModalContent{
+    height:95%;
+}
+
+#filesModal {
+    display:none;
+    /*position:absolute;*/
+    width:600px;
+    /*max-width: 90%;*/
+    height:560px;
+}
+#filesModalTitleText {font-size:12pt}
+#filesModalClose {clear:right; float:right; padding:0 5px; cursor:pointer;}

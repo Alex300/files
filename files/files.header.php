@@ -1,8 +1,8 @@
 <?php
 /* ====================
 [BEGIN_COT_EXT]
-Hooks=header.tags
-Tags=header.tpl:{HEADER_USER_PFS}
+Hooks=header.tags,header.user.tags
+Tags=header.tpl:{HEADER_USER_PFS},{HEADER_USER_PFS_URL}
 [END_COT_EXT]
 ==================== */
 
