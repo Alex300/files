@@ -1,6 +1,6 @@
 <!-- BEGIN: MAIN -->
 
-<!-- IF {PHP.att_widget_present} == '' -->
+<!-- IF {PHP.files_widget_present} == '' -->
 <link rel="stylesheet" href="{PHP.cfg.modules_dir}/files/tpl/link.css">
 <div id="filesModal" class="jqmWindow">
     <div id="filesModalTitle">

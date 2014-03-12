@@ -19,4 +19,11 @@
     .files .name, .att-edit-title {
         width: 100%;
     }
+    .files .name{
+        overflow-x: hidden;
+    }
+    .files .preview{
+        display: inline-block;
+        width: 100px;
+    }
 }

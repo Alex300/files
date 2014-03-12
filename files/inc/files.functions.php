@@ -821,7 +821,7 @@ function cot_files_downloads($source, $item, $field = '', $tpl = 'files.download
  * @todo no cache parameter for css
  * @todo generate formUnikey
  */
-function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -1, $standalone = false)
+function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -1, $tpl = 'files.filebox', $standalone = false)
 {
     global $R, $cot_modules;
 
@@ -832,12 +832,12 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
     static $jQtemlatesOut = false;
     $jQtemlates = '';
     if(!$jQtemlatesOut){
-        $tpl = new XTemplate(cot_tplfile('files.templates', 'module'));
-        $tpl->assign(array(
+        $templates = new XTemplate(cot_tplfile('files.templates', 'module'));
+        $templates->assign(array(
             'IS_STANDALONE' => ($standalone) ? 1 : 0,
         ));
-        $tpl->parse();
-        $jQtemlates = $tpl->text();
+        $templates->parse();
+        $jQtemlates = $templates->text();
         $jQtemlatesOut = true;
 
         $modUrl = cot::$cfg['modules_dir'].'/files';
@@ -913,7 +913,7 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
     }
     $type = json_encode($type);
 
-    $t = new XTemplate(cot_tplfile('files.filebox', 'module'));
+    $t = new XTemplate(cot_tplfile($tpl, 'module'));
 
     $limits = cot_files_getLimits(cot::$usr['id'], $source, $item, $name);
     if($limit == 0){
@@ -981,7 +981,7 @@ function cot_files_gallery($source, $item, $field = '', $tpl = 'files.gallery', 
  * @param string $height
  * @return string           Rendered widget
  */
-function cot_files_widget($source, $item, $field = '', $tpl = 'files.widget', $width = '100%', $height = '200'){
+function cot_files_widget($source, $item, $field = '', $tpl = 'files.widget', $width = '100%', $height = '300'){
     global $files_widget_present;
 
     $t = new XTemplate(cot_tplfile($tpl, 'module'));

@@ -13,71 +13,20 @@ defined('COT_CODE') or die('Wrong URL.');
  */
 class FilesController{
 
-    /**
-     * @todo generate formUnikey
-     */
-    public function displayAction(){
 
+    public function displayAction(){
         $source = cot_import('source', 'G', 'ALP');
         $item = cot_import('item', 'G', 'INT');
         $field = (string)cot_import('field', 'G', 'TXT');
         $limit = cot_import('limit', 'G', 'INT');
+        if(is_null($limit)) $limit = -1;
         $type = (string)cot_import('type', 'G', 'TXT');
+        if(!$type) $type = 'all';
 
-        $formId = "{$source}_{$item}_{$field}";
 
-        $t = new XTemplate(cot_tplfile('files.files', 'module'));
+        $html = cot_files_filebox($source, $item, $field, $type, $limit, 'files.files');
 
-        // Metadata
-        $limits = cot_files_getLimits(cot::$usr['id'], $source, $item, $field);
-        if($limit == 0){
-            $limit = 100000000000000000;
-        }elseif($limit == -1){
-            $limit = $limits['count_max'];
-        }
-
-        $type = str_replace(' ', '', $type);
-        if(empty($type)){
-            $type = array('all');
-        }else{
-            $type = explode(',', $type);
-        }
-        $type = json_encode($type);
-
-        $tpl = new XTemplate(cot_tplfile('files.templates.widget', 'module'));
-        $tpl->parse();
-
-        $unikey = mb_substr(md5($formId . '_' . rand(0, 99999999)), 0, 15);
-        $params = base64_encode(serialize(array(
-            'source'  => $source,
-            'item'    => $item,
-            'field'   => $field,
-            'limit'   => $limit,
-            'type'    => $type,
-            'unikey'  => $unikey
-        )));
-
-        $action = 'index.php?e=files&m=upload&source='.$source.'&item='.$item;
-        if(!empty($field)) $action .= '&field='.$field;
-
-        $t->assign(array(
-            'UPLOAD_ID'      => $formId,
-            'UPLOAD_SOURCE'  => $source,
-            'UPLOAD_ITEM'    => $item,
-            'UPLOAD_FIELD'   => $field,
-            'UPLOAD_LIMIT'   => $limit,
-            'UPLOAD_TYPE'    => $type,
-            'UPLOAD_PARAM'   => $params,
-            'UPLOAD_CHUNK'   => (int)cot::$cfg['files']['chunkSize'],
-            'UPLOAD_EXTS'    => preg_replace('#[^a-zA-Z0-9,]#', '', cot::$cfg['files']['exts']),
-//        'UPLOAD_ACCEPT'  => preg_replace('#[^a-zA-Z0-9,*/-]#', '',cot::$cfg['plugin']['attach2']['accept']),
-            'UPLOAD_MAXSIZE' => $limits['size_maxfile'],
-            'UPLOAD_ACTION'  => $action,
-            'UPLOAD_X'       => cot::$sys['xk'],
-        ));
-
-        $t->parse();
-        $t->out();
+        echo $html;
         exit;
     }
 

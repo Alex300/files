@@ -1,6 +1,6 @@
 <!-- BEGIN: MAIN -->
 
-<!-- IF {PHP.att_widget_present} == '' -->
+<!-- IF {PHP.files_widget_present} == '' -->
 <link rel="stylesheet" href="{PHP.cfg.modules_dir}/files/tpl/link.css">
 <div class="modal fade" id="dlgFiles" tabindex="-1" role="dialog" aria-labelledby="dlgFilesLabel" aria-hidden="true">
     <div class="modal-dialog">

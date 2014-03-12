@@ -173,7 +173,7 @@ class PfsController{
             'FOLDERS_COUNT_RAW' => $folders_count,
             'FOLDERS_ONPAGE_COUNT' => cot_declension($onPageFoldersCount, $Ls['Folders']),
             'FOLDERS_ONPAGE_COUNT_RAW' => $onPageFoldersCount,
-            'FILES_WIDGET' => ($isSFS || $uid == $usr['id']) ? cot_files_filebox($source, $f, '', 'all', -1, $standalone) : '',
+            'FILES_WIDGET' => ($isSFS || $uid == $usr['id']) ? cot_files_filebox($source, $f, '', 'all', -1, 'files.templates', $standalone) : '',
             'IS_SITE_FILE_SPACE' => $isSFS,
             'PFS_FILES_COUNT' => cot_declension($files_count, $Ls['Files']),
             'PFS_FILES_COUNT_RAW' => $files_count,
@@ -488,7 +488,7 @@ class PfsController{
             'PFS_FILES_COUNT_RAW' => $folder->ff_count,
 
             'FILES_WIDGET' => ($folder->ff_id > 0 && ($isSFS || $uid == $usr['id'])) ?
-                    cot_files_filebox($source, $f, '', 'all', -1, $standalone) : '',
+                    cot_files_filebox($source, $f, '', 'all', -1, 'files.templates', $standalone) : '',
             'IS_SITE_FILE_SPACE' => $isSFS,
             'PAGE_TITLE' => cot::$out['subtitle'] =  $title,
             'BREADCRUMBS' => cot_breadcrumbs($crumbs, !$standalone && cot::$cfg['homebreadcrumb']),

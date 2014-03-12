@@ -24,13 +24,7 @@
     <!-- Bootstrap styles -->
     <link rel="stylesheet" href="{PHP.cfg.modules_dir}/files/lib/bootstrap/css/bootstrap.min.css?{PHP.cot_modules.files.version}">
     <link rel="stylesheet" href="{PHP.cfg.modules_dir}/files/lib/bootstrap/css/bootstrap-theme.min.css?{PHP.cot_modules.files.version}">
-    <!-- IF 0 == 1 -->
-    <!-- blueimp Gallery styles -->
-    <link rel="stylesheet" href="{PHP.cfg.modules_dir}/files/lib/Gallery/css/blueimp-gallery.min.css?{PHP.cot_modules.files.version}">
-    <!-- ENDIF -->
-    <!-- CSS to style the file input field as button and adjust the Bootstrap progress bars -->
-    <link rel="stylesheet" href="{PHP.cfg.modules_dir}/files/lib/upload/css/jquery.fileupload.css?{PHP.cot_modules.files.version}">
-    <link rel="stylesheet" href="{PHP.cfg.modules_dir}/files/lib/upload/css/jquery.fileupload-ui.css?{PHP.cot_modules.files.version}">
+    {PHP.out.head_head}
     <!-- Generic page styles -->
     <link rel="stylesheet" href="{PHP.cfg.modules_dir}/files/tpl/widget.css?{PHP.cot_modules.files.version}">
     <!-- CSS adjustments for browsers with JavaScript disabled -->
@@ -43,11 +37,11 @@
 <body>
 <div class="container">
     <!-- The file upload form used as target for the file upload widget -->
-    <form class="fileupload" id="fileupload_{FILES_SOURCE}_{FILES_ITEM}_{FILES_FIELD}" action="{FILES_ACTION}"
-          method="POST" enctype="multipart/form-data" data-url="{FILES_ACTION}">
+    <form class="fileupload" id="fileupload_{UPLOAD_SOURCE}_{UPLOAD_ITEM}_{UPLOAD_FIELD}" data-url="{UPLOAD_ACTION}""
+          method="POST" enctype="multipart/form-data" data-url="{UPLOAD_ACTION}">
         <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
         <div class="row fileupload-buttonbar">
-            <div class="col-lg-7">
+            <div class="col-sm-12">
                 <!-- The fileinput-button span is used to style the file input field as button -->
                 <span class="btn btn-success fileinput-button">
                     <i class="glyphicon glyphicon-plus"></i>
@@ -70,8 +64,11 @@
                 <!-- The global file processing state -->
                 <span class="fileupload-process"></span>
             </div>
+            <div class="col-sm-12 text-center small">
+                <span class="glyphicon glyphicon-import"></span> {PHP.L.files_draghere}
+            </div>
             <!-- The global progress state -->
-            <div class="col-lg-5 fileupload-progress fade">
+            <div class="col-sm-12 fileupload-progress fade">
                 <!-- The global progress bar -->
                 <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
                     <div class="progress-bar progress-bar-success" style="width:0%;"></div>
@@ -86,41 +83,10 @@
     </form>
 </div>
 
-{ATTACH_TEMPLATES}
-
 <script src="js/jquery.min.js"></script>
-<!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
-<script src="{PHP.cfg.modules_dir}/files/lib/upload/js/vendor/jquery.ui.widget.js?{PHP.cot_modules.files.version}"></script>
-<!-- The Templates plugin is included to render the upload/download listings -->
-<script src="{PHP.cfg.modules_dir}/files/lib/JavaScript-Templates/tmpl.min.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
-<!-- The Load Image plugin is included for the preview images and image resizing functionality -->
-<script src="{PHP.cfg.modules_dir}/files/lib/JavaScript-Load-Image/js/load-image.min.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
-<!-- The Canvas to Blob plugin is included for image resizing functionality -->
-<script src="{PHP.cfg.modules_dir}/files/lib/JavaScript-Canvas-to-Blob/canvas-to-blob.min.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
 <!-- Bootstrap JS is not required, but included for the responsive demo navigation -->
-<script src="{PHP.cfg.modules_dir}/files/lib/bootstrap/js/bootstrap.min.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
-<!-- IF 0 == 1 -->
-<!-- blueimp Gallery script -->
-<script src="http://blueimp.github.io/Gallery/js/jquery.blueimp-gallery.min.js"></script>
-<!-- ENDIF -->
-<!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
-<script src="{PHP.cfg.plugins_dir}/attach2/lib/upload/js/jquery.iframe-transport.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
-<!-- The basic File Upload plugin -->
-<script src="{PHP.cfg.plugins_dir}/attach2/lib/upload/js/jquery.fileupload.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
-<!-- The File Upload processing plugin -->
-<script src="{PHP.cfg.plugins_dir}/attach2/lib/upload/js/jquery.fileupload-process.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
-<!-- The File Upload image preview & resize plugin -->
-<script src="{PHP.cfg.plugins_dir}/attach2/lib/upload/js/jquery.fileupload-image.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
-<!-- The File Upload audio preview plugin -->
-<script src="{PHP.cfg.plugins_dir}/attach2/lib/upload/js/jquery.fileupload-audio.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
-<!-- IF 0 == 1 -->
-<!-- The File Upload video preview plugin -->
-<script src="{PHP.cfg.plugins_dir}/attach2/lib/upload/js/jquery.fileupload-video.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
-<!-- ENDIF -->
-<!-- The File Upload validation plugin -->
-<script src="{PHP.cfg.plugins_dir}/attach2/lib/upload/js/jquery.fileupload-validate.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
-<!-- The File Upload user interface plugin -->
-<script src="{PHP.cfg.plugins_dir}/attach2/lib/upload/js/jquery.fileupload-ui.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
+<script src="{PHP.cfg.modules_dir}/files/lib/bootstrap/js/bootstrap.min.js?{PHP.cot_modules.files.version}"></script>
+{PHP.out.footer_rc}
 <!-- Cotonti config -->
 <script type="text/javascript">
     if (filesConfig === undefined) {
@@ -142,10 +108,6 @@
         param:  '{UPLOAD_PARAM}'
     };
 </script>
-<!-- Table Drag&Drop plugin for reordering -->
-<script type="text/javascript" src="js/jquery.tablednd.min.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
-<!-- The main application script -->
-<script src="{PHP.cfg.plugins_dir}/attach2/js/attach2.js?{PHP.cot_plugins_enabled.attach2.version}"></script>
 <!-- The XDomainRequest Transport is included for cross-domain file deletion for IE 8 and IE 9 -->
 <!--[if (gte IE 8)&(lt IE 10)]>
 <script src="js/cors/jquery.xdr-transport.js"></script>
