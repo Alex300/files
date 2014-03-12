@@ -114,7 +114,9 @@ class PfsController{
                 $crumbs[] = array(cot_url('users'), cot::$L['Users']);
                 $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']), $urr['user_name']);
                 if($folder){
-                    $crumbs[] = array(cot_url('files', $urlParams), cot::$L['Files']);
+                    $tmp = $urlParams;
+                    if($uid != $usr['id']) $tmp['uid'] = $uid;
+                    $crumbs[] = array(cot_url('files', $tmp), cot::$L['Files']);
                     $crumbs[] = $title = $folder->ff_title;
                 }else{
                     $crumbs[] = $title = cot::$L['Files'];
@@ -173,7 +175,7 @@ class PfsController{
             'FOLDERS_COUNT_RAW' => $folders_count,
             'FOLDERS_ONPAGE_COUNT' => cot_declension($onPageFoldersCount, $Ls['Folders']),
             'FOLDERS_ONPAGE_COUNT_RAW' => $onPageFoldersCount,
-            'FILES_WIDGET' => ($isSFS || $uid == $usr['id']) ? cot_files_filebox($source, $f, '', 'all', -1, 'files.templates', $standalone) : '',
+            'FILES_WIDGET' => ($isSFS || $uid == $usr['id']) ? cot_files_filebox($source, $f, '', 'all', -1, 'files.filebox', $standalone) : '',
             'IS_SITE_FILE_SPACE' => $isSFS,
             'PFS_FILES_COUNT' => cot_declension($files_count, $Ls['Files']),
             'PFS_FILES_COUNT_RAW' => $files_count,
@@ -488,7 +490,7 @@ class PfsController{
             'PFS_FILES_COUNT_RAW' => $folder->ff_count,
 
             'FILES_WIDGET' => ($folder->ff_id > 0 && ($isSFS || $uid == $usr['id'])) ?
-                    cot_files_filebox($source, $f, '', 'all', -1, 'files.templates', $standalone) : '',
+                    cot_files_filebox($source, $f, '', 'all', -1, 'files.filebox', $standalone) : '',
             'IS_SITE_FILE_SPACE' => $isSFS,
             'PAGE_TITLE' => cot::$out['subtitle'] =  $title,
             'BREADCRUMBS' => cot_breadcrumbs($crumbs, !$standalone && cot::$cfg['homebreadcrumb']),

@@ -22,6 +22,7 @@ $L['files_intheroot'] = 'в корневом каталоге';
 $L['files_inthisfolder'] = 'в текущем каталоге';
 $L['files_isgallery'] = 'Альбом?';
 $L['files_ispublic'] = 'Открытый доступ?';
+$L['files_morefiles'] = 'Больше файлов';
 $L['files_mypage'] = 'Моя страница';
 $L['files_newalbum'] = 'Создать новый альбом';
 $L['files_newfile'] = 'Загрузить файл';

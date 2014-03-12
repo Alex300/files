@@ -13,34 +13,242 @@ defined('COT_CODE') or die('Wrong URL.');
  */
 class MainController{
 
+
     /**
      * файлы пользователя
+     * @param string $type
      * @return string
+     * @todo пагинация
      */
-    public function indexAction(){
-        global $usr;
+    public function indexAction($type = 'all'){
+        global $usr, $Ls, $db_files, $db_files_folders, $outHeaderFooter, $cot_extensions;
 
-        list($pgf, $df) = cot_import_pagenav('df', cot::$cfg['files']['maxFoldersPerPage']);   // page number folders
+        $perPage = cot::$cfg['files']['maxFoldersPerPage'];
 
+        list($pgf, $df) = cot_import_pagenav('df', $perPage);   // page number folders
+
+        list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
+        cot_block($usr['auth_read']);
+
+        $f = cot_import('f', 'G', 'INT');     // folder id
+        if(!$f) $f = 0;
+        $uid = cot_import('uid', 'G', 'INT');  // user ID or 0
+        if($uid === null) $uid = $usr['id'];
+
+        $urlParams = array();
+        if(!$f && $uid != $usr['id']) $urlParams['uid'] = $uid;
+
+        /* === Hook === */
+        foreach (cot_getextplugins('files.first') as $pl)
+        {
+            include $pl;
+        }
+        /* ===== */
+
+        $folders = null;
+        $folder = null;
+        $folders_count = 0;
+        $isSFS = false;                        // is Site File Space
+
+        if($f > 0){
+            $folder = files_model_Folder::getById($f);
+            if(!$folder) cot_die_message(404);
+            $uid = (int)$folder->user_id;
+        }else{
+            $folders = files_model_Folder::find(array(array('user_id', $uid)), $perPage, $df, array(array('ff_title', 'ASC')));
+            $folders_count = files_model_Folder::count(array(array('user_id', $uid)));
+            $onPageFoldersCount = count($folders);
+        }
+
+        if($uid === 0){
+            $isSFS = true;
+            cot_block($usr['id'] > 0);     // Не зареги не видят sfs вообще
+        }
+
+        $crumbs = array();
+        $title = '';
+        if($isSFS){
+            $tmp = $urlParams;
+            if($uid != $usr['id']) $tmp['uid'] = $uid;
+            if($folder){
+                $crumbs[] = array(cot_url('files', $tmp), cot::$L['SFS']);
+                $crumbs[] = $title = $folder->ff_title;
+            }else{
+                $crumbs[] = $title = cot::$L['SFS'];
+            }
+
+        }else{
+
+            $urr = cot_files_getUserData($uid);
+            if(empty($urr) && !$usr['isadmin']) cot_die_message(404);   // Вдруг пользователь удален, а вайлы остались?
+
+            if($uid == $usr['id']){
+                if($folder){
+                    $crumbs[] = array(cot_url('files', $urlParams), cot::$L['Mypfs']);
+                    $crumbs[] = $title = $folder->ff_title;
+                }else{
+                    $crumbs[] = $title = cot::$L['Mypfs'];
+                }
+
+            }else{
+                $crumbs[] = array(cot_url('users'), cot::$L['Users']);
+                $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']), $urr['user_name']);
+                if($folder){
+                    $tmp = $urlParams;
+                    if($uid != $usr['id']) $tmp['uid'] = $uid;
+                    $crumbs[] = array(cot_url('files', $tmp), cot::$L['Files']);
+                    $crumbs[] = $title = $folder->ff_title;
+                }else{
+                    $crumbs[] = $title = cot::$L['Files'];
+                }
+            }
+        }
+
+
+        $tpl = cot_tplfile(array('files', $type), 'module');
+        $t = new XTemplate($tpl);
+
+        $source = $isSFS ? 'sfs' : 'pfs';
+        if($f == 0){
+            $countCond = array(
+                array('file_source', $source),
+                array('file_item', $f),
+            );
+            $files_count = intval(files_model_File::count($countCond));
+        }else{
+            $files_count = $folder->ff_count;
+        }
+
+        $t->assign(array(
+            'FOLDERS_COUNT' => cot_declension($folders_count, $Ls['Folders']),
+            'FOLDERS_COUNT_RAW' => $folders_count,
+            'FOLDERS_ONPAGE_COUNT' => cot_declension($onPageFoldersCount, $Ls['Folders']),
+            'FOLDERS_ONPAGE_COUNT_RAW' => $onPageFoldersCount,
+            'IS_SITE_FILE_SPACE' => $isSFS,
+            'PFS_FILES_COUNT' => cot_declension($files_count, $Ls['Files']),
+            'PFS_FILES_COUNT_RAW' => $files_count,
+            'PFS_IS_ROOT' => ($f == 0) ? 1 : 0,
+            'PAGE_TITLE' => cot::$out['subtitle'] =  $title,
+            'BREADCRUMBS' => cot_breadcrumbs($crumbs, cot::$cfg['homebreadcrumb']),
+        ));
+
+        // Если мы находимся в корне, то можем работать с папками
+        if($f == 0){
+            if($folders){
+
+                $folderIds = array();
+                $onPageFoldersFilesCount = 0;
+                foreach($folders as $folderRow){
+                    $folderIds[] = $folderRow->ff_id;
+                }
+
+                $sql = cot::$db->query("SELECT file_item as ff_id, COUNT(*) as items_count, SUM(file_size) as size
+                    FROM $db_files WHERE file_source='{$source}' AND file_item IN (".implode(',', $folderIds).")
+                    GROUP BY file_item");
+                while ($pfs_filesinfo = $sql->fetch()){
+                    $ff_filessize[$pfs_filesinfo['ff_id']]  = $pfs_filesinfo['size'];
+                    $onPageFoldersFilesCount += $pfs_filesinfo['items_count'];
+                }
+
+                $sql = cot::$db->query("SELECT SUM(ff_count) as files_count FROM $db_files_folders WHERE user_id=?", $uid);
+                $foldersFilesCount = $sql->fetchColumn();
+
+                $fLimit = 3;
+                if($type == 'image') $fLimit = 6;
+                $i = 1;
+                foreach($folders as $folderRow){
+                    $t->assign(files_model_Folder::generateTags($folderRow, 'FOLDER_ROW_', $urlParams));
+                    $t->assign(array(
+                        'FOLDER_ROW_NUM' => $i,
+                        'FOLDER_ROW_ITEMS_SIZE' => cot_build_filesize((int)$ff_filessize[$folderRow->ff_id]),
+                        'FOLDER_ROW_ITEMS_SIZE_RAW' => (int)$ff_filessize[$folderRow->ff_id],
+                    ));
+
+                    $filesRowCond = array(
+                        array('file_source', $source),
+                        array('file_item', $folderRow->ff_id),
+                    );
+                    $folderFiles = files_model_File::find($filesRowCond, $fLimit, 0, 'file_order ASC');
+                    if($folderFiles){
+                        $jj = 0;
+                        foreach($folderFiles as $fileRow){
+                            $t->assign(files_model_File::generateTags($fileRow, 'FILES_ROW_'));
+                            $t->assign(array(
+                                'FILES_ROW_NUM'      => $jj,
+                            ));
+                            $t->parse('MAIN.FOLDERS.ROW.FILES_ROW');
+                            $jj++;
+                        }
+                    }
+
+                    $i++;
+                    $t->parse('MAIN.FOLDERS.ROW');
+                }
+            }else{
+                $t->parse('MAIN.FOLDERS.EMPTY');
+            }
+
+            //@todo Пагинация по папкам
+
+            if($usr['auth_write']){
+                if(($isSFS && $usr['isadmin']) || ($uid == $usr['id'])){
+                    $t->assign(array(
+                        'FOLDER_ADDFORM_URL'    => cot_url('files', array('m' => 'pfs', 'a' => 'editFolder')),
+                        'FOLDER_ADDFORM_TITLE'  => cot_inputbox('text', 'ff_title'),
+                        'FOLDER_ADDFORM_DESC'   => cot_textarea('ff_desc', '', '', ''),
+                        'FOLDER_ADDFORM_PUBLIC' => cot_checkbox(true, 'ff_public', cot::$L['files_ispublic']),
+                        'FOLDER_ADDFORM_ALBUM'  => cot_checkbox(true, 'ff_album',  cot::$L['files_isgallery']),
+                        'FOLDER_ADDFORM_HIDDEN' => cot_inputbox('hidden', 'uid', $uid).cot_inputbox('hidden', 'act', 'save'),
+                    ));
+                    $t->parse('MAIN.FOLDER_NEWFORM');
+                }
+            }
+
+            $t->assign(array(
+                'FOLDERS_FILES_COUNT' => cot_declension($foldersFilesCount, $Ls['Files']),
+                'FOLDERS_FILES_COUNT_RAW' => $foldersFilesCount,
+                'FOLDERS_ONPAGE_FILES_COUNT' => cot_declension($onPageFoldersFilesCount, $Ls['Files']),
+                'FOLDERS_ONPAGE_FILES_COUNT_RAW' => $onPageFoldersFilesCount,
+            ));
+
+            $t->parse('MAIN.FOLDERS');
+
+            if($pgf > 1) cot::$out['subtitle'] .= " (".cot::$L['Page']." {$pgf})";
+
+        }else{
+            if($folder) $t->assign(files_model_Folder::generateTags($folder, 'FOLDER_', $urlParams));
+        }
+
+
+        /* === Hook === */
+        foreach (cot_getextplugins('files.tags') as $pl)
+        {
+            include $pl;
+        }
+        /* ===== */
+
+
+        // Error and message handling
+        cot_display_messages($t);
+
+        $t->parse();
+        return $t->text();
 
     }
-
-
 
     /**
      * Альбомы пользователя
      */
     public function albumAction(){
-        return $this->userFiles('image');
+        return $this->indexAction('image');
     }
 
     /**
      * Файлы пользователя
      */
     public function filesAction(){
-        return $this->userFiles('file');
+        return $this->indexAction('file');
     }
-
 
 
 }

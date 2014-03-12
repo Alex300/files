@@ -207,7 +207,7 @@ class files_model_Folder extends Som_Model_Abstract
                 $itemEditUrl = '';
                 $itemDelUrl = '';
                 $itemPfsUrl = '';
-                if($usr['isadmin'] || ($usr['id'] > 0 && $usr['id'] == $item['user_id'])){
+                if($usr['isadmin'] || ($usr['id'] > 0 && $usr['id'] == $item->user_id)){
                     $urlParams['f'] = $item->ff_id;
                     $itemPfsUrl = cot_url('files',$urlParams);
 

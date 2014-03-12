@@ -815,6 +815,7 @@ function cot_files_downloads($source, $item, $field = '', $tpl = 'files.download
  * @param int $limit file limit
  *      -1 - use plugin config value
  *       0 - unlimited
+ * @param string $tpl Template code
  * @param bool $standalone
  * @return string
  *

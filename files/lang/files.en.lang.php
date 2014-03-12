@@ -22,6 +22,7 @@ $L['files_intheroot'] = 'in the root';
 $L['files_inthisfolder'] = 'in this folder';
 $L['files_isgallery'] = 'Album?';
 $L['files_ispublic'] = 'Public?';
+$L['files_morefiles'] = 'More files';
 $L['files_mypage'] = 'My page';
 $L['files_newalbum'] = 'Create a new album';
 $L['files_newfile'] = 'Upload a file';
