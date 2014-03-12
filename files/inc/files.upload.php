@@ -56,9 +56,8 @@ class UploadController{
     public function get($print_response = true) {
         global $source, $item, $field, $filename;
 
-//        if ($print_response && isset($_GET['download'])) {
-//            return $this->download();
-//        }
+        $uid = cot_import('uid', 'G', 'TXT');
+        if(is_null($uid)) $uid = cot::$usr['id'];
 
         $res = array();
         $condition = array(
@@ -66,6 +65,7 @@ class UploadController{
             array('file_item', $item),
             array('file_field', $field),
         );
+        if($source == 'pfs' && $item == 0) $condition[] = array('user_id', $uid);
 
         if (is_null($filename) || empty($filename))
         {

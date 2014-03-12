@@ -166,6 +166,7 @@ class PfsController{
                 array('file_source', $source),
                 array('file_item', $f),
             );
+            if(!$isSFS) $countCond[] = array('user_id', $uid);
             $files_count = intval(files_model_File::count($countCond));
         }else{
             $files_count = $folder->ff_count;
@@ -238,13 +239,18 @@ class PfsController{
 
             $t->parse('MAIN.FOLDERS');
 
+            $hidden = cot_inputbox('hidden', 'uid', $uid).cot_inputbox('hidden', 'act', 'save');
+            if ($standalone){
+                $hidden .= cot_inputbox('hidden', 'c1', $c1).cot_inputbox('hidden', 'c2', $c2).
+                    cot_inputbox('hidden', 'parser', $parser);
+            }
             $t->assign(array(
                 'FOLDER_ADDFORM_URL'    => cot_url('files', array('m' => 'pfs', 'a' => 'editFolder')),
                 'FOLDER_ADDFORM_TITLE'  => cot_inputbox('text', 'ff_title'),
                 'FOLDER_ADDFORM_DESC'   => cot_textarea('ff_desc', '', '', ''),
                 'FOLDER_ADDFORM_PUBLIC' => cot_checkbox(true, 'ff_public', cot::$L['files_ispublic']),
                 'FOLDER_ADDFORM_ALBUM'  => cot_checkbox(true, 'ff_album',  cot::$L['files_isgallery']),
-                'FOLDER_ADDFORM_HIDDEN' => cot_inputbox('hidden', 'uid', $uid).cot_inputbox('hidden', 'act', 'save'),
+                'FOLDER_ADDFORM_HIDDEN' => $hidden,
             ));
             $t->parse('MAIN.FOLDER_NEWFORM');
 
@@ -329,8 +335,11 @@ class PfsController{
         if(is_null($uid)) $uid = cot_import('uid', 'P', 'INT');
 
         $c1 = cot_import('c1','G','ALP');			// form name
+        if(!$c1) $c1 = cot_import('c1', 'P', 'ALP');
         $c2 = cot_import('c2','G','ALP');			// input name
+        if(!$c2) $c2 = cot_import('c2', 'P', 'ALP');
         $parser = cot_import('parser', 'G', 'ALP');	// custom parser
+        if(!$parser) $parser = cot_import('parser', 'P', 'ALP');
         $standalone = FALSE;                        // is in popup window
         $isSFS = false;                             // is Site File Space
 
