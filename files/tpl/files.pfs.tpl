@@ -62,7 +62,7 @@
             <p class="strong margin0"><a href="{FOLDER_ROW_PFS_URL}">{FOLDER_ROW_TITLE}</a></p>
             <p class="desc margin0 lnh padding0">{FOLDER_ROW_DESC}</p>
             <p class="desc italic margin0 lnh padding0 text-right">
-                <em>Код для вставки:</em> <strong>[pfs_gallery?f={FOLDER_ROW_ID}]</strong>
+                <em>{PHP.L.files_pastecode}:</em> <strong>[pfs_gallery?f={FOLDER_ROW_ID}]</strong>
             </p>
         </td>
         <td class="centerall">{FOLDER_ROW_PUBLIC}</td>
@@ -75,7 +75,7 @@
             </a>
             <!-- IF {PFS_IS_STANDALONE} -->
             <a href="javascript:addgallery('{FOLDER_ROW_ID}')" class="btn btn-default btn-sm"
-               title="Вставить как галерею"  data-toggle="tooltip">
+               title="{PHP.L.files_pastegallery}"  data-toggle="tooltip">
                 <span class="glyphicon glyphicon-picture"></span>
             </a>
             <!-- ENDIF -->
@@ -87,11 +87,15 @@
 </table>
 <!-- ENDIF -->
 
-<p class="pagination">{PFF_PAGING_PREV}{PFF_PAGING_CURRENT}{PFF_PAGING_NEXT}</p>
+<!-- IF {FOLDERS_PAGINATION} -->
+<div class="pagination text-right">
+    {FOLDERS_PAGEPREV}{FOLDERS_PAGINATION}{FOLDERS_PAGENEXT}
+</div>
+<!-- ENDIF -->
 <!-- END: FOLDERS -->
 
 <!-- IF {IS_SITE_FILE_SPACE} == 0 -->
-<div class="well well-sm">
+<div class="well well-sm margintop10">
     <p>{PHP.L.files_totalsize}: {PFS_TOTALSIZE} {PHP.L.Of} {PFS_MAXTOTAL} ({PFS_PERCENTAGE}%)</p>
 
     <div class="progress  progress-striped">
@@ -138,11 +142,11 @@
                 <div class="modal-body">
 
                     <div class="form-group">
-                        <label>Назание:</label>
+                        <label>{PHP.L.Title}:</label>
                         {FOLDER_ADDFORM_TITLE}
                     </div>
                     <div class="form-group">
-                        <label>Описание:</label>
+                        <label>{PHP.L.Description}:</label>
                         {FOLDER_ADDFORM_DESC}
                     </div>
 
@@ -152,9 +156,9 @@
                 </div>
 
                 <div class="modal-footer text-center">
-                    <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-ok"></span> Сохранить</button>
+                    <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-ok"></span> {PHP.L.Submit}</button>
                     <button type="button" class="btn btn-default" data-dismiss="modal">
-                        <span class="glyphicon glyphicon-remove"></span> Отменить</button>
+                        <span class="glyphicon glyphicon-remove"></span> {PHP.L.Cancel}</button>
                 </div>
             </form>
         </div>

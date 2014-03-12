@@ -31,22 +31,16 @@
             <!-- IF {FOLDER_ROW_DESC} --><div class="marginbottom10">{FOLDER_ROW_DESC}</div><!-- ENDIF -->
             <div class="row">
                 <!-- BEGIN: FILES_ROW -->
-                <div class="col-sm-6 col-md-4 marginbottom10">
-                    <div class="pull-left" style="width: 50px">
-                        <!-- IF {FILES_ROW_ICON} -->
-                        <a href="{FILES_ROW_URL}" title="{FILES_ROW_TITLE}"><img src="{FILES_ROW_ICON}" alt="{FILES_ROW_EXT}" /></a>
-                        <!-- ENDIF -->
-                    </div>
-                    <div class="pull-left" data-source="folder-file-row-tooltip-{FILES_ROW_ID}" data-toggle="tooltip"
-                         title="" data-html="true">
-                        <a href="{FILES_ROW_URL}">{FILES_ROW_NAME}</a><br />
-                        <!-- IF {FILES_ROW_TITLE} -->{FILES_ROW_TITLE}<br /><!-- ENDIF -->
-                        <span class="desc">{FILES_ROW_UPDATED_RAW|cot_date('datetime_medium', $this)}<br /></span>
-                    </div>
+                <div class="col-sm-2" data-source="folder-file-row-tooltip-{FILES_ROW_ID}" data-toggle="tooltip"
+                     title="" data-html="true">
+                    <a href="{FILES_ROW_ID|cot_files_thumb($this,1600,800,'auto')}" rel="" title="{FILES_ROW_TITLE}" class="thumbnail" >
+                        <img src="{FILES_ROW_ID|cot_files_thumb($this,185,185,'crop')}" alt="{FILES_ROW_FILENAME}" />
+                    </a>
                 </div>
                 <div id="folder-file-row-tooltip-{FILES_ROW_ID}" class="hidden">
-                    {FILES_ROW_NAME}<br />{FILES_ROW_UPDATED_RAW|cot_date('datetime_medium', $this)}<br />
-                    {FILES_ROW_SIZE} ({PHP.L.files_downloads}: {FILES_ROW_COUNT})
+                    {FILES_ROW_NAME}<br />
+                    <!-- IF {FILES_ROW_TITLE} -->{FILES_ROW_TITLE}<br /><!-- ENDIF -->
+                    {FILES_ROW_UPDATED_RAW|cot_date('datetime_medium', $this)}
                 </div>
                 <!-- END: FILES_ROW -->
             </div>
@@ -87,12 +81,6 @@
 <!-- ENDIF -->
 <!-- END:FOLDERS -->
 
-<!-- IF {FOLDER_EDIT_URL} -->
-<div class="text-right">
-    <a href="{FOLDER_EDIT_URL}" class="btn btn-primary"><span class="glyphicon glyphicon-edit"></span> {PHP.L.Edit}</a>
-</div>
-<!-- ENDIF -->
-
 <div class="margintop20 desc">
     <strong>{FILES_COUNT}</strong>
     <!-- IF {FILES_IS_ROOT} -->{PHP.L.files_intheroot}<!-- ELSE -->{PHP.L.files_inthisfolder}<!-- ENDIF -->
@@ -100,6 +88,12 @@
 
 <!-- IF {FILES_CAN_EDIT} -->
 <div class="text-right">
+    <!-- IF {FOLDER_EDIT_URL} -->
+    <a href="{FOLDER_EDIT_URL}" class="btn btn-primary" title="{PHP.L.Edit}" data-toggle="tooltip">
+        <span class="glyphicon glyphicon-edit"></span>
+    </a>
+    <!-- ENDIF -->
+
     <a href="index.php?e=files&amp;m=files&amp;a=display&amp;source={FILES_SOURCE}&amp;item={FOLDER_ID}&amp;field=&amp;type={FILES_TYPE}&amp;nc={PHP.cot_modules.files.version}"
    class="btn btn-default filesLink"  title="{PHP.L.files_add}" data-toggle="tooltip">
         <span class="glyphicon glyphicon-upload"></span>
@@ -111,16 +105,16 @@
 <!-- BEGIN: FILES -->
 <div class="row margintop20">
     <!-- BEGIN: ROW -->
-    <div class="col-sm-2 text-center" style="height: 110px; overflow: hidden" data-source="file-row-tooltip-{FILES_ROW_ID}"
-         data-toggle="tooltip" title="" data-html="true">
-        <a href="{FILES_ROW_URL}" title="{FILES_ROW_TITLE}"><img src="{FILES_ROW_ICON}" alt="{FILES_ROW_EXT}" /></a><br />
-        <a href="{FILES_ROW_URL}" title="{FILES_ROW_TITLE}" class="strong lhn">{FILES_ROW_NAME}</a><br />
-        <!-- IF {FILES_ROW_TITLE} -->{FILES_ROW_TITLE}<br /><!-- ENDIF -->
-        <span class="desc">{FILES_ROW_SIZE} ({PHP.L.files_downloads}: {FILES_ROW_COUNT})</span>
+    <div class="col-sm-2" data-source="folder-file-row-tooltip-{FILES_ROW_ID}" data-toggle="tooltip"
+         title="" data-html="true">
+        <a href="{FILES_ROW_ID|cot_files_thumb($this,1600,800,'auto')}" rel="" title="{FILES_ROW_TITLE}" class="thumbnail" >
+            <img src="{FILES_ROW_ID|cot_files_thumb($this,185,185,'crop')}" alt="{FILES_ROW_FILENAME}" />
+        </a>
     </div>
-    <div id="file-row-tooltip-{FILES_ROW_ID}" class="hidden">
+    <div id="folder-file-row-tooltip-{FILES_ROW_ID}" class="hidden">
         {FILES_ROW_NAME}<br />
-        {FILES_ROW_SIZE} ({PHP.L.files_downloads}: {FILES_ROW_COUNT})
+        <!-- IF {FILES_ROW_TITLE} -->{FILES_ROW_TITLE}<br /><!-- ENDIF -->
+        {FILES_ROW_UPDATED_RAW|cot_date('datetime_medium', $this)}
     </div>
     <!-- END: ROW -->
 </div>

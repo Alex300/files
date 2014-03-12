@@ -11,7 +11,6 @@ defined('COT_CODE') or die('Wrong URL.');
  * @author Cotonti Team
  * @copyright (c) Cotonti Team 2014
  *
- * @todo пагинация
  */
 class PfsController{
 
@@ -22,7 +21,9 @@ class PfsController{
     public function indexAction(){
         global $usr, $Ls, $db_files, $db_files_folders, $outHeaderFooter, $cot_extensions;
 
-        list($pgf, $df) = cot_import_pagenav('df', cot::$cfg['files']['maxFoldersPerPage']);   // page number folders
+        $perPage = cot::$cfg['files']['maxFoldersPerPage'];
+
+        list($pgf, $df) = cot_import_pagenav('df', $perPage);   // page number folders
 
         list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
         cot_block($usr['auth_read']);   // Это бекэнд часть для пользователя. Может надо блокировать, если нет прав на запись????
@@ -65,7 +66,7 @@ class PfsController{
             if(!$folder) cot_die_message(404);
             $uid = (int)$folder->user_id;
         }else{
-            $folders = files_model_Folder::find(array(array('user_id', $uid)), cot::$cfg['files']['maxFoldersPerPage'], $df, array(array('ff_title', 'ASC')));
+            $folders = files_model_Folder::find(array(array('user_id', $uid)), $perPage, $df, array(array('ff_title', 'ASC')));
             $folders_count = files_model_Folder::count(array(array('user_id', $uid)));
             $onPageFoldersCount = count($folders);
         }
@@ -218,13 +219,21 @@ class PfsController{
                 }
             }
 
-            //@todo Пагинация по папкам
+            // Folders pagination
+            $pagenavFolders = cot_pagenav('files', $urlParams, $df, $folders_count, $perPage, 'df');
 
             $t->assign(array(
                 'FOLDERS_FILES_COUNT' => cot_declension($foldersFilesCount, $Ls['Files']),
                 'FOLDERS_FILES_COUNT_RAW' => $foldersFilesCount,
                 'FOLDERS_ONPAGE_FILES_COUNT' => cot_declension($onPageFoldersFilesCount, $Ls['Files']),
                 'FOLDERS_ONPAGE_FILES_COUNT_RAW' => $onPageFoldersFilesCount,
+
+                'FOLDERS_PAGINATION'    => $pagenavFolders['main'],
+                'FOLDERS_PAGEPREV'      => $pagenavFolders['prev'],
+                'FOLDERS_PAGENEXT'      => $pagenavFolders['next'],
+                'FOLDERS_CURRENTPAGE'   => $pagenavFolders['current'],
+                'FOLDERS_MAXPERPAGE'    => $perPage,
+                'FOLDERS_TOTALPAGES'    => $pagenavFolders['total']
             ));
 
             $t->parse('MAIN.FOLDERS');

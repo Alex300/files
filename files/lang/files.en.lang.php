@@ -12,32 +12,39 @@ $L['info_desc'] = 'Personal file space and attach images and files and build gal
 $L['info_notes'] = 'DO NOT FORGET to create a writable folder for the files. Jquery must be on.';
 
 $L['files_add'] = 'Add files';
+$L['files_albums'] = 'Albums';
 $L['files_attach'] = 'Attach files';
 $L['files_attachments'] = 'Attachments';
 $L['files_cancel'] = 'Cancel upload';
+$L['files_created'] = 'Created';
 $L['files_downloads'] = 'Downloads';
 $L['files_draghere'] = 'Drag files here';
 $L['files_extallowed'] = 'Extensions allowed';
+$L['files_havenotfolders'] = 'have not any folders';
 $L['files_intheroot'] = 'in the root';
 $L['files_inthisfolder'] = 'in this folder';
 $L['files_isgallery'] = 'Album?';
 $L['files_ispublic'] = 'Public?';
+$L['files_maxsize'] = 'Maximum size for a file';
+$L['files_maxspace'] = 'Maximum space allowed';
 $L['files_morefiles'] = 'More files';
 $L['files_mypage'] = 'My page';
 $L['files_newalbum'] = 'Create a new album';
 $L['files_newfile'] = 'Upload a file';
 $L['files_newfolder'] = 'Create a new folder';
 $L['files_onpage'] = 'On this page';
+$L['files_pastecode'] = 'Paste code';
 $L['files_pastefile'] = 'Paste as file link';
+$L['files_pastegallery'] = 'Paste as gallery';
 $L['files_pasteimage'] = 'Paste as image';
 $L['files_pastethumb'] = 'Paste as thumbnail';
 $L['files_processing'] = 'Processing';
-$L['files_start'] = 'Start';
 $L['files_replace'] = 'Replace';
+$L['files_start'] = 'Start';
 $L['files_start_upload'] = 'Start upload';
 $L['files_totalsize'] = 'Total size';
-$L['files_maxsize'] = 'Maximum size for a file';
-$L['files_maxspace'] = 'Maximum space allowed';
+$L['files_updated'] = 'Updated';
+$L['files_youhavenotfolders'] = 'You have not any folders';
 
 
 /**

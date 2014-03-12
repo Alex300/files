@@ -18,7 +18,6 @@ class MainController{
      * файлы пользователя
      * @param string $type
      * @return string
-     * @todo пагинация
      */
     public function indexAction($type = 'all'){
         global $usr, $Ls, $db_files, $db_files_folders, $outHeaderFooter, $cot_extensions;
@@ -54,15 +53,29 @@ class MainController{
             $folder = files_model_Folder::getById($f);
             if(!$folder) cot_die_message(404);
             $uid = (int)$folder->user_id;
+
+            // Private folders
+            if(!$usr['isadmin'] && $uid != $usr['id'] && !$folder->ff_public){
+                cot_die_message(404);
+            }
+            $type = ($folder->ff_album) ? 'image' : 'all';
+
         }else{
-            $folders = files_model_Folder::find(array(array('user_id', $uid)), $perPage, $df, array(array('ff_title', 'ASC')));
-            $folders_count = files_model_Folder::count(array(array('user_id', $uid)));
+            $foldersCond = array(
+                array('user_id', $uid),
+            );
+            if($type == 'image') $foldersCond[] = array('ff_album', 1);
+            if(!$usr['isadmin'] && $uid != $usr['id']){
+                $foldersCond[] = array('ff_public', 1);
+            }
+            $folders = files_model_Folder::find($foldersCond, $perPage, $df, array(array('ff_title', 'ASC')));
+            $folders_count = files_model_Folder::count($foldersCond);
             $onPageFoldersCount = count($folders);
         }
 
         if($uid === 0){
             $isSFS = true;
-            cot_block($usr['id'] > 0);     // Не зареги не видят sfs вообще
+            cot_block($usr['id'] > 0);     // Незареги не видят sfs вообще
         }
 
         $crumbs = array();
@@ -80,14 +93,23 @@ class MainController{
         }else{
 
             $urr = cot_files_getUserData($uid);
-            if(empty($urr) && !$usr['isadmin']) cot_die_message(404);   // Вдруг пользователь удален, а вайлы остались?
+            if(empty($urr) && !$usr['isadmin']) cot_die_message(404);   // Вдруг пользователь удален, а файлы остались?
 
             if($uid == $usr['id']){
+                $crumbs[] = array(cot_url('users', array('m' => 'details')), cot::$L['files_mypage']);
                 if($folder){
-                    $crumbs[] = array(cot_url('files', $urlParams), cot::$L['Mypfs']);
+                    if($type == 'image'){
+                        $crumbs[] = array(cot_url('files', array_merge($urlParams, array('a' => 'album'))), cot::$L['files_albums']);
+                    }else{
+                        $crumbs[] = array(cot_url('files', $urlParams), cot::$L['Mypfs']);
+                    }
                     $crumbs[] = $title = $folder->ff_title;
                 }else{
-                    $crumbs[] = $title = cot::$L['Mypfs'];
+                    if($type == 'image'){
+                        $crumbs[] = $title = cot::$L['files_albums'];
+                    }else{
+                        $crumbs[] = $title = cot::$L['Mypfs'];
+                    }
                 }
 
             }else{
@@ -104,20 +126,29 @@ class MainController{
             }
         }
 
-
-        $tpl = cot_tplfile(array('files', $type), 'module');
-        $t = new XTemplate($tpl);
-
         $source = $isSFS ? 'sfs' : 'pfs';
+
+        $filesCond = array(
+            array('file_source', $source),
+            array('file_item', $f),
+        );
+        if($type == 'image') $filesCond[] = array('file_img', 1);
+
         if($f == 0){
-            $countCond = array(
-                array('file_source', $source),
-                array('file_item', $f),
-            );
-            $files_count = intval(files_model_File::count($countCond));
+            if(!$isSFS) $filesCond[] = array('user_id', $uid);
+            $files_count = intval(files_model_File::count($filesCond));
         }else{
             $files_count = $folder->ff_count;
         }
+        $files = files_model_File::find($filesCond, 0, 0, 'file_order ASC');
+
+        // Права на редактирование
+        $canEdit = 0;
+        if($usr['isadmin'] || $uid == $usr['id']) $canEdit = 1;
+        if($isSFS && !$usr['isadmin']) $canEdit = 0;
+
+        $tpl = cot_tplfile(array('files', $type), 'module');
+        $t = new XTemplate($tpl);
 
         $t->assign(array(
             'FOLDERS_COUNT' => cot_declension($folders_count, $Ls['Folders']),
@@ -125,12 +156,23 @@ class MainController{
             'FOLDERS_ONPAGE_COUNT' => cot_declension($onPageFoldersCount, $Ls['Folders']),
             'FOLDERS_ONPAGE_COUNT_RAW' => $onPageFoldersCount,
             'IS_SITE_FILE_SPACE' => $isSFS,
-            'PFS_FILES_COUNT' => cot_declension($files_count, $Ls['Files']),
-            'PFS_FILES_COUNT_RAW' => $files_count,
-            'PFS_IS_ROOT' => ($f == 0) ? 1 : 0,
+            'FILES_COUNT' => cot_declension($files_count, $Ls['Files']),
+            'FILES_COUNT_RAW' => $files_count,
+            'FILES_IS_ROOT' => ($f == 0) ? 1 : 0,
             'PAGE_TITLE' => cot::$out['subtitle'] =  $title,
+            'FILES_CAN_EDIT' => $canEdit,
+            'FILES_SOURCE' => $source,
+            'FILES_TYPE' => $type,
             'BREADCRUMBS' => cot_breadcrumbs($crumbs, cot::$cfg['homebreadcrumb']),
         ));
+
+        if(!$isSFS){
+            $t->assign(cot_generate_usertags($urr, 'USER_'));
+            $t->assign(array(
+                'USER_GENDER_RAW' => $urr['user_gender'],
+                'USER_COUNTRY_RAW' => $urr['user_country'],
+            ));
+        }
 
         // Если мы находимся в корне, то можем работать с папками
         if($f == 0){
@@ -180,15 +222,12 @@ class MainController{
                             $jj++;
                         }
                     }
-
                     $i++;
                     $t->parse('MAIN.FOLDERS.ROW');
                 }
             }else{
                 $t->parse('MAIN.FOLDERS.EMPTY');
             }
-
-            //@todo Пагинация по папкам
 
             if($usr['auth_write']){
                 if(($isSFS && $usr['isadmin']) || ($uid == $usr['id'])){
@@ -204,21 +243,52 @@ class MainController{
                 }
             }
 
+            // Folders pagination
+            $tmp = $urlParams;
+            if($type = 'image') $tmp['a'] = 'album';
+            $pagenavFolders = cot_pagenav('files', $tmp, $df, $folders_count, $perPage, 'df');
+
             $t->assign(array(
                 'FOLDERS_FILES_COUNT' => cot_declension($foldersFilesCount, $Ls['Files']),
                 'FOLDERS_FILES_COUNT_RAW' => $foldersFilesCount,
                 'FOLDERS_ONPAGE_FILES_COUNT' => cot_declension($onPageFoldersFilesCount, $Ls['Files']),
                 'FOLDERS_ONPAGE_FILES_COUNT_RAW' => $onPageFoldersFilesCount,
+
+                'FOLDERS_PAGINATION'    => $pagenavFolders['main'],
+                'FOLDERS_PAGEPREV'      => $pagenavFolders['prev'],
+                'FOLDERS_PAGENEXT'      => $pagenavFolders['next'],
+                'FOLDERS_CURRENTPAGE'   => $pagenavFolders['current'],
+                'FOLDERS_MAXPERPAGE'    => $perPage,
+                'FOLDERS_TOTALPAGES'    => $pagenavFolders['total']
             ));
 
             $t->parse('MAIN.FOLDERS');
 
             if($pgf > 1) cot::$out['subtitle'] .= " (".cot::$L['Page']." {$pgf})";
 
-        }else{
-            if($folder) $t->assign(files_model_Folder::generateTags($folder, 'FOLDER_', $urlParams));
         }
 
+        if($folder){
+            $t->assign(files_model_Folder::generateTags($folder, 'FOLDER_', $urlParams));
+        }else{
+            $t->assign(array(
+                'FOLDER_ID' => 0,
+            ));
+        }
+
+
+        if($files){
+            $jj = 0;
+            foreach($files as $fileRow){
+                $t->assign(files_model_File::generateTags($fileRow, 'FILES_ROW_'));
+                $t->assign(array(
+                    'FILES_ROW_NUM'      => $jj,
+                ));
+                $t->parse('MAIN.FILES.ROW');
+                $jj++;
+            }
+        }
+        $t->parse('MAIN.FILES');
 
         /* === Hook === */
         foreach (cot_getextplugins('files.tags') as $pl)
