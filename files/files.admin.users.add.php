@@ -8,14 +8,18 @@ Hooks=admin.users.add.first
 /**
  * Users admin edit tags
  *
- * @package pfs
- * @version 0.9.0
+ * @package files
  * @author Cotonti Team
- * @copyright Copyright (c) Cotonti Team 2011-2013
+ * @copyright Copyright (c) Cotonti Team 2011-2014
  * @license BSD
  */
 
 defined('COT_CODE') or die('Wrong URL.');
 
-$rgroups['grp_pfs_maxfile'] = (int)min(cot_import('rmaxfile', 'P', 'INT'), cot_get_uploadmax());
+$rgroups['grp_pfs_maxfile'] = (int)cot_import('rmaxfile', 'P', 'INT');
+// Ограничения на загрузку файлов через POST
+if(cot::$cfg['files']['chunkSize'] == 0){
+    $rgroups['grp_pfs_maxfile']  = min($rgroups['grp_pfs_maxfile'], cot_get_uploadmax() * 1024);
+}
 $rgroups['grp_pfs_maxtotal'] = (int)cot_import('rmaxtotal', 'P', 'INT');
+$rgroups['grp_files_perpost'] = (int)cot_import('rfiles_perpost', 'P', 'INT');

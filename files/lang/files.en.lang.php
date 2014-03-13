@@ -46,6 +46,28 @@ $L['files_totalsize'] = 'Total size';
 $L['files_updated'] = 'Updated';
 $L['files_youhavenotfolders'] = 'You have not any folders';
 
+/**
+ * Admin
+ */
+$L['adm_maxsizesingle'] = $L['files_maxsizesingle'] = 'Max size for a single file in '.$L['PFS'].' ('.$L['bytes'].'),<br />
+    0 - unlimited, -1 - disabled';
+$L['adm_maxsizeallpfs'] = $L['files_maxsizesingle'] = 'Max size of all files together in '.$L['PFS'].' ('.$L['bytes'].'),<br />
+    0 - unlimited, -1 - disabled';
+$L['files_cleanup'] = 'Clean up';
+$L['files_cleanup_conf'] = 'This will remove all files attached to posts which no longer exist. Continue?';
+$L['files_cleanup_desc'] = 'Will remove all files attached to pages and forum posts which no longer exists, if for some
+    reason they were not removed automatically';
+$L['files_deleteallthumbs'] = 'Remove all thumbnails';
+$L['files_deleteallthumbs_conf'] = 'All thumbnails for all images will be deleted. New thumbnails will be generated when they are needed';
+$L['files_deleteallthumbs_desc'] = 'If you have changed thumbnails settings and want to regenerate them, use the
+    <strong>«Remove all thumbnails»</strong>. New thumbnails will be generated when they are needed. It can cause
+    problems on pages with lots of thumbnails';
+$L['files_itemsperpost'] = 'Attachments per post (max.), 0 - unlimited';
+$L['files_userfilespace'] = 'User file space';
+$L['files_userfilespace_desc'] = 'This is your files. Set desired user id';
+$L['files_userpublic_albums'] = 'User Public images and albums';
+$L['files_userpublic_files'] = 'User public files and folders';
+
 
 /**
  * Errors & Messages

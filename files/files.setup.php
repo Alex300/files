@@ -4,6 +4,7 @@
 Code=files
 Name=Files
 Description=Personal File Space and attach files to posts and pages
+Category=files-media
 Version=1.0.0
 Date=2014-02-25
 Author=Cotonti Team
