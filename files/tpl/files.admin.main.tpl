@@ -1,5 +1,4 @@
 <!-- BEGIN: MAIN -->
-
 <!-- IF {PAGE_TITLE} -->
 <h2 class="tags"><img src="{PHP.cfg.modules_dir}/files/files.png" style="vertical-align: middle;" /> {PAGE_TITLE}</h2>
 <!-- ENDIF -->
@@ -8,7 +7,7 @@
 
 <!-- BEGIN: GD_INFO -->
 <div class="block">
-    <h3>{PHP.L.adm_gd}:</h3>
+    <h3>{PHP.L.files_gd}:</h3>
     <ul class="follow">
         <!-- BEGIN: ROW -->
         <li>{GD_DATAS_NAME}: <span class="strong">{GD_DATAS_DATAS_ENABLE}</span></li>

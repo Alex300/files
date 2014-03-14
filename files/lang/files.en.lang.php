@@ -53,6 +53,8 @@ $L['adm_maxsizesingle'] = $L['files_maxsizesingle'] = 'Max size for a single fil
     0 - unlimited, -1 - disabled';
 $L['adm_maxsizeallpfs'] = $L['files_maxsizesingle'] = 'Max size of all files together in '.$L['PFS'].' ('.$L['bytes'].'),<br />
     0 - unlimited, -1 - disabled';
+$L['files_allpfs'] = 'All PFS';
+$L['files_allpfs_help'] = $L['PFS'].' of all registered users';
 $L['files_cleanup'] = 'Clean up';
 $L['files_cleanup_conf'] = 'This will remove all files attached to posts which no longer exist. Continue?';
 $L['files_cleanup_desc'] = 'Will remove all files attached to pages and forum posts which no longer exists, if for some
@@ -62,6 +64,7 @@ $L['files_deleteallthumbs_conf'] = 'All thumbnails for all images will be delete
 $L['files_deleteallthumbs_desc'] = 'If you have changed thumbnails settings and want to regenerate them, use the
     <strong>«Remove all thumbnails»</strong>. New thumbnails will be generated when they are needed. It can cause
     problems on pages with lots of thumbnails';
+$L['files_gd'] = 'GD graphical library';
 $L['files_itemsperpost'] = 'Attachments per post (max.), 0 - unlimited';
 $L['files_userfilespace'] = 'User file space';
 $L['files_userfilespace_desc'] = 'This is your files. Set desired user id';
@@ -82,6 +85,8 @@ $L['files_err_type'] = 'This type of files is not allowed';
 $L['files_err_replace'] = 'Could not replace file';
 $L['files_err_upload'] = 'The file could not be uploaded';
 $L['files_foldertitlemissing'] = 'A folder title is required.';
+$L['files_nogd'] = 'The GD graphical library is not supported by this host, Cotonti won\'t be able to create
+    thumbnails for images.';
 $L['files_saved'] = 'Saved.';
 
 

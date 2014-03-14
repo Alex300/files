@@ -824,7 +824,15 @@ function cot_files_downloads($source, $item, $field = '', $tpl = 'files.download
  */
 function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -1, $tpl = 'files.filebox', $standalone = false)
 {
-    global $R, $cot_modules;
+    global $R, $cot_modules, $usr;
+
+    list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
+
+    $uid = $usr['id'];
+    if($source == 'pfs' && $usr['isadmin']){
+        $uid = cot_import('uid', 'G', 'INT');
+        if(is_null($uid)) $uid = $usr['id'];
+    }
 
     $jsFunc = (!defined('COT_HEADER_COMPLETE')) ? 'cot_rc_link_file': 'cot_rc_link_footer';
     $nc = $cot_modules['files']["version"];
@@ -916,7 +924,7 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
 
     $t = new XTemplate(cot_tplfile($tpl, 'module'));
 
-    $limits = cot_files_getLimits(cot::$usr['id'], $source, $item, $name);
+    $limits = cot_files_getLimits($usr['id'], $source, $item, $name);
     if($limit == 0){
         $limit = 100000000000000000;
     }elseif($limit == -1){
@@ -935,6 +943,13 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
 
     $action = 'index.php?e=files&m=upload&source='.$source.'&item='.$item;
     if(!empty($name)) $action .= '&field='.$name;
+    if($uid != $usr['id']){
+        $t->assign(array(
+            'UPLOAD_UID'     => $uid,
+        ));
+        $action .= '&uid='.$uid;
+    }
+
     // Metadata
     $t->assign(array(
         'UPLOAD_ID'      => $formId,
@@ -971,6 +986,23 @@ function cot_files_gallery($source, $item, $field = '', $tpl = 'files.gallery', 
 }
 
 /**
+ * user display name
+ */
+function cot_files_user_displayName($user){
+    if(empty($user)) return '';
+
+    if(!empty($user['user_firstname']) || !empty($user['user_lastname']) || !empty($user['user_middlename'])){
+        return trim($user['user_lastname'].' '.$user['user_firstname'].' '.$user['user_middlename']);
+    }
+
+    if(!empty($user['user_first_name']) || !empty($user['user_last_name']) || !empty($user['user_middle_name'])){
+        return trim($user['user_last_name'].' '.$user['user_first_name'].' '.$user['user_middle_name']);
+    }
+
+    return $user['user_name'];
+}
+
+/**
  * Generates a file upload/edit widget.
  * Use it as CoTemplate callback.
  *
@@ -983,12 +1015,15 @@ function cot_files_gallery($source, $item, $field = '', $tpl = 'files.gallery', 
  * @return string           Rendered widget
  */
 function cot_files_widget($source, $item, $field = '', $tpl = 'files.widget', $width = '100%', $height = '300'){
-    global $files_widget_present;
+    global $files_widget_present, $cot_modules;
 
     $t = new XTemplate(cot_tplfile($tpl, 'module'));
 
     // Metadata
     $limits = cot_files_getLimits(cot::$usr['id'], $source, $item, $field);
+
+    $urlParams = array('m'=>'files', 'a'=>'display', 'source'=>$source, 'item'=>$item, 'field'=>$field,
+        'nc'=>$cot_modules['files']['version']);
 
     $t->assign(array(
         'FILES_SOURCE'  => $source,
@@ -998,7 +1033,8 @@ function cot_files_widget($source, $item, $field = '', $tpl = 'files.widget', $w
 //        'FILES_ACCEPT'  => preg_replace('#[^a-zA-Z0-9,*/-]#', '',$cfg['plugin']['attach2']['accept']),
         'FILES_MAXSIZE' => $limits['size_maxfile'],
         'FILES_WIDTH'   => $width,
-        'FILES_HEIGHT'  => $height
+        'FILES_HEIGHT'  => $height,
+        'FILES_URL'     => cot_url('files', $urlParams, '', true),
     ));
 
     $t->parse();

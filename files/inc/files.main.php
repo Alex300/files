@@ -20,7 +20,7 @@ class MainController{
      * @return string
      */
     public function indexAction($type = 'all'){
-        global $usr, $Ls, $db_files, $db_files_folders, $outHeaderFooter, $cot_extensions;
+        global $usr, $Ls, $db_files, $db_files_folders, $cot_modules;
 
         $perPage = cot::$cfg['files']['maxFoldersPerPage'];
 
@@ -114,7 +114,8 @@ class MainController{
 
             }else{
                 $crumbs[] = array(cot_url('users'), cot::$L['Users']);
-                $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']), $urr['user_name']);
+                $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
+                    cot_files_user_displayName($urr));
                 if($folder){
                     $tmp = $urlParams;
                     if($uid != $usr['id']) $tmp['uid'] = $uid;
@@ -147,6 +148,13 @@ class MainController{
         if($usr['isadmin'] || $uid == $usr['id']) $canEdit = 1;
         if($isSFS && !$usr['isadmin']) $canEdit = 0;
 
+        $uploadUrlParams = array('m'=>'files', 'a'=>'display', 'source'=>$source, 'item'=>$f,
+            'nc'=>$cot_modules['files']['version']);
+
+        if(!$isSFS && $uid != $usr['id'] && $usr['isadmin']){
+            $uploadUrlParams['uid'] = $uid;
+        }
+
         $tpl = cot_tplfile(array('files', $type), 'module');
         $t = new XTemplate($tpl);
 
@@ -163,6 +171,7 @@ class MainController{
             'FILES_CAN_EDIT' => $canEdit,
             'FILES_SOURCE' => $source,
             'FILES_TYPE' => $type,
+            'FILES_UPLOADURL'     => cot_url('files', $uploadUrlParams, '', true),
             'BREADCRUMBS' => cot_breadcrumbs($crumbs, cot::$cfg['homebreadcrumb']),
         ));
 

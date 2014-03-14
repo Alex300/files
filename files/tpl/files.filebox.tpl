@@ -79,7 +79,6 @@ filesConfig.{UPLOAD_ID} = {
     param:  '{UPLOAD_PARAM}'
 };
 </script>
-
 <!-- The XDomainRequest Transport is included for cross-domain file deletion for IE 8 and IE 9 -->
 <!--[if (gte IE 8)&(lt IE 10)]>
 <script src="js/cors/jquery.xdr-transport.js"></script>

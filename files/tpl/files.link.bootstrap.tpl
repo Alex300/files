@@ -38,6 +38,5 @@
 </script>
 <!-- ENDIF -->
 
-<a href="index.php?e=files&amp;m=files&amp;a=display&amp;source={FILES_SOURCE}&amp;item={FILES_ITEM}&amp;field={FILES_FIELD}&amp;nc={PHP.cot_modules.files.version}"
-   class="filesLink"  title="{PHP.L.files_attachments}">{PHP.L.files_attach}</a>
+<a href="{FILES_URL}" class="filesLink"  title="{PHP.L.files_attachments}">{PHP.L.files_attach}</a>
 <!-- END: MAIN -->

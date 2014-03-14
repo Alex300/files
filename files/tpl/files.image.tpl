@@ -94,8 +94,7 @@
     </a>
     <!-- ENDIF -->
 
-    <a href="index.php?e=files&amp;m=files&amp;a=display&amp;source={FILES_SOURCE}&amp;item={FOLDER_ID}&amp;field=&amp;type={FILES_TYPE}&amp;nc={PHP.cot_modules.files.version}"
-   class="btn btn-default filesLink"  title="{PHP.L.files_add}" data-toggle="tooltip">
+    <a href="{FILES_UPLOADURL}" class="btn btn-default filesLink"  title="{PHP.L.files_add}" data-toggle="tooltip">
         <span class="glyphicon glyphicon-upload"></span>
         <span class="glyphicon glyphicon-cog"></span>
     </a>

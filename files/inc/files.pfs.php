@@ -113,7 +113,8 @@ class PfsController{
 
             }else{
                 $crumbs[] = array(cot_url('users'), cot::$L['Users']);
-                $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']), $urr['user_name']);
+                $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
+                    cot_files_user_displayName($urr));
                 if($folder){
                     $tmp = $urlParams;
                     if($uid != $usr['id']) $tmp['uid'] = $uid;
@@ -132,7 +133,7 @@ class PfsController{
         $percentage = $limits['size_maxtotal'] > 0 ? round($limits['size_used'] / $limits['size_maxtotal'] * 100) : 100;
         $progressbarClass = 'progress-bar-info';
         if($percentage > 70) $progressbarClass = 'progress-bar-warning';
-        if($percentage > 70) $progressbarClass = 'progress-bar-danger';
+        if($percentage > 90) $progressbarClass = 'progress-bar-danger';
         $t->assign(array(
             'PFS_TOTALSIZE' => cot_build_filesize($limits['size_used'], 1),
             'PFS_TOTALSIZE_RAW' => $limits['size_used'],
@@ -177,7 +178,7 @@ class PfsController{
             'FOLDERS_COUNT_RAW' => $folders_count,
             'FOLDERS_ONPAGE_COUNT' => cot_declension($onPageFoldersCount, $Ls['Folders']),
             'FOLDERS_ONPAGE_COUNT_RAW' => $onPageFoldersCount,
-            'FILES_WIDGET' => ($isSFS || $uid == $usr['id']) ? cot_files_filebox($source, $f, '', 'all', -1, 'files.filebox', $standalone) : '',
+            'FILES_WIDGET' => cot_files_filebox($source, $f, '', 'all', -1, 'files.filebox', $standalone),
             'IS_SITE_FILE_SPACE' => $isSFS,
             'PFS_FILES_COUNT' => cot_declension($files_count, $Ls['Files']),
             'PFS_FILES_COUNT_RAW' => $files_count,
@@ -427,7 +428,8 @@ class PfsController{
                 cot::$out['subtitle'] = cot::$L['Mypfs'];
             }else{
                 $crumbs[] = array(cot_url('users'), cot::$L['Users']);
-                $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']), $urr['user_name']);
+                $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
+                    cot_files_user_displayName($urr));
                 $crumbs[] = array(cot_url('files', $tmp), cot::$L['Files']);
                 if($folder){
                     $crumbs[] = array(cot_url('files', array('m'=>'pfs', 'f' => $folder->ff_id)), $folder->ff_title);
@@ -475,7 +477,7 @@ class PfsController{
         $percentage = $limits['size_maxtotal'] > 0 ? round($limits['size_used'] / $limits['size_maxtotal'] * 100) : 100;
         $progressbarClass = 'progress-bar-info';
         if($percentage > 70) $progressbarClass = 'progress-bar-warning';
-        if($percentage > 70) $progressbarClass = 'progress-bar-danger';
+        if($percentage > 90) $progressbarClass = 'progress-bar-danger';
         $t->assign(array(
             'PFS_TOTALSIZE' => cot_build_filesize($limits['size_used'], 1),
             'PFS_TOTALSIZE_RAW' => $limits['size_used'],
@@ -507,7 +509,7 @@ class PfsController{
             'PFS_FILES_COUNT' => cot_declension($folder->ff_count, $Ls['Files']),
             'PFS_FILES_COUNT_RAW' => $folder->ff_count,
 
-            'FILES_WIDGET' => ($folder->ff_id > 0 && ($isSFS || $uid == $usr['id'])) ?
+            'FILES_WIDGET' => ($folder->ff_id > 0 ) ?
                     cot_files_filebox($source, $f, '', 'all', -1, 'files.filebox', $standalone) : '',
             'IS_SITE_FILE_SPACE' => $isSFS,
             'PAGE_TITLE' => cot::$out['subtitle'] =  $title,

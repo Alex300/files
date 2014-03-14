@@ -56,7 +56,7 @@ class UploadController{
     public function get($print_response = true) {
         global $source, $item, $field, $filename;
 
-        $uid = cot_import('uid', 'G', 'TXT');
+        $uid = cot_import('uid', 'G', 'INT');
         if(is_null($uid)) $uid = cot::$usr['id'];
 
         $res = array();
@@ -399,6 +399,8 @@ class UploadController{
      * @param null $index
      * @param null $content_range
      * @return stdClass
+     *
+     * @todo если пришел uid и пользователь админ, то сохранять файлы от пользователя с указанным uid
      */
     protected function handle_file_upload($uploaded_file, $name, $size, $type, $error,
                                           $index = null, $content_range = null) {
