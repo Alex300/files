@@ -17,7 +17,7 @@
 
 </head>
 <body>
-<div class="container">
+<div class="container pfs standalone">
 <!-- END: STANDALONE_HEADER -->
 
 <div class="breadcrumb">{BREADCRUMBS}</div>
