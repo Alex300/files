@@ -654,8 +654,10 @@ function cot_files_watermark($source, $target, $watermark = '', $jpegquality = 8
 
     $wmAdded = false;
     if ( ($ww + 60) < $w && ($wh + 40) < $h ){
+        imageAlphaBlending($image, TRUE);
+
         // Insert watermark to the right bottom corner
-        imagecopy($image, $watermark, intval(($w-$ww)/2), $h-$wh-20, 0, 0, $ww, $wh);
+        imagecopy($image, $watermark, $w - 40 - $ww, $h-$wh-20, 0, 0, $ww, $wh);
         unlink($target);
         switch($targetExt)
         {
