@@ -16,21 +16,24 @@ Tags=comments.tpl:{COMMENTS_FORM_PFS},{COMMENTS_FORM_SFS}
  */
 defined('COT_CODE') or die('Wrong URL.');
 
-require_once cot_incfile('files', 'module');
+if(cot_auth('files', 'a', 'W')){
 
-if (cot_get_caller() == 'comments.functions')
-{
-	$form_name = 'newcomment';
-	$input_name = 'rtext';
-}
-else
-{
-	$form_name = 'comments';
-	$input_name = 'comtext';
-}
+    require_once cot_incfile('files', 'module');
 
-$t->assign(array(
-	'COMMENTS_FORM_PFS' => cot_files_buildPfs(cot::$usr['id'], $form_name, $input_name, cot::$L['Mypfs'], cot::$sys['parser']),
-	'COMMENTS_FORM_SFS' => (cot_auth('files', 'a', 'A')) ? cot_files_buildPfs(0, $form_name, $input_name,
-                cot::$L['SFS'], cot::$sys['parser']) : ''
-));
+    if (cot_get_caller() == 'comments.functions')
+    {
+        $form_name = 'newcomment';
+        $input_name = 'rtext';
+    }
+    else
+    {
+        $form_name = 'comments';
+        $input_name = 'comtext';
+    }
+
+    $t->assign(array(
+        'COMMENTS_FORM_PFS' => cot_files_buildPfs(cot::$usr['id'], $form_name, $input_name, cot::$L['Mypfs'], cot::$sys['parser']),
+        'COMMENTS_FORM_SFS' => (cot_auth('files', 'a', 'A')) ? cot_files_buildPfs(0, $form_name, $input_name,
+                    cot::$L['SFS'], cot::$sys['parser']) : ''
+    ));
+}
