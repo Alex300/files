@@ -237,6 +237,20 @@ class MainController{
 
         rrmdir(cot::$cfg['files']['folder'].'/_thumbs');
 
+        // Очистим кеш, чтобы миниатюры могли перегенерироваться
+        if (cot::$cache){
+            if (cot::$cfg['cache_page']){
+                cot::$cache->page->clear('page');
+            }
+            if (cot::$cfg['cache_index']){
+                cot::$cache->page->clear('index');
+            }
+            if (cot::$cfg['cache_forums']){
+                cot::$cache->page->clear('forums');
+            }
+        }
+
+
         cot_message(cot::$L['files_thumbs_removed']);
 
         // Return to the main page and show messages
