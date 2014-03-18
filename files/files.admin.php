@@ -53,13 +53,14 @@ if (file_exists(cot_incfile('files', 'module', 'admin.'.$n))) {
     exit;
 }
 
-if (COT_AJAX) {
+if (COT_AJAX && $_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Не использовать эту фичу, если $_SERVER["REQUEST_METHOD"] == 'GET' т.к. это поломает ajax пагинацию
     require_once $cfg['system_dir'] . '/header.php';
     echo $content;
     require_once $cfg['system_dir'] . '/footer.php';
     exit;
 }
-//$adminhelp .= '<p><a href="http://portal30.ru/sozdanie-internet-sajtov/free-scripts/cotonti-shop" target="_blanl">powered by portal30</a></p>';
+
 $t->assign('CONTENT', $content);
 
 // Error and message handling

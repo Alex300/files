@@ -682,11 +682,41 @@ function cot_files_watermark($source, $target, $watermark = '', $jpegquality = 8
     return $wmAdded;
 }
 
-// workaround for splitting basename whith beginning utf8 multibyte char
+/**
+ * Сборка мусора от несохраненных форм
+ * @todo дописать
+ */
+function cot_files_formGarbageCollect(){
+    return 0;
+}
+
+/**
+ * workaround for splitting basename whith beginning utf8 multibyte char
+ */
 function mb_basename($filepath, $suffix = NULL)
 {
     $splited = preg_split('/\//', rtrim($filepath, '/ '));
     return substr(basename('X' . $splited[count($splited) - 1], $suffix), 1);
+}
+
+/**
+ * Recursive remove directory
+ * @param $dir
+ * @return bool
+ */
+function rrmdir($dir) {
+    if(empty($dir) && $dir != '0') return false;
+
+    if (is_dir($dir)) {
+        $objects = scandir($dir);
+        foreach ($objects as $object) {
+            if ($object != "." && $object != "..") {
+                if (filetype($dir."/".$object) == "dir") rrmdir($dir."/".$object); else unlink($dir."/".$object);
+            }
+        }
+        reset($objects);
+        rmdir($dir);
+    }
 }
 
 // ===== outputs and widgets =====

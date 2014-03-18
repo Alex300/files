@@ -66,6 +66,8 @@ $L['files_deleteallthumbs_desc'] = 'If you have changed thumbnails settings and 
     problems on pages with lots of thumbnails';
 $L['files_gd'] = 'GD graphical library';
 $L['files_itemsperpost'] = 'Attachments per post (max.), 0 - unlimited';
+$L['files_items_removed'] = 'Items removed';
+$L['files_thumbs_removed'] = 'Thumbnails removed';
 $L['files_userfilespace'] = 'User file space';
 $L['files_userfilespace_desc'] = 'This is your files. Set desired user id';
 $L['files_userpublic_albums'] = 'User Public images and albums';

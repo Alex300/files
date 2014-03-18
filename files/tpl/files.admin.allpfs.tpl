@@ -3,6 +3,16 @@
 <h2 class="tags"><img src="{PHP.cfg.modules_dir}/files/files.png" style="vertical-align: middle;" /> {PAGE_TITLE}</h2>
 <!-- ENDIF -->
 
+<!-- BEGIN: SFS -->
+<table class="cells marginbottom10">
+    <tr>
+        <td class="strong width60">{PHP.L.SFS}</td>
+        <td class="centerall width20">{SFS_COUNT}</td>
+        <td class="centerall width20"><a title="{PHP.L.Open}" href="{PHP|cot_url('files', 'm=pfs&uid=0')}">{PHP.R.icon_folder}</a></td>
+    </tr>
+</table>
+<!-- END: SFS -->
+
 <table class="cells">
     <tr>
         <td class="coltop width60">{PHP.L.User}</td>
@@ -18,7 +28,7 @@
             <!-- ENDIF -->
         </td>
         <td class="centerall">{ALLPFS_ROW_COUNT}</td>
-        <td class="centerall"><a title="{PHP.L.Edit}" href="{ALLPFS_ROW_URL}">{PHP.R.icon_folder}</a></td>
+        <td class="centerall"><a title="{PHP.L.Open}" href="{ALLPFS_ROW_URL}">{PHP.R.icon_folder}</a></td>
     </tr>
     <!-- END: ALLPFS_ROW -->
 </table>

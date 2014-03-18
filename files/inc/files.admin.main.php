@@ -57,8 +57,6 @@ class MainController{
 
     /**
      * @return string
-     * @todo проверить пагинацию, в т.ч. ajax
-     * @todo вывод инфломации о sfs
      * @todo на будущее, выбор поля для сортировки и фильтры
      */
     public function allpfsAction(){
@@ -68,10 +66,10 @@ class MainController{
         $adminhelp = cot::$L['adm_help_allpfs'];
         $adminsubtitle = cot::$L['files_allpfs'];
 
-        list($pg, $d, $durl) = cot_import_pagenav('d', cot::$cfg['maxrowsperpage']);
-
         $urlParams = array('m'=>'files', 'a'=> 'allpfs');
         $perPage = cot::$cfg['maxrowsperpage'];
+        $perPage = 1;
+        list($pg, $d, $durl) = cot_import_pagenav('d', $perPage);
 
         /* === Hook === */
         foreach (cot_getextplugins('admin.files.allpfs.first') as $pl)
@@ -83,8 +81,7 @@ class MainController{
         $totalitems = cot::$db->query("SELECT COUNT(DISTINCT user_id) FROM $db_files
             WHERE file_source='pfs'")->fetchColumn();
 
-       //$pagenav = cot_pagenav('admin', $urlParams, $d, $totalitems, $perPage, 'd', '', $cfg['jquery'] && $cfg['turnajax']);
-        $pagenav = cot_pagenav('admin', $urlParams, $d, $totalitems, $perPage, 'd');
+       $pagenav = cot_pagenav('admin', $urlParams, $d, $totalitems, $perPage, 'd', '', cot::$cfg['jquery'] && cot::$cfg['turnajax']);
 
         $sqlOrder = $order = 'u.user_name ASC';
 
@@ -151,6 +148,14 @@ class MainController{
             $ii++;
         }
 
+        // Site file spase info
+        if($d == 0){
+            $t->assign(array(
+                'SFS_COUNT' => files_model_File::count(array(array('file_source', 'sfs'))),
+            ));
+            $t->parse('MAIN.SFS');
+        }
+
         $t->assign(array(
             'ALLPFS_PAGINATION_PREV' => $pagenav['prev'],
             'ALLPFS_PAGNAV' => $pagenav['main'],
@@ -172,4 +177,69 @@ class MainController{
 
     }
 
+    public function cleanupAction(){
+        global $db_forum_posts, $db_files, $db_pages;
+
+        $count = 0;
+
+        if (cot_module_active('forums')){
+            // Remove unused forum attachments
+            require_once cot_incfile('forums', 'module');
+
+            $condition = "LEFT JOIN $db_forum_posts ON $db_files.file_item = $db_forum_posts.fp_id
+		                  WHERE $db_files.file_source = 'forums' AND $db_forum_posts.fp_id IS NULL";
+
+            $res = cot::$db->query("SELECT file_id FROM $db_files $condition")->fetchAll(PDO::FETCH_COLUMN);
+            if($res){
+                $files = files_model_File::find(array(array('file_id', $res)));
+                if($files){
+                    foreach($files as $fileRow){
+                        $count++;
+                        $fileRow->delete();
+                    }
+                }
+            }
+        }
+
+        if (cot_module_active('page')){
+            // Remove unused page attachments
+            require_once cot_incfile('page', 'module');
+
+            $condition = "LEFT JOIN $db_pages ON $db_files.file_item = $db_pages.page_id
+		                  WHERE $db_files.file_source = 'page' AND $db_pages.page_id IS NULL";
+
+            $res = cot::$db->query("SELECT file_id FROM $db_files $condition")->fetchAll(PDO::FETCH_COLUMN);
+            if($res){
+                $files = files_model_File::find(array(array('file_id', $res)));
+                if($files){
+                    foreach($files as $fileRow){
+                        $count++;
+                        $fileRow->delete();
+                    }
+                }
+            }
+        }
+
+        $count += cot_files_formGarbageCollect();
+
+        cot_message($count . ' ' . cot::$L['files_items_removed']);
+
+        // Return to the main page and show messages
+        cot_redirect(cot_url('admin', 'm=files', '', true));
+    }
+
+
+    public function delAllThumbsAction(){
+
+        if(empty(cot::$cfg['files']['folder']) || !file_exists(cot::$cfg['files']['folder'].'/_thumbs')){
+            cot_redirect(cot_url('admin', 'm=files', '', true));
+        }
+
+        rrmdir(cot::$cfg['files']['folder'].'/_thumbs');
+
+        cot_message(cot::$L['files_thumbs_removed']);
+
+        // Return to the main page and show messages
+        cot_redirect(cot_url('admin', 'm=files', '', true));
+    }
 }
