@@ -40,6 +40,7 @@ $L['files_pasteimage'] = 'Paste as image';
 $L['files_pastethumb'] = 'Paste as thumbnail';
 $L['files_processing'] = 'Processing';
 $L['files_replace'] = 'Replace';
+$L['files_select_avatar'] = 'Select avatar';
 $L['files_start'] = 'Start';
 $L['files_start_upload'] = 'Start upload';
 $L['files_totalsize'] = 'Total size';

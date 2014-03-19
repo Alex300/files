@@ -40,6 +40,7 @@ $L['files_pasteimage'] = 'Вставить как изображение';
 $L['files_pastethumb'] = 'Вставить миниатюру';
 $L['files_processing'] = 'Обработка';
 $L['files_replace'] = 'Заменить';
+$L['files_select_avatar'] = 'Выбрать аватар';
 $L['files_start'] = 'Начать';
 $L['files_start_upload'] = 'Начать закачку';
 $L['files_totalsize'] = 'Общий объем';

@@ -83,3 +83,7 @@ cot::$R['files_pfs_link_addthumb'] =
 cot::$R['files_pfs_link_addfile'] =
     '<a href="#" title="'.cot::$L['files_pastefile'].'" '.
         'data-toggle="tooltip" class="btn btn-default btn-sm pasteFile">'.cot::$R['files_icon_pastefile'].'</a>';
+
+
+$R['files_user_avatar'] = '<img src="{$src}" alt="{$alt}" class="avatar" />';
+$R['files_user_default_avatar'] = '<img src="datas/defaultav/blank.png" alt="'.cot::$L['Avatar'].'" class="avatar" />';

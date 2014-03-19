@@ -34,6 +34,54 @@ $(function () {
                 'modules/files/lib/upload/cors/result.html?%s'
             )
         );
+        $(this).bind('fileuploaddone', function (e, data) {
+            // После загрузки новых файлов их тоже надо сортировать
+            // todo обойтись без дублирования кода
+            $.each(data.result.files, function (index, file) {
+                fileInput.find(".filesTable").tableDnD({
+                    onDragStart: function(table, row){
+                        var offset = $(row).offset();
+                        dndOffset = offset.top;
+                    },
+                    onDrop: function(table, row) {
+
+                        var offset = $(row).offset();
+                        if(Math.abs(dndOffset - offset.top) < 20 ) return;
+
+                        dndOffset = 0;
+
+                        var orders = [];
+                        var i = 0;
+                        var rows = table.tBodies[0].rows;
+                        $(rows).each(function() {
+                            var id = $(this).attr('data-id');
+                            orders[i] = id;
+                            i++;
+                        });
+
+                        var x = filesConfig['x'];
+                        var updateUrl = 'index.php?e=files&m=files&a=reorder';
+
+                        var procDiv = $('<div>', { 'id': "task-processing" });
+                        $(table).before( procDiv );
+
+                        $.post(updateUrl, {
+                            orders: orders,
+                            source: filesConfig[uplId].source,
+                            item: filesConfig[uplId].item,
+                            field: filesConfig[uplId].field,
+                            x: x
+                        }, function(data) {
+
+                        }, 'json').fail(function() {
+                            alert('Request Error');
+                        }).always(function() {
+                            $(procDiv).remove();
+                        });
+                    }
+                });
+            });
+        });
 
         // Load existing files:
         fileInput.addClass('fileupload-processing');

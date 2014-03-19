@@ -722,6 +722,107 @@ function rrmdir($dir) {
 // ===== outputs and widgets =====
 
 /**
+ * Generates a avatar selecteion
+ * Use it as CoTemplate callback.
+ *
+ * @param int $userId for admins only
+ * @param string $tpl Template code
+ * @return string
+ *
+ * @todo no cache parameter for css
+ * @todo generate formUnikey
+ */
+function cot_files_avatarbox($userId = null, $tpl = 'files.avatarbox' ){
+    global $R, $cot_modules, $usr;
+
+    list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
+
+    $source = 'pfs';
+    $item = 0;
+    $filed = '';
+
+    $uid = cot::$usr['id'];
+    if($usr['isadmin']){
+        $uid = $userId;
+
+        if(is_null($uid)) $uid = cot_import('uid', 'G', 'INT');
+        if(is_null($uid)) $uid = $usr['id'];
+    }
+
+    $jsFunc = (!defined('COT_HEADER_COMPLETE')) ? 'cot_rc_link_file': 'cot_rc_link_footer';
+    $nc = $cot_modules['files']["version"];
+
+    // Подключаем jQuery-templates только один раз
+//    static $jQtemlatesOut = false;
+//    $jQtemlates = '';
+    $modUrl = cot::$cfg['modules_dir'].'/files';
+
+    $jsFunc = (!defined('COT_HEADER_COMPLETE')) ? 'cot_rc_link_file': 'cot_rc_link_footer';
+    // CSS to style the file input field as button and adjust the Bootstrap progress bars
+    $jsFunc($modUrl.'/lib/upload/css/jquery.fileupload.css');
+    $jsFunc($modUrl.'/lib/upload/css/jquery.fileupload-ui.css');
+
+    /* === Java Scripts === */
+    // The jQuery UI widget factory, can be omitted if jQuery UI is already included
+    cot_rc_link_footer($modUrl.'/lib/upload/js/vendor/jquery.ui.widget.js?nc='.$nc);
+    cot_rc_link_footer($modUrl.'/lib/upload/js/jquery.iframe-transport.js?nc='.$nc);
+    cot_rc_link_footer($modUrl.'/lib/upload/js/jquery.fileupload.js?nc='.$nc);
+
+    $formId = "{$source}_{$item}_{$filed}";
+    $type = array('image');
+
+    $type = json_encode($type);
+
+    // Get current avatar
+    $user = cot_files_getUserData($uid);
+    $avatar = cot_files_user_avatar($user['user_avatar'], $user);
+
+    $t = new XTemplate(cot_tplfile($tpl, 'module'));
+
+    $limits = cot_files_getLimits($usr['id'], $source, $item, '');
+
+    $unikey = mb_substr(md5($formId . '_' . rand(0, 99999999)), 0, 15);
+    $params = base64_encode(serialize(array(
+        'source'  => $source,
+        'item'    => $item,
+        'field'   => '',
+        'limit'   => $limits['count_max'],
+        'type'    => $type,
+        'avatar'  => 1,
+        'unikey'  => $unikey
+    )));
+
+    $action = 'index.php?e=files&m=upload&source='.$source.'&item='.$item;
+    if($uid != $usr['id']){
+        $t->assign(array(
+            'UPLOAD_UID'     => $uid,
+        ));
+        $action .= '&uid='.$uid;
+    }
+
+    // Metadata
+    $t->assign(array(
+        'AVATAR'         => $avatar,
+        'UPLOAD_ID'      => $formId,
+        'UPLOAD_SOURCE'  => $source,
+        'UPLOAD_ITEM'    => $item,
+        'UPLOAD_FIELD'   => '',
+        'UPLOAD_LIMIT'   => $limits['count_max'],
+        'UPLOAD_TYPE'    => $type,
+        'UPLOAD_PARAM'   => $params,
+        'UPLOAD_CHUNK'   => (int)cot::$cfg['files']['chunkSize'],
+        'UPLOAD_EXTS'    => preg_replace('#[^a-zA-Z0-9,]#', '', cot::$cfg['files']['exts']),
+//        'UPLOAD_ACCEPT'  => preg_replace('#[^a-zA-Z0-9,*/-]#', '',cot::$cfg['plugin']['attach2']['accept']),
+        'UPLOAD_MAXSIZE' => $limits['size_maxfile'],
+        'UPLOAD_ACTION'  => $action,
+        'UPLOAD_X'       => cot::$sys['xk'],
+    ));
+
+    $t->parse();
+    return $t->text();
+}
+
+/**
  * Generates a link to PFS popup window
  *
  * @param int $uid User ID
@@ -849,12 +950,14 @@ function cot_files_downloads($source, $item, $field = '', $tpl = 'files.download
  *       0 - unlimited
  * @param string $tpl Template code
  * @param bool $standalone
+ * @param int $userId   for admins only
  * @return string
  *
  * @todo no cache parameter for css
  * @todo generate formUnikey
  */
-function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -1, $tpl = 'files.filebox', $standalone = false)
+function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -1, $tpl = 'files.filebox',
+                           $standalone = false, $userId = null)
 {
     global $R, $cot_modules, $usr;
 
@@ -862,7 +965,9 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
 
     $uid = $usr['id'];
     if($source == 'pfs' && $usr['isadmin']){
-        $uid = cot_import('uid', 'G', 'INT');
+        $uid = $userId;
+
+        if(is_null($uid)) $uid = cot_import('uid', 'G', 'INT');
         if(is_null($uid)) $uid = $usr['id'];
     }
 
@@ -1015,6 +1120,52 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
  */
 function cot_files_gallery($source, $item, $field = '', $tpl = 'files.gallery', $limit = 0, $order = ''){
     return cot_files_display($source, $item, $field, $tpl, 'images', $limit, $order);
+}
+
+/**
+ * Get current avatar
+ * @param $file_id
+ * @param array|int $urr
+ * @return string
+ * @todo avatar dimensions
+ */
+function cot_files_user_avatar($file_id, $urr = 0){
+
+//    $user = cot_files_getUserData($uid);
+    $avatar = cot_rc('files_user_default_avatar');
+    $url = cot_files_user_avatar_url($file_id);
+    $alt = cot::$L['Avatar'];
+    if(is_array($urr)) $alt = htmlspecialchars(cot_files_user_displayName($urr));
+    if($url){
+        $avatar = cot_rc('files_user_avatar', array(
+            'src'=> $url,
+            'alt' => $alt,
+        ));
+    }
+    return $avatar;
+}
+
+/**
+ * @param $file_id
+ * @return string
+ * @todo avatar dimensions
+ */
+function cot_files_user_avatar_url($file_id){
+
+    $file = null;
+    if($file_id instanceof files_model_File){
+        $file = $file_id;
+        $file_id = $file->file_id;
+    }else{
+        $file_id = (int)$file_id;
+        if(!$file_id) return '';
+        $file = files_model_File::getById($file_id);
+    }
+
+    if(!$file) return '';
+
+    return cot_files_thumb($file, 0, 0, 'crop');
+
 }
 
 /**

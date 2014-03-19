@@ -19,10 +19,18 @@
     opacity: 1;
 }
 
-.fileupload .attTable p{ margin-bottom: 5px; }
-.fileupload .attTable .form-control{ margin-bottom: 10px; }
-.fileupload .attTable .att-replace-file{ margin-bottom: 5px; }
+.fileupload .filesTable p{ margin-bottom: 5px; }
+.fileupload .filesTable .form-control{ margin-bottom: 10px; }
+.fileupload .filesTable .files-replace-file{ margin-bottom: 5px; }
 .fileupload-progress{ margin: 10px 10px 0 10px; }
+
+.fileupload .filesTable .files .name {
+    /*width: 80px;*/
+    word-wrap: break-word;
+    max-width: 99%;
+    overflow-x: hidden;
+}
+
 .dropzone .progress{ margin-bottom: 10px; }
 
 #task-processing{

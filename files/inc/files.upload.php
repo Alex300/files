@@ -61,11 +61,14 @@ class UploadController{
 
         $res = array();
         $condition = array(
-            array('file_source', $source),
-            array('file_item', $item),
-            array('file_field', $field),
+            'sourse' => array('file_source', $source),
+            'item'   => array('file_item', $item),
+            'field'  => array('file_field', $field),
         );
-        if($source == 'pfs' && $item == 0) $condition[] = array('user_id', $uid);
+
+        if($source == 'pfs'){
+            if($item == 0) $condition['user'] = array('user_id', $uid);
+        }
 
         if (is_null($filename) || empty($filename))
         {
@@ -459,6 +462,11 @@ class UploadController{
                     return $file;
                 }
 
+                $params = cot_import('param', 'R', 'HTM');
+                if(!empty($params)){
+                    $params = unserialize(base64_decode($params));
+                }
+
                 // saving
                 $objFile = new files_model_File();
                 $objFile->file_name = $file->file_name;
@@ -486,6 +494,11 @@ class UploadController{
                         return $file;
                     }
                     $objFile->save();
+
+                    // Avatar support
+                    if(!empty($params['avatar']) && $objFile->file_img && $objFile->file_source == 'pfs'){
+                        $objFile->makeAvatar();
+                    }
 
                     $file->url = cot::$cfg['mainurl'] . '/' . $objFile->file_path;
                     $file->thumbnailUrl = $file->thumbnail = ($file->isImage) ? cot::$cfg['mainurl'] . '/' . cot_files_thumb($id) :

@@ -29,6 +29,9 @@ defined('COT_CODE') or die('Wrong URL.');
  */
 class files_model_File extends Som_Model_Abstract
 {
+    /**
+     * @var Som_Model_Mapper_Abstract
+     */
     protected  static $_db = null;
     protected  static $_columns = null;
     protected  static $_tbname = '';
@@ -67,6 +70,14 @@ class files_model_File extends Som_Model_Abstract
         }else{
             return cot::$cfg['modules_dir'] . "/files/img/types/$size/archive.png";
         }
+    }
+
+    public function makeAvatar(){
+        global $db_users;
+
+        if($this->_data['file_source'] != 'pfs' || $this->_data['file_img'] == 0 || !$this->_data['user_id']) return false;
+
+        static::$_db->update($db_users, array('user_avatar' => $this->_data['file_id']), 'user_id=?', array($this->_data['user_id']));
     }
 
     protected function beforeInsert(){
