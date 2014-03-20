@@ -63,12 +63,7 @@
             <div class="strong grey text-center">{PHP.L.files_youhavenotfolders}</div>
             <!-- ELSE -->
             <div class="strong grey text-center">
-                <!-- IF {USER_FIRSTNAME} OR {USER_LASTNAME} OR {USER_MIDDLENAME} -->
-                {USER_FIRSTNAME} {USER_MIDDLENAME} {USER_LASTNAME}
-                <!-- ELSE -->
-                {USER_NICKNAME}
-                <!-- ENDIF -->
-                {PHP.L.files_havenotfolders}
+                {USER_DISPLAY_NAME} {PHP.L.files_havenotfolders}
             </div>
             <!-- ENDIF -->
         <!-- ENDIF -->

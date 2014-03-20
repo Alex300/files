@@ -119,10 +119,18 @@ class MainController{
                 if($folder){
                     $tmp = $urlParams;
                     if($uid != $usr['id']) $tmp['uid'] = $uid;
-                    $crumbs[] = array(cot_url('files', $tmp), cot::$L['Files']);
+                    if($type == 'image'){
+                        $crumbs[] = array(cot_url('files', array_merge($tmp, array('a' => 'album'))), cot::$L['files_albums']);
+                    }else{
+                        $crumbs[] = array(cot_url('files', $tmp), cot::$L['Files']);
+                    }
                     $crumbs[] = $title = $folder->ff_title;
                 }else{
-                    $crumbs[] = $title = cot::$L['Files'];
+                    if($type == 'image'){
+                        $crumbs[] = $title = cot::$L['files_albums'];
+                    }else{
+                        $crumbs[] = $title = cot::$L['Files'];
+                    }
                 }
             }
         }
@@ -180,6 +188,7 @@ class MainController{
             $t->assign(array(
                 'USER_GENDER_RAW' => $urr['user_gender'],
                 'USER_COUNTRY_RAW' => $urr['user_country'],
+                'USER_DISPLAY_NAME' => htmlspecialchars(cot_files_user_displayName($urr)),
             ));
         }
 

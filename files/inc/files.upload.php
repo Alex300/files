@@ -408,13 +408,15 @@ class UploadController{
     protected function handle_file_upload($uploaded_file, $name, $size, $type, $error,
                                           $index = null, $content_range = null) {
 
-        global $source, $item, $field;
+        global $source, $item, $field, $usr;
 
         $file = new stdClass();
         $file->file_name = trim(mb_basename(stripslashes($name)));
         $file->name = $this->get_file_name($uploaded_file, $name, $size, $type, $error,  $index, $content_range);
         $file->size = $this->fix_integer_overflow(intval($size));
         $file->type = $type;
+
+        list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
 
         if ($this->validate($uploaded_file, $file, $error, $index)) {
             $file->ext = cot_files_get_ext($file->name);
@@ -467,10 +469,16 @@ class UploadController{
                     $params = unserialize(base64_decode($params));
                 }
 
+                $uid = $usr['id'];
+                if($usr['isadmin']){
+                    $uid = cot_import('uid', 'G', 'INT');
+                    if(is_null($uid)) $uid = $usr['id'];
+                }
+
                 // saving
                 $objFile = new files_model_File();
                 $objFile->file_name = $file->file_name;
-                $objFile->user_id = cot::$usr['id'];
+                $objFile->user_id = $uid;
                 $objFile->file_source = $source;
                 $objFile->file_item = $item;
                 $objFile->file_field = $field;
@@ -480,7 +488,7 @@ class UploadController{
 
                 if($id = $objFile->save()){
                     $file->name = $file->file_name;
-                    $objFile->file_path = cot_files_path($source, $item, $objFile->file_id, $file->ext);
+                    $objFile->file_path = cot_files_path($source, $item, $objFile->file_id, $file->ext, $objFile->user_id);
                     $file_dir = dirname($objFile->file_path);
                     if (!is_dir($file_dir)) {
                         mkdir($file_dir, cot::$cfg['dir_perms'], true);

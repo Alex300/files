@@ -177,6 +177,9 @@ class MainController{
 
     }
 
+    /**
+     * @todo все пользователям, у которых user_avatar > 0 а файла с таким id нет, установить user_avatar = 0
+     */
     public function cleanupAction(){
         global $db_forum_posts, $db_files, $db_pages;
 

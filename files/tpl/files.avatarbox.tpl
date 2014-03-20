@@ -25,6 +25,7 @@
 
                 $('#fileupload').fileupload({
                     dataType: 'json',
+                    maxChunkSize: filesConfig[uplId]['chunk'],
                     formData: {
                         param: filesConfig[uplId].param,
                         x: filesConfig['x']

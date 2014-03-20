@@ -55,6 +55,12 @@ wm_separator=40:separator:::
 thumb_watermark=41:string:::Add watermark for thumbs (Filename. Empty for disable)
 thumb_wm_widht=42:string::200:Image max width for resize
 thumb_wm_height=43:string::200:Image max width for resize
+
+av_separator=50:separator:::
+
+avatar_width=51:string::160:Default avatar width
+avatar_height=52:string::160:Default avatar height
+avatar_framing=53:select:height,width,auto,border_auto,crop:crop:Default avatar framing mode
 [END_COT_EXT_CONFIG]
 ==================== */
 

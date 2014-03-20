@@ -355,13 +355,15 @@ function cot_files_isValidImageFile($file_path) {
  * @param  int    $item Parent item ID
  * @param  int    $id   Attachment ID
  * @param  string $ext  File extension. Leave it empty to auto-detect.
+ * @param  int    $uid   User ID for pfs
  * @return string       Path for the file on disk
  */
-function cot_files_path($source, $item, $id, $ext = ''){
+function cot_files_path($source, $item, $id, $ext = '', $uid = 0){
 
     $filesPath = cot::$cfg['files']['folder'] . '/' . $source . '/' . $item;
     if($source == 'pfs'){
-        $filesPath = cot::$cfg['files']['folder'] . '/' . $source . '/'. cot::$usr['id']. '/' . $item;
+        if($uid == 0) $uid = cot::$usr['id'];
+        $filesPath = cot::$cfg['files']['folder'] . '/' . $source . '/'. $uid. '/' . $item;
     }
 
     if (empty($ext))
@@ -1126,14 +1128,16 @@ function cot_files_gallery($source, $item, $field = '', $tpl = 'files.gallery', 
  * Get current avatar
  * @param $file_id
  * @param array|int $urr
+ * @param int $width
+ * @param int $height
+ * @param string $frame
  * @return string
- * @todo avatar dimensions
  */
-function cot_files_user_avatar($file_id, $urr = 0){
+function cot_files_user_avatar($file_id, $urr = 0, $width = 0, $height = 0, $frame = ''){
 
 //    $user = cot_files_getUserData($uid);
     $avatar = cot_rc('files_user_default_avatar');
-    $url = cot_files_user_avatar_url($file_id);
+    $url = cot_files_user_avatar_url($file_id, $width, $height, $frame = '');
     $alt = cot::$L['Avatar'];
     if(is_array($urr)) $alt = htmlspecialchars(cot_files_user_displayName($urr));
     if($url){
@@ -1147,10 +1151,12 @@ function cot_files_user_avatar($file_id, $urr = 0){
 
 /**
  * @param $file_id
+ * @param int $width
+ * @param int $height
+ * @param string $frame
  * @return string
- * @todo avatar dimensions
  */
-function cot_files_user_avatar_url($file_id){
+function cot_files_user_avatar_url($file_id, $width = 0, $height = 0, $frame = ''){
 
     $file = null;
     if($file_id instanceof files_model_File){
@@ -1164,7 +1170,14 @@ function cot_files_user_avatar_url($file_id){
 
     if(!$file) return '';
 
-    return cot_files_thumb($file, 0, 0, 'crop');
+    if (empty($frame) || !in_array($frame, array('width', 'height', 'auto', 'crop', 'border_auto'))){
+        $frame = cot::$cfg['files']['avatar_framing'];
+    }
+
+    if ($width <= 0)  $width  = (int)cot::$cfg['files']['avatar_width'];
+    if ($height <= 0) $height = (int)cot::$cfg['files']['avatar_height'];
+
+    return cot_files_thumb($file, $width, $height, $frame);
 
 }
 

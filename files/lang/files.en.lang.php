@@ -103,6 +103,7 @@ $L['cfg_filecheck'] = 'File Check';
 $L['cfg_filecheck_hint'] = 'If Enabled will check any uploaded files through the '.$L['PFS'].', or images through the profile. To insure they are valid files. &quot;Yes&quot; recommended, for security reasons.';
 $L['cfg_pfsnomimepass'] = 'No Mimetype Pass';
 $L['cfg_pfsnomimepass_hint'] = 'If Enabled will it will allow uploaded files to pass even if there is no mimetype in the config file.';
+$L['cfg_maxFoldersPerPage'] = 'Max folders count per page';
 
 $L['cfg_upl_separator'] = 'Upload options';
 $L['cfg_autoupload'] = 'Start uploading automatically';
@@ -145,3 +146,15 @@ $L['cfg_thumb_watermark_hint'] = 'Path to watermark file. Supports png with tran
 $L['cfg_thumb_wm_widht'] = 'Min. thumbnail width';
 $L['cfg_thumb_wm_widht_hint'] = 'The watermark will be placed on on a thumbnail only if it width and height equal or greater than a given params';
 $L['cfg_thumb_wm_height'] = 'Min. thumbnail height';
+
+$L['cfg_av_separator'] = 'User avatar options';
+$L['cfg_avatar_width'] = 'Default avatar width';
+$L['cfg_avatar_height'] = 'Default avatar height';
+$L['cfg_avatar_framing'] = 'Default avatar framing mode';
+$L['cfg_avatar_framing_params'] = array(
+    'height' => 'By height',
+    'width'  => 'By width',
+    'auto'   => 'Auto',
+    'border_auto' => 'Auto with border',
+    'crop'   => 'Crop'
+);
