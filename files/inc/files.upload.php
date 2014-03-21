@@ -330,8 +330,18 @@ class UploadController{
         {
             $exif = @exif_read_data($file->path);
             if($exif !== false){
-                list($width, $height) = getimagesize($file->path);
-                $size_ok = function_exists('cot_img_check_memory') ? cot_img_check_memory($file->path, (int)ceil($width * $height * 4 / 1048576)) : true;
+
+                // Gettimg memory size required to process the image
+                $source_size = getimagesize($file->path);
+
+                $width = $source_size[0];
+                $height = $source_size[1];
+                $depth = ($source_size['bits'] > 8) ? ($source_size['bits'] / 8) : 1;
+                $channels = $source_size['channels'] > 0 ? $source_size['channels'] : 4;
+                // imagerotate потребляет много памяти. Попросим в 1.5 раза больше
+                $needExtraMem = $width * $height * $depth * $channels / 1048576 * 1.5;
+
+                $size_ok = function_exists('cot_img_check_memory') ? cot_img_check_memory($file->path, (int)ceil($needExtraMem)) : true;
                 if ($size_ok && isset($exif['Orientation']) && !empty($exif['Orientation']) && in_array($exif['Orientation'], array(3, 6, 8)))
                 {
                     switch ($file->ext)
@@ -380,6 +390,14 @@ class UploadController{
         if(cot::$cfg['files']['image_resize']){
             list($width_orig, $height_orig) = getimagesize($file->path);
             if ($width_orig > cot::$cfg['files']['image_maxwidth'] || $height_orig > cot::$cfg['files']['image_maxheight']){
+                // Проверяем размер изображения и пробуем расчитать необходимый объем оперативы
+                if(!cot_img_check_memory($file->path, (int)ceil(cot::$cfg['files']['image_maxwidth'] *
+                    cot::$cfg['files']['image_maxheight'] * 4 / 1048576))){
+                    @unlink($file->path);
+                    $file->error = cot::$L['files_err_toobig'];
+                    return $file;
+                }
+
                 $input_file = $file->path;
                 $tmp_file =  $file->path.'tmp.'.$file->ext;
                 cot_files_thumbnail($input_file, $tmp_file, cot::$cfg['files']['image_maxwidth'],
