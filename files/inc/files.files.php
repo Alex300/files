@@ -30,6 +30,144 @@ class FilesController{
         exit;
     }
 
+    /**
+     * File download
+     */
+    public function downloadAction(){
+        $id = cot_import('id', 'G', 'INT');
+
+        if(!$id) cot_die_message(404);
+
+        $file = files_model_File::getById($id);
+        if(!$file) cot_die_message(404);
+
+        // Increase downloads counter
+        $file->file_count += 1;
+        $file->save();
+
+        // Detect MIME type if possible
+        $contenttype = cot_files_getMime($file->file_path);
+
+        // Avoid sending unexpected errors to the client - we should be serving a file,
+        // we don't want to corrupt the data we send
+        @error_reporting(0);
+
+        // Clear and disable output buffer
+        while (ob_get_level() > 0){
+            ob_end_clean();
+        }
+
+        // Make sure the files exists, otherwise we are wasting our time
+        if (!file_exists($file->file_path)){
+            $file->delete();
+            cot_die_message(404);
+        }
+
+        // Get the 'Range' header if one was sent
+        if (isset($_SERVER['HTTP_RANGE'])){
+            $range = $_SERVER['HTTP_RANGE']; // IIS/Some Apache versions
+
+        }elseif (function_exists('apache_request_headers') && $apache = apache_request_headers()){
+            // Try Apache again
+            $headers = array();
+            foreach ($apache as $header => $val) $headers[strtolower($header)] = $val;
+            if (isset($headers['range']))
+            {
+                $range = $headers['range'];
+            }else{
+                // We can't get the header/there isn't one set
+                $range = FALSE;
+            }
+
+        }else{
+            // We can't get the header/there isn't one set
+            $range = FALSE;
+        }
+
+        // Get the data range requested (if any)
+        $filesize = filesize($file->file_path);
+        if ($range){
+            $partial = true;
+            list($param, $range) = explode('=', $range);
+            if (strtolower(trim($param)) != 'bytes')
+            {
+                // Bad request - range unit is not 'bytes'
+                cot_die_message(400);
+            }
+            $range = explode(',', $range);
+            $range = explode('-', $range[0]); // We only deal with the first requested range
+            if (count($range) != 2)
+            {
+                // Bad request - 'bytes' parameter is not valid
+                cot_die_message(400);
+            }
+            if ($range[0] === '')
+            {
+                // First number missing, return last $range[1] bytes
+                $end = $filesize - 1;
+                $start = $end - intval($range[0]);
+            }
+            elseif ($range[1] === '')
+            {
+                // Second number missing, return from byte $range[0] to end
+                $start = intval($range[0]);
+                $end = $filesize - 1;
+            }
+            else
+            {
+                // Both numbers present, return specific range
+                $start = intval($range[0]);
+                $end = intval($range[1]);
+                if ($end >= $filesize || (!$start && (!$end || $end == ($filesize - 1))))
+                {
+                    // Invalid range/whole file specified, return whole file
+                    $partial = false;
+                }
+            }
+            $length = $end - $start + 1;
+
+        }else{
+            // No range requested
+            $partial = false;
+        }
+
+        // Send standard headers
+        header("Content-Type: $contenttype");
+        header("Content-Length: $filesize");
+        header('Last-Modified: '.gmdate('D, d M Y H:i:s T', filemtime($file->file_path)));
+        header('Content-Disposition: attachment; filename="'.$file->file_name.'"');
+        header('Accept-Ranges: bytes');
+
+        if ($partial){
+            // if requested, send extra headers and part of file...
+            header('HTTP/1.1 206 Partial Content');
+            header("Content-Range: bytes $start-$end/$filesize");
+            if (!$fp = fopen($file->file_path, 'r'))
+            {
+                // Error out if we can't read the file
+                cot_die_message(500);
+            }
+            if ($start)
+            {
+                fseek($fp,$start);
+            }
+            while ($length)
+            {
+                // Read in blocks of 8KB so we don't chew up memory on the server
+                $read = ($length > 8192) ? 8192 : $length;
+                $length -= $read;
+                echo fread($fp,$read);
+            }
+            fclose($fp);
+        }
+        else
+        {
+            // ...otherwise just send the whole file
+            readfile($file->file_path);
+        }
+        exit();
+    }
+
     public function updateTitleAction(){
         $id = cot_import('id', 'P', 'INT');
 

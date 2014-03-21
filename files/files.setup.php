@@ -19,7 +19,7 @@ Recommends_modules=page,users
 [BEGIN_COT_EXT_CONFIG]
 folder=01:string::datas/files:Directory for files
 prefix=02:string::file_:File prefix
-exts=03:text::gif,jpg,jpeg,png,zip,rar,7z,gz,bz2,pdf,djvu,mp3,ogg,wma,avi,divx,mpg,mpeg,swf,txt:Allowed extensions (comma separated, no dots and spaces)
+exts=03:text::gif,jpg,jpeg,png,zip,rar,7z,gz,bz2,pdf,djvu,mp3,ogg,wma,avi,divx,mpg,mpeg,swf,txt,doc,docx,xls,xlsx:Allowed extensions (comma separated, no dots and spaces)
 filecheck=04:radio::1:
 nomimepass=05:radio::1:
 maxFoldersPerPage=07:string::15:

@@ -645,6 +645,8 @@ class UploadController{
      * @param $error
      * @param $index
      * @return bool
+     *
+     * @todo проверка mime-типа
      */
     protected function validate($uploaded_file, $file, $error, $index) {
 
