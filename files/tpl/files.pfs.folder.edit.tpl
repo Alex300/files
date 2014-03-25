@@ -27,34 +27,34 @@
 {FILE "{PHP.cfg.themes_dir}/{PHP.cfg.defaulttheme}/warnings.tpl"}
 
 <!-- BEGIN: FORM -->
-<form action="{FORM_SEND}" enctype="multipart/form-data" method="post" name="groupform"
+<form action="{FOLDER_FORM_URL}" enctype="multipart/form-data" method="post" name="groupform"
       class="form-horizontal" role="form">
     {FOLDER_FORM_HIDDEN}
 
-    <div class="form-group {PHP|p30_formGroupClass('sgrp_title')}">
-        <label class="{PHP.p30.labelClass} control-label">Название: *</label>
-        <div class="{PHP.p30.elementClass}">{FOLDER_FORM_TITLE}</div>
+    <div class="form-group {PHP|cot_files_formGroupClass('ff_title')}">
+        <label class="col-sm-2 control-label">Название: *</label>
+        <div class="col-sm-10">{FOLDER_FORM_TITLE}</div>
     </div>
 
-    <div class="form-group {PHP|p30_formGroupClass('sgrp_text')}">
-        <label class="{PHP.p30.labelClass} control-label">{PHP.L.Description}:</label>
-        <div class="{PHP.p30.elementClass}">{FOLDER_FORM_DESC}</div>
+    <div class="form-group {PHP|cot_files_formGroupClass('ff_desc')}">
+        <label class="col-sm-2 control-label">{PHP.L.Description}:</label>
+        <div class="col-sm-10">{FOLDER_FORM_DESC}</div>
     </div>
 
     <div class="form-group">
-        <div class="{PHP.p30.elementClass} col-sm-offset-2">
+        <div class="col-sm-10 col-sm-offset-2">
             <div class="checkbox">{FOLDER_FORM_PUBLIC}</div>
         </div>
     </div>
 
     <div class="form-group">
-        <div class="{PHP.p30.elementClass} col-sm-offset-2">
+        <div class="col-sm-10 col-sm-offset-2">
             <div class="checkbox">{FOLDER_FORM_ALBUM}</div>
         </div>
     </div>
 
     <div class="form-group">
-        <div class="{PHP.p30.elementClass} col-sm-offset-2">
+        <div class="col-sm-10 col-sm-offset-2">
             <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-ok"></span>
                 {PHP.L.Submit}</button>
         </div>

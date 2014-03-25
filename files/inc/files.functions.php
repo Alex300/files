@@ -90,6 +90,20 @@ function cot_files_ajax_get_status($code)
         return "$code Unknown";
 }
 
+/**
+ * Посветка ошибочных элементов на форме
+ * @param string $name имя элемента
+ * @return string
+ */
+function cot_files_formGroupClass($name){
+    global $cfg;
+
+    $error = $cfg['msg_separate'] ? cot_implode_messages($name, 'error') : '';
+    if($error) return 'has-error has-feedback';
+
+    return '';
+}
+
 
 function cot_files_getUserData($uid = 0, $cacheitem = true){
     global $db_users;

@@ -356,6 +356,7 @@ class PfsController{
         }else{
             $folder = files_model_Folder::getById($f);
             if(!$folder) cot_die_message(404, TRUE);
+            $folderData = $folder->toArray();
             $uid = (int)$folder->user_id;
             if($uid == 0) $isSFS = true;
         }
@@ -406,7 +407,7 @@ class PfsController{
                 $crumbs[] = array(cot_url('files', $tmp), cot::$L['SFS']);
                 $tmp['f'] = $folder->ff_id;
                 unset($tmp['uid']);
-                $crumbs[] = array(cot_url('files', $tmp), $folder->ff_title);
+                $crumbs[] = array(cot_url('files', $tmp), $folderData['ff_title']);
             }else{
                 $crumbs[] = array(cot_url('files', $urlParams), cot::$L['SFS']);
             }
@@ -423,7 +424,7 @@ class PfsController{
                 $crumbs[] = array(cot_url('files', $tmp), cot::$L['Mypfs']);
                 if($folder){
                     $tmp['f'] = $folder->ff_id;
-                    $crumbs[] = array(cot_url('files', $tmp), $folder->ff_title);
+                    $crumbs[] = array(cot_url('files', $tmp), $folderData['ff_title']);
                 }
                 cot::$out['subtitle'] = cot::$L['Mypfs'];
             }else{
@@ -432,7 +433,7 @@ class PfsController{
                     cot_files_user_displayName($urr));
                 $crumbs[] = array(cot_url('files', $tmp), cot::$L['Files']);
                 if($folder){
-                    $crumbs[] = array(cot_url('files', array('m'=>'pfs', 'f' => $folder->ff_id)), $folder->ff_title);
+                    $crumbs[] = array(cot_url('files', array('m'=>'pfs', 'f' => $folder->ff_id)), $folderData['ff_title']);
                 }
                 cot::$out['subtitle'] = cot::$L['Files'].' - '.$urr['user_name'];
             }
@@ -446,7 +447,7 @@ class PfsController{
         }else{
             $isAlbum = cot_import('ff_album', 'P', 'BOL');
             $crumbs[] = cot::$L['Edit'];
-            $title = $folder->ff_title.': '.cot::$L['Edit'];
+            $title = $folderData['ff_title'].': '.cot::$L['Edit'];
             cot::$out['subtitle'] = $title.' - '.cot::$out['subtitle'];
         }
 
