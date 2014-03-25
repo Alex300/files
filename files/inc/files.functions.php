@@ -419,7 +419,7 @@ function cot_files_getMime($path)
         'ods' => 'application/vnd.oasis.opendocument.spreadsheet'
     );
 
-    $ext = att_get_ext($path);
+    $ext = cot_files_get_ext($path);
 
     if (function_exists('mime_content_type'))
     {
