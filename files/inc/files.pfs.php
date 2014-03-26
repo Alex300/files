@@ -576,4 +576,48 @@ class PfsController{
         return $t->text();
     }
 
+    /**
+     * Delete folder
+     */
+    public function deleteFolderAction(){
+        global $usr;
+
+        list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
+        cot_block($usr['auth_write']);
+
+        $f = cot_import('f', 'G', 'INT');           // folder id
+        if(!$f) cot_die_message(404);
+        $folder = files_model_Folder::getById($f);
+        if(!$folder) cot_die_message(404);
+        $uid = (int)$folder->user_id;
+
+        $c1 = cot_import('c1','G','ALP');			// form name
+        if(!$c1) $c1 = cot_import('c1', 'P', 'ALP');
+        $c2 = cot_import('c2','G','ALP');			// input name
+        if(!$c2) $c2 = cot_import('c2', 'P', 'ALP');
+        $parser = cot_import('parser', 'G', 'ALP');	// custom parser
+        if(!$parser) $parser = cot_import('parser', 'P', 'ALP');
+        $standalone = FALSE;                        // is in popup window
+        $isSFS = false;                             // is Site File Space
+
+        if($uid == 0) $isSFS = true;
+
+        if( ($isSFS || $folder->user_id != $usr['id']) && ! $usr['isadmin']) cot_die_message(404, TRUE);
+
+        $urlParams = array('m' => 'pfs');
+        if($uid != $usr['id']) $urlParams['uid'] = $uid;
+
+        if (!empty($c1) || !empty($c2)){
+            $standalone = TRUE;
+            if(!empty($c1)) $urlParams['c1'] = $c1;
+            if(!empty($c2)) $urlParams['c2'] = $c2;
+            if(!empty($parser)) $urlParams['parser'] = $parser;
+        }
+
+        $folderArr = $folder->toArray();
+
+        $folder->delete();
+        cot_message(sprintf(cot::$L['files_folder_deleted'], $folderArr['ff_title']));
+        cot_redirect(cot_url('files', $urlParams, '', true));
+    }
 }

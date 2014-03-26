@@ -87,6 +87,7 @@ $L['files_err_toobig'] = 'File is too big';
 $L['files_err_type'] = 'This type of files is not allowed';
 $L['files_err_replace'] = 'Could not replace file';
 $L['files_err_upload'] = 'The file could not be uploaded';
+$L['files_folder_deleted'] = 'Folder «%1$s» deleted';
 $L['files_foldertitlemissing'] = 'A folder title is required.';
 $L['files_nogd'] = 'The GD graphical library is not supported by this host, Cotonti won\'t be able to create
     thumbnails for images.';

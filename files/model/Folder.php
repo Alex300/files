@@ -58,24 +58,30 @@ class files_model_Folder extends Som_Model_Abstract
     }
 
     /**
-     * Уда
+     * Delete
      * @return bool
      */
-//    public function delete(){
-//        global $db_pages;
-//
-//        // Удалить все файлы и изображения
-//        att_remove_all(null, 'social_topic', $this->_data['st_id']);
-//
-//        // Удалить все страницы топика
-//        $pages = static::$_db->query("SELECT * FROM $db_pages WHERE page_st_id={$this->_data['st_id']}")->fetchAll();
-//        if(!empty($pages)){
-//            foreach($pages as $rpage){
-//                cot_page_delete($rpage['page_id'], $rpage);
-//            }
-//        }
-//        return parent::delete();
-//    }
+    public function delete(){
+
+        $uid = (int)$this->_data['user_id'];
+        $isSFS = false;                             // is Site File Space
+
+        if($uid == 0) $isSFS = true;
+        $source = $isSFS ? 'sfs' : 'pfs';
+
+        // Remove all files
+        $files = files_model_File::find(array(
+            array('file_source', $source),
+            array('file_item', $this->_data['ff_id'])
+        ));
+        if(!empty($files)){
+            foreach($files as $fileRow){
+                $fileRow->delete();
+            }
+        }
+
+        return parent::delete();
+    }
 
     public static function fieldList() {
         return array(
