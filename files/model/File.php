@@ -23,6 +23,7 @@ defined('COT_CODE') or die('Wrong URL.');
  * @property int    $file_count     Количество скачиваний
  * @property int    $file_order     Порядок для отображения
  * @property string $file_updated   Дата последнего изменения
+ * @property string $file_unikey    Ключ формы для хранения временных файлов от несуществующих объектов
  *
  * @property string $icon   File icon url
  *
@@ -291,6 +292,15 @@ class files_model_File extends Som_Model_Abstract
                     'name'      => 'file_updated',
                     'type'      => 'datetime',
                     'description' => 'Дата последнего изменения',
+                ),
+            'file_unikey'  =>
+                array(
+                    'name'      => 'file_unikey',
+                    'type'      => 'varchar',
+                    'length'    => '255',
+                    'nullable'  => true,
+                    'default'   => '',
+                    'description' => 'Ключ формы для хранения временных файлов от несуществующих объектов',
                 ),
         );
     }

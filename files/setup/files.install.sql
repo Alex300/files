@@ -14,9 +14,10 @@ CREATE TABLE IF NOT EXISTS `cot_files` (
 	`file_count` INT NOT NULL DEFAULT 0,
 	`file_order` SMALLINT NOT NULL DEFAULT 0,
 	`file_updated` datetime DEFAULT NULL,
+	`file_unikey` varchar(255)  DEFAULT '',
 	PRIMARY KEY(`file_id`),
-	KEY (`file_source`, `file_item`),
-	KEY (`file_source`, `file_item`, `file_field`)
+	KEY `file_source` (`file_source`, `file_item`),
+	KEY `file_source_2` (`file_source`, `file_item`, `file_field`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 

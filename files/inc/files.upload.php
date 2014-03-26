@@ -70,6 +70,11 @@ class UploadController{
             if($item == 0) $condition['user'] = array('user_id', $uid);
         }
 
+        if(!in_array($source, array('sfs', 'pfs')) && $item == 0){
+            $unikey = cot_import('unikey', 'G', 'TXT');
+            if($unikey) $condition['unikey'] = array('file_unikey', $unikey);
+        }
+
         if (is_null($filename) || empty($filename))
         {
             $multi = true;
@@ -503,6 +508,11 @@ class UploadController{
                 $objFile->file_ext = $file->ext;
                 $objFile->file_img = $file->isImage;
                 $objFile->file_size = $file->size;
+
+                if(!in_array($source, array('sfs', 'pfs')) && $item == 0){
+                    $unikey = cot_import('unikey', 'G', 'TXT');
+                    if($unikey) $objFile->file_unikey = $unikey;
+                }
 
                 if($id = $objFile->save()){
                     $file->name = $file->file_name;

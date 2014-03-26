@@ -454,6 +454,56 @@ function cot_files_isValidImageFile($file_path) {
 }
 
 /**
+ * Привязка ранее загруженных файлов к только что созданному объекту
+ * @param $source
+ * @param $item
+ */
+function cot_files_linkFiles($source, $item){
+
+    $formId = "{$source}_0";
+
+    $unikey = cot_import('cf_'.$formId, 'P', 'TXT');
+    if(!$unikey) $unikey = cot_import('cf_'.$formId, 'G', 'TXT');
+    //$unikey = cot_import_buffered('cf_'.$formId, $unikey);
+
+    if($unikey && $item > 0){
+        $condition = array(
+            array('file_source', $source),
+            array('file_item', 0),
+            array('file_unikey', $unikey)
+        );
+
+        $files = files_model_File::find($condition);
+
+        if($files){
+            foreach($files as $fileRow){
+                $oldPath = $fileRow->file_path;
+                $newPath = cot_files_path($source, $item, $fileRow->file_id, $fileRow->file_ext, $fileRow->user_id);
+
+                $file_dir = dirname($newPath);
+                if (!is_dir($file_dir)) {
+                    mkdir($file_dir, cot::$cfg['dir_perms'], true);
+                }
+                if(!@rename($oldPath, $newPath)){
+                    cot_error(cot::$L['files_err_upload']);
+                    $fileRow->delete();
+
+                }else{
+                    $fileRow->file_item = $item;
+                    $fileRow->file_path = $newPath;
+                    $fileRow->file_unikey = '';
+                    $fileRow->save();
+                }
+
+            }
+        }
+
+    }
+
+    cot_files_formGarbageCollect();
+}
+
+/**
  * Calculates attachment path.
  * @param  string $source Module or plugin code
  * @param  int    $item Parent item ID
@@ -790,10 +840,30 @@ function cot_files_watermark($source, $target, $watermark = '', $jpegquality = 8
 
 /**
  * Сборка мусора от несохраненных форм
- * @todo дописать
  */
 function cot_files_formGarbageCollect(){
-    return 0;
+
+    $yesterday = (int)(cot::$sys['now'] - 60 * 60 * 24);
+    if($yesterday < 100) return 0;  // мало ли ))
+
+    //$dateTo = date('Y-m-d H:i:s',  );   // До вчерашнего дня
+    $condition = array(
+        array('file_source', array('sfs', 'pfs'), '<>'),
+        array('file_updated', date('Y-m-d H:i:s',  $yesterday), '<'),
+        array('file_unikey', '', '<>')
+    );
+
+    $cnt = 0;
+
+    $files = files_model_File::find($condition);
+    if($files){
+        foreach($files as $fileRow){
+            $fileRow->delete();
+            $cnt++;
+        }
+    }
+
+    return $cnt;
 }
 
 /**
@@ -1174,18 +1244,34 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
         $limit = $limits['count_max'];
     }
 
-    $unikey = mb_substr(md5($formId . '_' . rand(0, 99999999)), 0, 15);
-    $params = base64_encode(serialize(array(
+    $params = array(
         'source'  => $source,
         'item'    => $item,
         'field'   => $name,
         'limit'   => $limit,
         'type'    => $type,
-        'unikey'  => $unikey
-    )));
+    );
 
     $action = 'index.php?e=files&m=upload&source='.$source.'&item='.$item;
     if(!empty($name)) $action .= '&field='.$name;
+
+    $formUnikey = '';
+    if(!in_array($source, array('sfs', 'pfs')) && $item == 0){
+        $unikeyName = "cf_{$source}_{$item}";
+
+        $unikey = cot_import($unikeyName, 'P', 'TXT');
+        if(!$unikey) $unikey = cot_import($unikeyName, 'G', 'TXT');
+        $unikey = cot_import_buffered($unikeyName, $unikey);
+        if(!$unikey)  $unikey = mb_substr(md5("{$source}_{$item}" . '_'.cot::$usr['id'] . rand(0, 99999999)), 0, 15);
+
+        $params['unikey'] = $unikey;
+        $formUnikey = cot_inputbox('hidden', $unikeyName, $unikey);
+
+        $action .= '&unikey='.$unikey;
+    }
+
+    $params = base64_encode(serialize($params));
+
     if($uid != $usr['id']){
         $t->assign(array(
             'UPLOAD_UID'     => $uid,
@@ -1211,7 +1297,7 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
     ));
 
     $t->parse();
-    return $t->text().$jQtemlates;
+    return $formUnikey.$t->text().$jQtemlates;
 }
 
 /**
