@@ -543,7 +543,7 @@ function cot_files_path($source, $item, $id, $ext = '', $uid = 0){
 /**
  * Returns attachment thumbnail path. Generates the thumbnail first if
  * it does not exist.
- * @param  mixed   $id     Attachment ID or a row returned by att_get() function.
+ * @param  mixed   $id     File ID or instance of files_model_File.
  * @param  integer $width  Thumbnail width in pixels
  * @param  integer $height Thumbnail height in pixels
  * @param  string  $frame  Framing mode: 'width', 'height', 'auto', 'border_auto' or 'crop'
