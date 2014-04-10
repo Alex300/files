@@ -120,22 +120,16 @@ class files_model_Folder extends Som_Model_Abstract
                     'name'      => 'ff_public',
                     'type'      => 'bool',
                     'nullable'  => true,
-                    'default'   => true,
+                    'default'   => 1,
                     'description' => 'Публичный?'
                 ),
             'ff_album'  =>
                 array(
-                    'name'      => 'ff_gallery',
+                    'name'      => 'ff_album',
                     'type'      => 'bool',
                     'nullable'  => true,
-                    'default'   => false,
+                    'default'   => 0,
                     'description' => 'Галерея?'
-                ),
-            'st_source'  =>
-                array(
-                    'name'      => 'st_source',
-                    'type'      => 'varchar',
-                    'length'    => '255',
                 ),
             'ff_count'  =>
                 array(

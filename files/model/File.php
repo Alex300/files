@@ -170,26 +170,6 @@ class files_model_File extends Som_Model_Abstract
 
     }
 
-    /**
-     * Уда
-     * @return bool
-     */
-//    public function delete(){
-//        global $db_pages;
-//
-//        // Удалить все файлы и изображения
-//        att_remove_all(null, 'social_topic', $this->_data['st_id']);
-//
-//        // Удалить все страницы топика
-//        $pages = static::$_db->query("SELECT * FROM $db_pages WHERE page_st_id={$this->_data['st_id']}")->fetchAll();
-//        if(!empty($pages)){
-//            foreach($pages as $rpage){
-//                cot_page_delete($rpage['page_id'], $rpage);
-//            }
-//        }
-//        return parent::delete();
-//    }
-
     public static function fieldList() {
         return array(
             'file_id'  =>
@@ -236,7 +216,7 @@ class files_model_File extends Som_Model_Abstract
                 ),
             'file_name'  =>
                 array(
-                    'name'      => 'file_filename',
+                    'name'      => 'file_name',
                     'type'      => 'varchar',
                     'length'    => '255',
                     'description' => 'Исходное имя файла',
@@ -253,7 +233,7 @@ class files_model_File extends Som_Model_Abstract
                     'name'      => 'file_img',
                     'type'      => 'bool',
                     'nullable'  => true,
-                    'default'   => false,
+                    'default'   => 0,
                     'description' => 'Является ли изображением'
                 ),
             'file_size'  =>
@@ -281,7 +261,7 @@ class files_model_File extends Som_Model_Abstract
                 ),
             'file_order'  =>
                 array(
-                    'name'      => 'file_orde',
+                    'name'      => 'file_order',
                     'type'      => 'int',
                     'nullable'  => true,
                     'default'   => 0,
