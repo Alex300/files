@@ -105,6 +105,7 @@ $L['cfg_filecheck_hint'] = 'If Enabled will check any uploaded files through the
 $L['cfg_pfsnomimepass'] = 'No Mimetype Pass';
 $L['cfg_pfsnomimepass_hint'] = 'If Enabled will it will allow uploaded files to pass even if there is no mimetype in the config file.';
 $L['cfg_maxFoldersPerPage'] = 'Max folders count per page';
+$L['cfg_pfs_winclose'] = 'Close popup window after file insert into editor';
 
 $L['cfg_upl_separator'] = 'Upload options';
 $L['cfg_autoupload'] = 'Start uploading automatically';
