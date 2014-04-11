@@ -933,7 +933,6 @@ function cot_files_avatarbox($userId = null, $tpl = 'files.avatarbox' ){
 //    $jQtemlates = '';
     $modUrl = cot::$cfg['modules_dir'].'/files';
 
-    $jsFunc = (!defined('COT_HEADER_COMPLETE')) ? 'cot_rc_link_file': 'cot_rc_link_footer';
     // CSS to style the file input field as button and adjust the Bootstrap progress bars
     $jsFunc($modUrl.'/lib/upload/css/jquery.fileupload.css');
     $jsFunc($modUrl.'/lib/upload/css/jquery.fileupload-ui.css');
