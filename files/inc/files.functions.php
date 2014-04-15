@@ -15,6 +15,7 @@ Loader::registerMe();
 // Additional API requirements
 require_once cot_incfile('uploads');
 require_once './datas/extensions.php';
+require_once cot_incfile('forms');
 
 // Self requirements
 require_once cot_langfile('files', 'module');
