@@ -342,6 +342,7 @@ class files_model_File extends Som_Model_Abstract
                     'SIZE' => cot_build_filesize($item->file_size),
                     'SIZE_RAW' => $item->file_size,
                     'TITLE' => htmlspecialchars($item->file_title),
+                    'TITLE_OR_NAME' => !empty($item->file_title) ? htmlspecialchars($item->file_title) : htmlspecialchars($item->file_name),
                     'COUNT' => $item->file_count,
                     'UPDATED' => $item->file_updated,
                     'UPDATE_DATE' => cot_date($date_format, strtotime($item->file_updated)),
