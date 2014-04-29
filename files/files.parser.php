@@ -101,7 +101,6 @@ if (!function_exists('files_thumb_bbcode'))
 
     // Replaces pfs_gallery bbcode with the thumbnail galery
     function pfs_gallery_bbcode($m){
-        global $db, $db_attach, $att_item_cache;
 
         parse_str(htmlspecialchars_decode($m[1]), $params);
 
@@ -117,7 +116,16 @@ if (!function_exists('files_thumb_bbcode'))
         $tpl = 'files.gallery';
         if(!empty($params['tpl'])) $tpl = $params['tpl'];
 
-        $html = cot_files_gallery($source, $folder->ff_id, '', $tpl);
+        $order = '';
+        if(!empty($params['order'])){
+            if($params['order'] == 'desc'){
+                $order = 'file_order DESC';
+            }elseif($params['order'] == 'rand'){
+                $order = 'RAND()';
+            }
+        }
+
+        $html = cot_files_gallery($source, $folder->ff_id, '', $tpl, 0, $order);
         if (!$html) return $m[0].'err2';
 
         return $html;
