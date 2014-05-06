@@ -10,7 +10,7 @@ defined('COT_CODE') or die('Wrong URL.');
 
 // Автозагрузка
 require_once './lib/Loader.php';
-Loader::registerMe();
+Loader::register();
 
 // Additional API requirements
 require_once cot_incfile('uploads');
