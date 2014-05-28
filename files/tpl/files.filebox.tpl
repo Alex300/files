@@ -11,7 +11,7 @@
     <div class="col-xs-12 fileupload" id="fileupload_{UPLOAD_SOURCE}_{UPLOAD_ITEM}_{UPLOAD_FIELD}" data-url="{UPLOAD_ACTION}">
         <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
         <div class="row fileupload-buttonbar">
-            <div class="col-md-12">
+            <div class="col-xs-12">
                 <!-- The fileinput-button span is used to style the file input field as button -->
                 <span class="btn btn-success fileinput-button">
                     <i class="glyphicon glyphicon-plus"></i>
@@ -35,7 +35,7 @@
                 <span class="fileupload-process"></span>
             </div>
 
-            <div class="col-md-12">
+            <div class="col-xs-12 hidden-xs">
                 <div id="dropzone" class="dropzone fade well">
 
                     <span class="glyphicon glyphicon-import"></span> {PHP.L.files_draghere}
