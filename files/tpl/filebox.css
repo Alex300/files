@@ -41,3 +41,31 @@
     height: 128px;
     background: url(../lib/upload/img/loading.gif) center no-repeat;
 }
+
+.preview img{
+    max-width: 140px;
+}
+@media (max-width: 769px) {
+    .files .preview img,
+    .files .preview canvas{
+        max-width: 60px;
+    }
+    .fileupload .filesTable .form-control{
+        max-width: 160px;
+    }
+    .fileupload .filesTable .files .name {
+        max-width: 160px;
+    }
+    .files-replace-file{
+        max-width: 160px;
+    }
+    .dropzone{
+        background: none;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+    }
+    .dropzone .fileupload-progress{
+        margin: 0;
+    }
+}

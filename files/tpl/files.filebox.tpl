@@ -35,10 +35,10 @@
                 <span class="fileupload-process"></span>
             </div>
 
-            <div class="col-xs-12 hidden-xs">
+            <div class="col-xs-12">
                 <div id="dropzone" class="dropzone fade well">
 
-                    <span class="glyphicon glyphicon-import"></span> {PHP.L.files_draghere}
+                    <div class="hidden-xs"><span class="glyphicon glyphicon-import"></span> {PHP.L.files_draghere}</div>
 
                     <!-- The global progress state -->
                     <div class="fileupload-progress fade">
@@ -47,7 +47,7 @@
                             <div class="progress-bar progress-bar-success" style="width:0%;"></div>
                         </div>
                         <!-- The extended global progress state -->
-                        <div class="progress-extended">&nbsp;</div>
+                        <div class="progress-extended hidden-xs">&nbsp;</div>
                     </div>
                 </div>
             </div>
