@@ -8,13 +8,14 @@
         </td>
         <td>
             <p class="name">{%=file.name%}</p>
+            <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-bar progress-bar-success" style="width:0%;"></div></div>
             <strong class="error text-danger"></strong>
         </td>
-        <td>
+        <td class="hidden-xs">
             <p class="size">{PHP.L.files_processing}...</p>
-            <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-bar progress-bar-success" style="width:0%;"></div></div>
         </td>
         <td>
+            <div class="visible-xs"><span class="size">{PHP.L.files_processing}...</span></div>
             {% if (!i && !o.options.autoUpload) { %}
                 <button class="btn btn-primary start" disabled>
                     <i class="glyphicon glyphicon-upload"></i>
@@ -62,10 +63,11 @@
             {% } %}
             </div>
         </td>
-        <td>
+        <td class="hidden-xs">
             <span class="size">{%=o.formatFileSize(file.size)%}</span>
         </td>
         <td>
+            <div class="visible-xs"><span class="size">{%=o.formatFileSize(file.size)%}</span></div>
             {% if (file.deleteUrl) { %}
 
                 <!-- IF {IS_STANDALONE} == 1 -->
