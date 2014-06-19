@@ -1,6 +1,6 @@
 <!-- BEGIN: MAIN -->
 <!-- BEGIN: FILES_ROW -->
-<div class="col-sm-2 text-center" style="height: 110px; overflow: hidden" data-source="file-row-tooltip-{FILES_ROW_ID}"
+<div class="col-xs-6 col-sm-2 text-center" style="height: 110px; overflow: hidden" data-source="file-row-tooltip-{FILES_ROW_ID}"
      data-toggle="tooltip" title="" data-html="true">
     <a href="{FILES_ROW_URL}" title="{FILES_ROW_TITLE}"><img src="{FILES_ROW_ICON}" alt="{FILES_ROW_EXT}" /></a><br />
     <a href="{FILES_ROW_URL}" title="{FILES_ROW_TITLE}" class="strong lhn">{FILES_ROW_NAME}</a><br />
