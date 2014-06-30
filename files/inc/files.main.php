@@ -64,7 +64,11 @@ class MainController{
             $foldersCond = array(
                 array('user_id', $uid),
             );
-            if($type == 'image') $foldersCond[] = array('ff_album', 1);
+            if($type == 'image'){
+                $foldersCond[] = array('ff_album', 1);
+            }else{
+                $foldersCond[] = array('ff_album', 0);
+            }
             if(!$usr['isadmin'] && $uid != $usr['id']){
                 $foldersCond[] = array('ff_public', 1);
             }
@@ -228,6 +232,7 @@ class MainController{
                         array('file_source', $source),
                         array('file_item', $folderRow->ff_id),
                     );
+                    if($type == 'image') $filesRowCond[] = array('file_img', 1);
                     $folderFiles = files_model_File::find($filesRowCond, $fLimit, 0, 'file_order ASC');
                     if($folderFiles){
                         $jj = 0;
@@ -249,13 +254,22 @@ class MainController{
 
             if($usr['auth_write']){
                 if(($isSFS && $usr['isadmin']) || ($uid == $usr['id'])){
+                    $formHidden = cot_inputbox('hidden', 'uid', $uid).cot_inputbox('hidden', 'act', 'save');
+                    $formAlbum = cot_checkbox(true, 'ff_album',  cot::$L['files_isgallery']);
+                    if($type == 'image'){
+                        $formHidden .= cot_inputbox('hidden', 'ff_album', 1);
+                        $formAlbum = '';
+                    }elseif($type == 'file'){
+                        $formHidden .= cot_inputbox('hidden', 'ff_album', 0);
+                        $formAlbum = '';
+                    }
                     $t->assign(array(
                         'FOLDER_ADDFORM_URL'    => cot_url('files', array('m' => 'pfs', 'a' => 'editFolder')),
                         'FOLDER_ADDFORM_TITLE'  => cot_inputbox('text', 'ff_title'),
                         'FOLDER_ADDFORM_DESC'   => cot_textarea('ff_desc', '', '', ''),
                         'FOLDER_ADDFORM_PUBLIC' => cot_checkbox(true, 'ff_public', cot::$L['files_ispublic']),
-                        'FOLDER_ADDFORM_ALBUM'  => cot_checkbox(true, 'ff_album',  cot::$L['files_isgallery']),
-                        'FOLDER_ADDFORM_HIDDEN' => cot_inputbox('hidden', 'uid', $uid).cot_inputbox('hidden', 'act', 'save'),
+                        'FOLDER_ADDFORM_ALBUM'  => $formAlbum,
+                        'FOLDER_ADDFORM_HIDDEN' => $formHidden,
                     ));
                     $t->parse('MAIN.FOLDER_NEWFORM');
                 }

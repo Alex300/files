@@ -147,7 +147,7 @@
                         {FOLDER_ADDFORM_DESC}
                     </div>
 
-                    <div class="checkbox">{FOLDER_ADDFORM_ALBUM}</div>
+                    <!-- IF {FOLDER_ADDFORM_ALBUM} --><div class="checkbox">{FOLDER_ADDFORM_ALBUM}</div><!-- ENDIF -->
                     <div class="checkbox">{FOLDER_ADDFORM_PUBLIC}</div>
 
                 </div>

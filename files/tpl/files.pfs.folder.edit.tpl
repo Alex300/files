@@ -47,12 +47,14 @@
         </div>
     </div>
 
+    <!-- IF {FOLDER_FORM_ALBUM} -->
     <div class="form-group">
         <div class="col-sm-10 col-sm-offset-2">
             <div class="checkbox">{FOLDER_FORM_ALBUM}</div>
         </div>
     </div>
-
+    <!-- ENDIF -->
+    
     <div class="form-group">
         <div class="col-sm-10 col-sm-offset-2">
             <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-ok"></span>

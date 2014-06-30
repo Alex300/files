@@ -451,16 +451,28 @@ class PfsController{
             cot::$out['subtitle'] = $title.' - '.cot::$out['subtitle'];
         }
 
-
+        $source = $isSFS ? 'sfs' : 'pfs';
 
         $tpl = cot_tplfile(array('files', 'pfs', 'folder', 'edit'), 'module');
         $t = new XTemplate($tpl);
 
+        $folderFormHidden = cot_inputbox('hidden', 'uid', $uid).cot_inputbox('hidden', 'f', $f).
+            cot_inputbox('hidden', 'act', 'save');
         if($f > 0){
             $t->assign(files_model_Folder::generateTags($folder, 'FOLDER_', $urlParams));
         }else{
             $folder->ff_public = 1;
             $folder->ff_album = 1;
+        }
+        $folderFormAlbum = cot_checkbox($folder->ff_album, 'ff_album',  cot::$L['files_isgallery']);
+
+        // Если в папке есть файлы не изображения, то это не альбом
+        if($f > 0 && files_model_File::count(array(
+                            array('file_source', $source), array('file_item', $f), array('file_img', 0))
+                    ) > 0){
+            $folderFormAlbum = '';
+            $folderFormHidden .= cot_inputbox('hidden', 'ff_album', 0);
+            $folder->ff_album = 0;
         }
 
         $t->assign(array(
@@ -468,9 +480,8 @@ class PfsController{
             'FOLDER_FORM_TITLE'  => cot_inputbox('text', 'ff_title', $folder->ff_title),
             'FOLDER_FORM_DESC'   => cot_textarea('ff_desc', $folder->ff_desc, '', ''),
             'FOLDER_FORM_PUBLIC' => cot_checkbox($folder->ff_public, 'ff_public', cot::$L['files_ispublic']),
-            'FOLDER_FORM_ALBUM'  => cot_checkbox($folder->ff_album, 'ff_album',  cot::$L['files_isgallery']),
-            'FOLDER_FORM_HIDDEN' => cot_inputbox('hidden', 'uid', $uid).cot_inputbox('hidden', 'f', $f).
-                cot_inputbox('hidden', 'act', 'save'),
+            'FOLDER_FORM_ALBUM'  => $folderFormAlbum,
+            'FOLDER_FORM_HIDDEN' => $folderFormHidden,
         ));
         $t->parse('MAIN.FORM');
 
@@ -505,7 +516,6 @@ class PfsController{
             $t->parse('MAIN.ALLOWED_ROW');
         }
 
-        $source = $isSFS ? 'sfs' : 'pfs';
         $t->assign(array(
             'PFS_FILES_COUNT' => cot_declension($folder->ff_count, $Ls['Files']),
             'PFS_FILES_COUNT_RAW' => $folder->ff_count,
