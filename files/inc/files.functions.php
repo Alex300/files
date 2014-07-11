@@ -105,45 +105,6 @@ function cot_files_formGroupClass($name){
     return '';
 }
 
-
-function cot_files_getUserData($uid = 0, $cacheitem = true){
-    global $db_users;
-
-    $user = false;
-
-    if(!$uid && cot::$usr['id'] > 0){
-        $uid = cot::$usr['id'];
-        $user = cot::$usr['profile'];
-    }
-    if(!$uid) return null;
-
-    static $u_cache = array();
-
-    if($cacheitem && isset($u_cache[$uid])) {
-        return $u_cache[$uid];
-    }
-
-    if(!$user){
-        if(is_array($uid)){
-            $user = $uid;
-            $uid = $user['user_id'];
-        }else{
-            if($uid > 0 && $uid == cot::$usr['id']){
-                $user = cot::$usr['profile'];
-            }else{
-                $uid = (int)$uid;
-                if(!$uid) return null;
-                $sql = cot::$db->query("SELECT * FROM $db_users WHERE user_id = ? LIMIT 1", $uid);
-                $user = $sql->fetch();
-            }
-        }
-    }
-
-    $cacheitem && $u_cache[$uid] = $user;
-
-    return $user;
-}
-
 /**
  * Checks if file extension is allowed for upload. Returns error message or empty string.
  * Emits error messages via cot_error().
@@ -268,7 +229,7 @@ function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = ''){
     );
 
     if(!$uid) $uid = cot::$usr['id'];
-    if(!empty($uid)) $urr = cot_files_getUserData($uid);
+    if(!empty($uid)) $urr = cot_user_data($uid);
 
     if($source == 'sfs'){
 
@@ -950,7 +911,7 @@ function cot_files_avatarbox($userId = null, $tpl = 'files.avatarbox' ){
     $type = json_encode($type);
 
     // Get current avatar
-    $user = cot_files_getUserData($uid);
+    $user = cot_user_data($uid);
     $avatar = cot_files_user_avatar($user['user_avatar'], $user);
 
     $t = new XTemplate(cot_tplfile($tpl, 'module'));
@@ -1325,11 +1286,10 @@ function cot_files_gallery($source, $item, $field = '', $tpl = 'files.gallery', 
  */
 function cot_files_user_avatar($file_id, $urr = 0, $width = 0, $height = 0, $frame = ''){
 
-//    $user = cot_files_getUserData($uid);
     $avatar = cot_rc('files_user_default_avatar');
     $url = cot_files_user_avatar_url($file_id, $width, $height, $frame = '');
     $alt = cot::$L['Avatar'];
-    if(is_array($urr)) $alt = htmlspecialchars(cot_files_user_displayName($urr));
+    if(is_array($urr)) $alt = htmlspecialchars(cot_user_display_name($urr));
     if($url){
         $avatar = cot_rc('files_user_avatar', array(
             'src'=> $url,
@@ -1369,23 +1329,6 @@ function cot_files_user_avatar_url($file_id, $width = 0, $height = 0, $frame = '
 
     return cot_files_thumb($file, $width, $height, $frame);
 
-}
-
-/**
- * user display name
- */
-function cot_files_user_displayName($user){
-    if(empty($user)) return '';
-
-    if(!empty($user['user_firstname']) || !empty($user['user_lastname']) || !empty($user['user_middlename'])){
-        return trim($user['user_lastname'].' '.$user['user_firstname'].' '.$user['user_middlename']);
-    }
-
-    if(!empty($user['user_first_name']) || !empty($user['user_last_name']) || !empty($user['user_middle_name'])){
-        return trim($user['user_last_name'].' '.$user['user_first_name'].' '.$user['user_middle_name']);
-    }
-
-    return $user['user_name'];
 }
 
 /**

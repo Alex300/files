@@ -96,7 +96,7 @@ class MainController{
 
         }else{
 
-            $urr = cot_files_getUserData($uid);
+            $urr = cot_user_data($uid);
             if(empty($urr) && !$usr['isadmin']) cot_die_message(404);   // Вдруг пользователь удален, а файлы остались?
 
             if($uid == $usr['id']){
@@ -119,7 +119,7 @@ class MainController{
             }else{
                 $crumbs[] = array(cot_url('users'), cot::$L['Users']);
                 $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
-                    cot_files_user_displayName($urr));
+                    cot_user_display_name($urr));
                 if($folder){
                     $tmp = $urlParams;
                     if($uid != $usr['id']) $tmp['uid'] = $uid;
@@ -192,7 +192,7 @@ class MainController{
             $t->assign(array(
                 'USER_GENDER_RAW' => $urr['user_gender'],
                 'USER_COUNTRY_RAW' => $urr['user_country'],
-                'USER_DISPLAY_NAME' => htmlspecialchars(cot_files_user_displayName($urr)),
+                'USER_DISPLAY_NAME' => htmlspecialchars(cot_user_display_name($urr)),
             ));
         }
 
