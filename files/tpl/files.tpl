@@ -31,7 +31,7 @@
             <!-- IF {FOLDER_ROW_DESC} --><div class="marginbottom10">{FOLDER_ROW_DESC}</div><!-- ENDIF -->
             <div class="row">
                 <!-- BEGIN: FILES_ROW -->
-                <div class="col-sm-6 col-md-4 marginbottom10">
+                <div class="col-xs-6 col-sm-6 col-md-4 marginbottom10">
                     <div class="pull-left" style="width: 50px">
                         <!-- IF {FILES_ROW_ICON} -->
                         <a href="{FILES_ROW_URL}" title="{FILES_ROW_TITLE}"><img src="{FILES_ROW_ICON}" alt="{FILES_ROW_EXT}" /></a>
@@ -110,7 +110,7 @@
 <!-- BEGIN: FILES -->
 <div class="row margintop20">
     <!-- BEGIN: ROW -->
-    <div class="col-sm-2 text-center" style="height: 110px; overflow: hidden" data-source="file-row-tooltip-{FILES_ROW_ID}"
+    <div class="col-xs-6 col-sm-2 text-center" style="height: 110px; overflow: hidden" data-source="file-row-tooltip-{FILES_ROW_ID}"
          data-toggle="tooltip" title="" data-html="true">
         <a href="{FILES_ROW_URL}" title="{FILES_ROW_TITLE}"><img src="{FILES_ROW_ICON}" alt="{FILES_ROW_EXT}" /></a><br />
         <a href="{FILES_ROW_URL}" title="{FILES_ROW_TITLE}" class="strong lhn">{FILES_ROW_NAME}</a><br />
