@@ -181,7 +181,7 @@ function cot_files_get($source, $item, $field = '', $column = '', $number = 'fir
         if($field != '_all_') $cond[] = array('file_field', $field);
         $file = files_model_File::find($cond, 1, $offset, $order_by);
         if(!$file) return null;
-        $a_cache[$source][$item][$number] = $file[0];
+        $a_cache[$source][$item][$number] = current($file);
 
     }
     $tmp = 'file_'.$column;
