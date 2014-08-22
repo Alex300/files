@@ -56,7 +56,7 @@
             {% if (file.error) { %}
                 <div><span class="label label-danger">Error</span> {%=file.error%}</div>
             {% } else { %}
-                <input type="text" name="title" class="files-edit-title form-control" placeholder="{PHP.L.Title}" value="{%=file.title%}" data-id="{%=file.id%}">
+                <input type="text" name="files-edit-title" class="files-edit-title form-control" placeholder="{PHP.L.Title}" value="{%=file.title%}" data-id="{%=file.id%}">
                 {% if (window.FormData) { %}
                 <input type="file" name="replacement" class="files-replace-file" data-id="{%=file.id%}" id="files-file{%=file.id%}">
                 {% } %}
