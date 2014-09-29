@@ -1289,7 +1289,7 @@ function cot_files_user_avatar($file_id, $urr = 0, $width = 0, $height = 0, $fra
     $avatar = cot_rc('files_user_default_avatar');
     $url = cot_files_user_avatar_url($file_id, $width, $height, $frame = '');
     $alt = cot::$L['Avatar'];
-    if(is_array($urr)) $alt = htmlspecialchars(cot_user_display_name($urr));
+    if(is_array($urr)) $alt = htmlspecialchars(cot_user_full_name($urr));
     if($url){
         $avatar = cot_rc('files_user_avatar', array(
             'src'=> $url,

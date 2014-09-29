@@ -119,7 +119,7 @@ class MainController{
             }else{
                 $crumbs[] = array(cot_url('users'), cot::$L['Users']);
                 $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
-                    cot_user_display_name($urr));
+                    cot_user_full_name($urr));
                 if($folder){
                     $tmp = $urlParams;
                     if($uid != $usr['id']) $tmp['uid'] = $uid;
@@ -192,7 +192,9 @@ class MainController{
             $t->assign(array(
                 'USER_GENDER_RAW' => $urr['user_gender'],
                 'USER_COUNTRY_RAW' => $urr['user_country'],
-                'USER_DISPLAY_NAME' => htmlspecialchars(cot_user_display_name($urr)),
+                // @deprecated use ...USER_FULL_NAME
+                'USER_DISPLAY_NAME' => htmlspecialchars(cot_user_full_name($urr)),
+                'USER_FULL_NAME' => htmlspecialchars(cot_user_full_name($urr)),
             ));
         }
 

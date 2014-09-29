@@ -134,7 +134,9 @@ class MainController{
 
             $t->assign(array(
                 'ALLPFS_ROW_URL' => cot_url('files', array('m'=>'pfs', 'uid'=>$row['user_id'])),
-                'ALLPFS_ROW_USER_DISPLAY_NAME' => cot_user_display_name($row),
+                // @deprecated use ...USER_FULL_NAME
+                'ALLPFS_ROW_USER_DISPLAY_NAME' => cot_user_full_name($row),
+                'ALLPFS_ROW_USER_FULL_NAME' => cot_user_full_name($row),
                 'ALLPFS_ROW_COUNT' => $row['count']
             ));
 

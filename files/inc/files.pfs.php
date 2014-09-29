@@ -114,7 +114,7 @@ class PfsController{
             }else{
                 $crumbs[] = array(cot_url('users'), cot::$L['Users']);
                 $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
-                    cot_user_display_name($urr));
+                    cot_user_full_name($urr));
                 if($folder){
                     $tmp = $urlParams;
                     if($uid != $usr['id']) $tmp['uid'] = $uid;
@@ -430,7 +430,7 @@ class PfsController{
             }else{
                 $crumbs[] = array(cot_url('users'), cot::$L['Users']);
                 $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
-                    cot_user_display_name($urr));
+                    cot_user_full_name($urr));
                 $crumbs[] = array(cot_url('files', $tmp), cot::$L['Files']);
                 if($f){
                     $crumbs[] = array(cot_url('files', array('m'=>'pfs', 'f' => $folder->ff_id)), $folderData['ff_title']);
