@@ -1112,16 +1112,16 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
     $nc = $cot_modules['files']["version"];
 
     // Подключаем jQuery-templates только один раз
-    static $jQtemlatesOut = false;
-    $jQtemlates = '';
-    if(!$jQtemlatesOut){
+    static $jQtemplatesOut = false;
+    $jQtemplates = '';
+    if(!$jQtemplatesOut){
         $templates = new XTemplate(cot_tplfile('files.templates', 'module'));
         $templates->assign(array(
             'IS_STANDALONE' => ($standalone) ? 1 : 0,
         ));
         $templates->parse();
-        $jQtemlates = $templates->text();
-        $jQtemlatesOut = true;
+        $jQtemplates = $templates->text();
+        $jQtemplatesOut = true;
 
         $modUrl = cot::$cfg['modules_dir'].'/files';
 
@@ -1216,15 +1216,18 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
     $action = 'index.php?e=files&m=upload&source='.$source.'&item='.$item;
     if(!empty($name)) $action .= '&field='.$name;
 
+    static $unikey = '';
+
     $formUnikey = '';
     if(!in_array($source, array('sfs', 'pfs')) && $item == 0){
         $unikeyName = "cf_{$source}_{$item}";
 
-        $unikey = cot_import($unikeyName, 'P', 'TXT');
-        if(!$unikey) $unikey = cot_import($unikeyName, 'G', 'TXT');
-        $unikey = cot_import_buffered($unikeyName, $unikey);
-        if(!$unikey)  $unikey = mb_substr(md5("{$source}_{$item}" . '_'.cot::$usr['id'] . rand(0, 99999999)), 0, 15);
-
+        if(empty($unikey)){
+            $unikey = cot_import($unikeyName, 'P', 'TXT');
+            if(!$unikey) $unikey = cot_import($unikeyName, 'G', 'TXT');
+            $unikey = cot_import_buffered($unikeyName, $unikey);
+            if(!$unikey)  $unikey = mb_substr(md5("{$source}_{$item}" . '_'.cot::$usr['id'] . rand(0, 99999999)), 0, 15);
+        }
         $params['unikey'] = $unikey;
         $formUnikey = cot_inputbox('hidden', $unikeyName, $unikey);
 
@@ -1258,7 +1261,7 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
     ));
 
     $t->parse();
-    return $formUnikey.$t->text().$jQtemlates;
+    return $formUnikey.$t->text().$jQtemplates;
 }
 
 /**
