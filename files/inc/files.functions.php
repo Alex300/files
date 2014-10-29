@@ -556,6 +556,7 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = ''){
         if (!$row || !$row->file_img) return false;
 
         $orig_path = $row->file_path;
+        if(!file_exists($orig_path) || !is_readable($orig_path)) return false;
 
         $thumbs_folder = $thumbs_folder . '/' . $id;
         $thumb_path = $thumbs_folder . '/'
@@ -755,6 +756,7 @@ function cot_files_thumb_path($id, $width, $height, $frame){
 function cot_files_watermark($source, $target, $watermark = '', $jpegquality = 85){
 
     if (empty($watermark)) return false;
+    if(!file_exists($source) || !is_readable($source)) return false;
 
     $sourceExt = cot_files_get_ext($source);
     $targetExt = cot_files_get_ext($target);
