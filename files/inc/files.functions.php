@@ -17,6 +17,8 @@ require_once cot_incfile('uploads');
 require_once './datas/extensions.php';
 require_once cot_incfile('forms');
 
+if(!function_exists('cot_user_data')) require_once cot_incfile('users', 'module');
+
 // Self requirements
 require_once cot_langfile('files', 'module');
 require_once  cot_incfile('files', 'module', 'resources');
