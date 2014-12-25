@@ -511,9 +511,10 @@ function cot_files_path($source, $item, $id, $ext = '', $uid = 0){
  * @param  integer $width  Thumbnail width in pixels
  * @param  integer $height Thumbnail height in pixels
  * @param  string  $frame  Framing mode: 'width', 'height', 'auto', 'border_auto' or 'crop'
+ * @param  bool    $watermark - set watermark if cot::$cfg['files']['thumb_watermark'] not empty?
  * @return string          Thumbnail path on success or false on error
  */
-function cot_files_thumb($id, $width = 0, $height = 0, $frame = ''){
+function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark = true){
     // Support rows fetched by att_get()
 //    if (is_array($id)){
 //        $row = $id;
@@ -530,6 +531,8 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = ''){
     {
         return '';
     }
+
+    if($watermark === '0' || mb_strtolower($watermark) === 'false') $watermark = false;
 
     if (empty($frame) || !in_array($frame, array('width', 'height', 'auto', 'crop', 'border_auto'))){
         $frame = cot::$cfg['files']['thumb_framing'];
@@ -566,7 +569,7 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = ''){
             (int)cot::$cfg['files']['upscale']);
 
         // Watermark
-        if(!empty(cot::$cfg['files']['thumb_watermark']) && file_exists(cot::$cfg['files']['thumb_watermark'])){
+        if($watermark && !empty(cot::$cfg['files']['thumb_watermark']) && file_exists(cot::$cfg['files']['thumb_watermark'])){
             list($th_width, $th_height) = getimagesize($thumb_path);
 
             if($th_width >= cot::$cfg['files']['thumb_wm_widht'] || cot::$cfg['files']['thumb_wm_height']){
@@ -592,12 +595,15 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = ''){
  * @return bool
  *
  * @todo 'border_auto' resize mode
+ * @todo use imagik
  */
 function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop', $quality = 85, $upscale = false)
 {
-    $ext = strtolower(pathinfo($source, PATHINFO_EXTENSION));
+    //$ext = strtolower(pathinfo($source, PATHINFO_EXTENSION));
+    $ext = cot_files_get_ext($source);
 
     if(!file_exists($source)) return false;
+    if(!cot_files_isValidImageFile($source)) return false;
 
     list($width_orig, $height_orig) = getimagesize($source);
 
@@ -605,7 +611,7 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
     {
         // Do not upscale smaller images, just copy them
         copy($source, $target);
-        return;
+        return true;
     }
 
     $x_pos = 0;
@@ -688,14 +694,19 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
         $newimage = imagecreatetruecolor($width, $height); //
     }
 
+    if($ext == 'gif' || $ext == 'png'){
+        imagealphablending($newimage, false);
+        $color = imagecolortransparent($newimage, imagecolorallocatealpha($newimage, 0, 0, 0, 127));
+        imagefill($newimage, 0, 0, $color);
+        imagesavealpha($newimage, true);
+    }
+
     switch ($ext)
     {
         case 'gif':
             $oldimage = imagecreatefromgif($source);
             break;
         case 'png':
-            imagealphablending($newimage, false);
-            imagesavealpha($newimage, true);
             $oldimage = imagecreatefrompng($source);
             break;
         default:
@@ -721,6 +732,7 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
     imagedestroy($newimage);
     imagedestroy($oldimage);
 }
+
 
 /**
  * Calculates path for the file thumbnail.
@@ -776,7 +788,11 @@ function cot_files_watermark($source, $target, $watermark = '', $jpegquality = 8
 
     $wmAdded = false;
     if ( ($ww + 60) < $w && ($wh + 40) < $h ){
-        imageAlphaBlending($image, TRUE);
+        imagealphablending($image, true);   // Наложение прозрачности
+
+        if($targetExt == 'gif' || $targetExt == 'png'){
+            imagesavealpha($image, true);
+        }
 
         // Insert watermark to the right bottom corner
         imagecopy($image, $watermark, $w - 40 - $ww, $h-$wh-20, 0, 0, $ww, $wh);
