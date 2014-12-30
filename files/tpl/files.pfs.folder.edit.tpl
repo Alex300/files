@@ -20,7 +20,7 @@
 <div class="container pfs standalone">
 <!-- END: STANDALONE_HEADER -->
 
-<div class="breadcrumb">{BREADCRUMBS}</div>
+{BREADCRUMBS}
 
 <h1>{PAGE_TITLE}</h1>
 
