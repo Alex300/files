@@ -1158,53 +1158,53 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
 
         /* === Java Scripts === */
         // The jQuery UI widget factory, can be omitted if jQuery UI is already included
-        cot_rc_link_footer($modUrl.'/lib/upload/js/vendor/jquery.ui.widget.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/lib/upload/js/vendor/jquery.ui.widget.js?nc='.$nc);
 
         // The Templates plugin is included to render the upload/download listings
-        cot_rc_link_footer($modUrl.'/lib/JavaScript-Templates/tmpl.min.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/lib/JavaScript-Templates/tmpl.min.js?nc='.$nc);
 
         // The Load Image plugin is included for the preview images and image resizing functionality
-        cot_rc_link_footer($modUrl.'/lib/JavaScript-Load-Image/js/load-image.min.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/lib/JavaScript-Load-Image/js/load-image.min.js?nc='.$nc);
 
         // The Canvas to Blob plugin is included for image resizing functionality
-        cot_rc_link_footer($modUrl.'/lib/JavaScript-Canvas-to-Blob/canvas-to-blob.min.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/lib/JavaScript-Canvas-to-Blob/canvas-to-blob.min.js?nc='.$nc);
 
         // blueimp Gallery script
         //cot_rc_link_footer($cfg['plugins_dir'].'/attach2/lib/Gallery/js/jquery.blueimp-gallery.min.js');
 
         // The Iframe Transport is required for browsers without support for XHR file uploads
-        cot_rc_link_footer($modUrl.'/lib/upload/js/jquery.iframe-transport.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/lib/upload/js/jquery.iframe-transport.js?nc='.$nc);
 
         // The basic File Upload plugin
-        cot_rc_link_footer($modUrl.'/lib/upload/js/jquery.fileupload.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/lib/upload/js/jquery.fileupload.js?nc='.$nc);
 
         // The File Upload file processing plugin
-        cot_rc_link_footer($modUrl.'/lib/upload/js/jquery.fileupload-process.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/lib/upload/js/jquery.fileupload-process.js?nc='.$nc);
 
         // The File Upload image preview & resize plugin
-        cot_rc_link_footer($modUrl.'/lib/upload/js/jquery.fileupload-image.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/lib/upload/js/jquery.fileupload-image.js?nc='.$nc);
 
         // The File Upload audio preview plugin
-        cot_rc_link_footer($modUrl.'/lib/upload/js/jquery.fileupload-audio.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/lib/upload/js/jquery.fileupload-audio.js?nc='.$nc);
 
         // The File Upload video preview plugin
         //cot_rc_link_footer($cfg['plugins_dir'].'/attach2/lib/upload/js/jquery.fileupload-video.js');
 
         // The File Upload validation plugin
-        cot_rc_link_footer($modUrl.'/lib/upload/js/jquery.fileupload-validate.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/lib/upload/js/jquery.fileupload-validate.js?nc='.$nc);
 
         // The File Upload user interface plugin
-        cot_rc_link_footer($modUrl.'/lib/upload/js/jquery.fileupload-ui.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/lib/upload/js/jquery.fileupload-ui.js?nc='.$nc);
 
         //    // The localization script
         //    cot_rc_link_footer($cfg['plugins_dir'].'/attach2/lib/upload/js/locale.js');
 
 
         // The main application script
-        cot_rc_link_footer($modUrl.'/js/files.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/js/files.js?nc='.$nc);
 
         // Table Drag&Drop plugin for reordering
-        cot_rc_link_footer('js/jquery.tablednd.min.js?nc='.$nc);
+        Resources::linkFileFooter('js/jquery.tablednd.min.js?nc='.$nc);
     }
 
     $formId = "{$source}_{$item}_{$name}";

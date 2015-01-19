@@ -278,7 +278,11 @@ class PfsController{
 
             cot_sendheaders();
 
-            cot_rc_output();
+            $html = Resources::render();
+            if($html) cot::$out['head_head'] = $html.cot::$out['head_head'];
+
+            $html = Resources::renderFooter();
+            if($html) cot::$out['footer_rc'] = $html.cot::$out['footer_rc'];
 
             $t->assign(array(
                 'PFS_HEAD' => cot::$out['head_head'],
@@ -544,7 +548,11 @@ class PfsController{
 
             cot_sendheaders();
 
-            cot_rc_output();
+            $html = Resources::render();
+            if($html) cot::$out['head_head'] = $html.cot::$out['head_head'];
+
+            $html = Resources::renderFooter();
+            if($html) cot::$out['footer_rc'] = $html.cot::$out['footer_rc'];
 
             $t->assign(array(
                 'PFS_HEAD' => cot::$out['head_head'],

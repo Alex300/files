@@ -5,10 +5,10 @@ Code=files
 Name=Files
 Description=Personal File Space and attach files to posts and pages
 Category=files-media
-Version=1.0.0
-Date=2014-02-25
+Version=1.0.1
+Date=2015-01-19
 Author=Cotonti Team
-Copyright=(c) Cotonti Team 2014
+Copyright=(c) Cotonti Team 2014-2015
 Notes=DO NOT FORGET to create a writable folder for the files
 Auth_guests=R
 Lock_guests=12345A
@@ -69,7 +69,7 @@ avatar_framing=53:select:height,width,auto,border_auto,crop:crop:Default avatar 
  *
  * @package Files
  * @author Cotonti Team
- * @copyright (c) Cotonti Team 2014
+ * @copyright (c) Cotonti Team 2014-2015
  *
  * В настройках все размеры указываются в байтах
  * в ограничениях 0 - не ограничено, -1 - запрещено
@@ -78,7 +78,6 @@ avatar_framing=53:select:height,width,auto,border_auto,crop:crop:Default avatar 
  * area = 'pfs' / 'sfs'
  * item = id папки
  * user_id = id пользователя реально добавившего файл или 0 для sfs
- * @todo для pfs создавать папку пользователя, а то в корне получится дофига файов
  *
  * В свой pfs добавлять файлы пользователь может только сам
  */
