@@ -42,7 +42,7 @@
     background: url(../lib/upload/img/loading.gif) center no-repeat;
 }
 
-.preview img{
+.preview img, .preview canvas{
     max-width: 140px;
 }
 @media (max-width: 769px) {

@@ -38,13 +38,12 @@
 
 @media (max-width: 767px) {
   .fileupload-buttonbar .toggle,
-  .fileupload-buttonbar .delete,
   .files .toggle,
   .files .btn span {
     display: none;
   }
   .files .name {
-    /*width: 80px;*/
+    width: 80px;
     word-wrap: break-word;
   }
   .files audio,

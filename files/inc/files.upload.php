@@ -180,27 +180,34 @@ class UploadController{
         );
     }
 
-
+    /**
+     * Ajax delete file
+     * @param bool $print_response
+     */
     public function delete($print_response = true) {
         $res = array(
             'success' => false
         );
         $id = cot_import('id', 'R', 'INT');
         if(!$id){
-            return $this->generate_response($res, $print_response);
+            $this->generate_response($res, $print_response);
+            exit();
         }
 
         $file = files_model_File::getById($id);
         if(!$file){
-            return $this->generate_response($res, $print_response);
+            $this->generate_response($res, $print_response);
+            exit();
         }
         if ($file->user_id != cot::$usr['id'] && !cot_auth('files', 'a', 'A')) {
-            return $this->generate_response($res, $print_response);
+            $this->generate_response($res, $print_response);
+            exit();
         }
 
         $res['success'] = $file->delete();
 
-        return $this->generate_response($res, $print_response);
+        $this->generate_response($res, $print_response);
+        exit;
     }
 
     /**

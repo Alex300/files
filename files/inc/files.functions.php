@@ -1164,7 +1164,7 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
         Resources::linkFileFooter($modUrl.'/lib/JavaScript-Templates/tmpl.min.js?nc='.$nc);
 
         // The Load Image plugin is included for the preview images and image resizing functionality
-        Resources::linkFileFooter($modUrl.'/lib/JavaScript-Load-Image/js/load-image.min.js?nc='.$nc);
+        Resources::linkFileFooter($modUrl.'/lib/JavaScript-Load-Image/js/load-image.all.min.js?nc='.$nc);
 
         // The Canvas to Blob plugin is included for image resizing functionality
         Resources::linkFileFooter($modUrl.'/lib/JavaScript-Canvas-to-Blob/canvas-to-blob.min.js?nc='.$nc);
@@ -1277,6 +1277,8 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
 //        'UPLOAD_ACCEPT'  => preg_replace('#[^a-zA-Z0-9,*/-]#', '',cot::$cfg['plugin']['attach2']['accept']),
         'UPLOAD_MAXSIZE' => $limits['size_maxfile'],
         'UPLOAD_ACTION'  => $action,
+        'UPLOAD_THUMB_WIDTH' => (int)cot::$cfg['files']['thumb_width'],
+        'UPLOAD_THUMB_HEIGHT' => (int)cot::$cfg['files']['thumb_height'],
         'UPLOAD_X'       => cot::$sys['xk'],
     ));
 

@@ -21,6 +21,8 @@ $(function () {
                 x: x
             },
             autoUpload: filesConfig.autoUpload,
+            previewMaxWidth: filesConfig.previewMaxWidth,
+            previewMaxHeight: filesConfig.previewMaxHeight,
             maxChunkSize: filesConfig[uplId]['chunk'],
             sequentialUploads: filesConfig.sequential
         });

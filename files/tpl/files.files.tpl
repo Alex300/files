@@ -2,7 +2,7 @@
 <!DOCTYPE HTML>
 <!--
 /*
- * jQuery File Upload Plugin Demo 9.0.1
+ * jQuery File Upload Plugin Demo 9.1.0
  * https://github.com/blueimp/jQuery-File-Upload
  *
  * Copyright 2010, Sebastian Tschan
@@ -94,6 +94,8 @@
             exts: $.map('{UPLOAD_EXTS}'.split(','), $.trim),
             //accept: '{UPLOAD_ACCEPT}',
             maxsize: {UPLOAD_MAXSIZE},
+            previewMaxWidth: {UPLOAD_THUMB_WIDTH},
+            previewMaxHeight: {UPLOAD_THUMB_HEIGHT},
             autoUpload: {PHP.cfg.files.autoupload},
             sequential: {PHP.cfg.files.sequential},
             'x':    '{UPLOAD_X}'
