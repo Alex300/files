@@ -220,25 +220,31 @@ $(function () {
         });
     }
 
-    // Title editing for uploaded items
-    $('.fileupload').on('change', 'input.files-edit-title', function() {
-        var that = this;
-        var id   = $(this).attr('data-id');
-        var x = filesConfig['x'];
+    /**
+     * Ajax редактирование полей загруженных элементов
+     */
+    $('.fileupload').on('change', '.file-edit', function() {
+        var that  = this,
+            me    = $(this),
+            row   = $(this).closest('.template-download'),
+            id    = row.attr('data-id'),
+            key   = $(this).attr('name'),
+            value = $(this).val(),
+            x     = filesConfig['x'],
+            updateUrl = 'index.php?e=files&m=files&a=updateValue';
 
-        var updateUrl = 'index.php?e=files&m=files&a=updateTitle';
-
-        var value = $(this).val();
+        key = key || false;
+        if(!key) return false;
 
         var procDiv = $('<div>', { 'id': "task-processing" });
         $(this).before( procDiv );
         $(this).attr('disabled', true);
 
-        $.post(updateUrl, {title: value, id: id, x: x}, function( data ) {
+        $.post(updateUrl, {key: key, value: value, id: id, x: x}, function( data ) {
             data.error = data.error || '';
             if(data.error != ''){
                 $('#files-file'+id).after('<div id="files-error-'+ id +'"><span class="label label-danger">Error</span> ' +
-                    data.error + '</div>');
+                data.error + '</div>');
                 $('#files-error-'+ id).fadeOut(3000);
             }
         }, 'json').fail(function() {

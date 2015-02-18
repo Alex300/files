@@ -168,12 +168,21 @@ class FilesController{
         exit();
     }
 
-    public function updateTitleAction(){
-        $id = cot_import('id', 'P', 'INT');
+    /**
+     * Update field value via Ajax
+     */
+    public function updateValueAction(){
+        global $cot_extrafields;
 
         $response = array( 'error' => '');
 
-        if(!$id){
+        $extFields = $cot_extrafields[files_model_File::getTableName()];
+
+        $id = cot_import('id', 'P', 'INT');
+        $field = cot_import('key', 'P', 'ALP');
+        $value = cot_import('value', 'P', 'TXT');
+
+        if(!$id || !$field){
             cot_sendheaders('application/json', cot_files_ajax_get_status(404));
             exit;
         }
@@ -181,7 +190,29 @@ class FilesController{
         $file = files_model_File::getById($id);
         if (!$file) cot_files_ajax_die(404);
 
+        // Можно изменить только title или что то из экстраполей
+        if($field != 'file_title') {
+            if(empty($extFields)) {
+                cot_sendheaders('application/json', cot_files_ajax_get_status(404));
+                exit;
+            }
+            $extfName = str_replace('file_', '', $field);
+            if(!array_key_exists($extfName, $extFields)){
+                cot_sendheaders('application/json', cot_files_ajax_get_status(404));
+                exit;
+            }
+            $value = cot_import_extrafields($_POST['value'], $extFields[$extfName], 'D', $file->{$field});
+        }
+
         cot_sendheaders('application/json', cot_files_ajax_get_status(200));
+
+        if(cot_error_found()) {
+            $response['error'] = cot_implode_messages();
+            cot_clear_messages();
+            echo json_encode($response);
+            exit;
+        }
+
 
         if (!cot_auth('files', 'a', 'A') && $file->user_id != cot::$usr['id']){
             $response['error'] = cot::$L['files_err_perms'];
@@ -189,7 +220,7 @@ class FilesController{
             exit;
         }
 
-        $file->file_title = cot_import('title', 'P', 'TXT');
+        $file->{$field} = $value;
         $file->save();
 
         $response['written'] = 1;
@@ -197,6 +228,8 @@ class FilesController{
         echo json_encode($response);
         exit;
     }
+
+
 
     public function reorderAction(){
         global $db_files;

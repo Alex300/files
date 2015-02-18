@@ -73,7 +73,7 @@ $L['files_userfilespace'] = 'User file space';
 $L['files_userfilespace_desc'] = 'This is your files. Set desired user id';
 $L['files_userpublic_albums'] = 'User Public images and albums';
 $L['files_userpublic_files'] = 'User public files and folders';
-
+$L['files_extrafields_hint'] = 'Extrafields must have class «file-edit» to edit them wia Ajax';
 
 /**
  * Errors & Messages

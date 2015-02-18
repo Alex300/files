@@ -54,7 +54,7 @@ class UploadController{
      * @return array             Data for JSON response
      */
     public function get($print_response = true) {
-        global $source, $item, $field, $filename;
+        global $source, $item, $field, $filename, $cot_extrafields;
 
         $uid = cot_import('uid', 'G', 'INT');
         if(is_null($uid)) $uid = cot::$usr['id'];
@@ -102,6 +102,34 @@ class UploadController{
                 'lastmod'     => strtotime($row->file_updated),
                 'isImage'     => $row->file_img
             );
+
+
+            $editForm = array(
+                0 => array(
+                    'title'   => cot::$L['Title'],
+                    'element' => cot_inputbox('text', 'file_title', $row->file_title,
+                        array('class' => 'form-control file-edit', 'placeholder' => cot::$L['Title']))
+                )
+            );
+            // Extra fields
+            if(!empty($cot_extrafields[files_model_File::getTableName()])) {
+                foreach ($cot_extrafields[files_model_File::getTableName()] as $exfld) {
+                    $uname = strtoupper($exfld['field_name']);
+                    $exfld_name = 'file_'.$exfld['field_name'];
+                    $exfld_element = cot_build_extrafields('file_' . $exfld['field_name'], $exfld, $row->{$exfld_name});
+                    $exfld_title = isset(cot::$L['files_' . $exfld['field_name'] . '_title']) ?
+                        cot::$L['files_' . $exfld['field_name'] . '_title'] : $exfld['field_description'];
+
+                    $file[$exfld_name] = cot_build_extrafields_data('files', $exfld, $row->{$exfld_name});
+
+                    $editForm[] = array(
+                        'title'   => $exfld_title,
+                        'element' => $exfld_element,
+                    );
+                }
+            }
+            // /Extra fields
+            $file['editForm'] = $editForm;
 
             if ($row->file_img){
                 $file['thumbnailUrl'] = cot::$cfg['mainurl'] . '/' . cot_files_thumb($row->file_id) . '?lastmod=' .
@@ -163,12 +191,9 @@ class UploadController{
             // $_FILES is a one-dimensional array:
             $files[] = $this->handle_file_upload(
                 isset($upload['tmp_name']) ? $upload['tmp_name'] : null,
-                $file_name ? $file_name : (isset($upload['name']) ?
-                    $upload['name'] : null),
-                $size ? $size : (isset($upload['size']) ?
-                    $upload['size'] : $this->get_server_var('CONTENT_LENGTH')),
-                isset($upload['type']) ?
-                    $upload['type'] : $this->get_server_var('CONTENT_TYPE'),
+                $file_name ? $file_name : (isset($upload['name']) ? $upload['name'] : null),
+                $size ? $size : (isset($upload['size']) ? $upload['size'] : $this->get_server_var('CONTENT_LENGTH')),
+                isset($upload['type']) ? $upload['type'] : $this->get_server_var('CONTENT_TYPE'),
                 isset($upload['error']) ? $upload['error'] : null,
                 null,
                 $content_range
@@ -438,7 +463,7 @@ class UploadController{
     protected function handle_file_upload($uploaded_file, $name, $size, $type, $error,
                                           $index = null, $content_range = null) {
 
-        global $source, $item, $field, $usr;
+        global $source, $item, $field, $usr, $cot_extrafields;
 
         $file = new stdClass();
         $file->file_name = trim(mb_basename(stripslashes($name)));
@@ -550,6 +575,33 @@ class UploadController{
                     $file->deleteUrl = cot::$cfg['mainurl'] . '/index.php?e=files&m=upload&id='.$objFile->file_id.
                         '&_method=DELETE&x='.cot::$sys['xk'];
                     $file->deleteType = 'POST';
+
+
+                    $editForm = array(
+                        0 => array(
+                            'title'   => cot::$L['Title'],
+                            'element' => cot_inputbox('text', 'file_title', '',
+                                array('class' => 'form-control file-edit', 'placeholder' => cot::$L['Title']))
+                        )
+                    );
+                    // Extra fields
+                    if(!empty($cot_extrafields[files_model_File::getTableName()])) {
+                        foreach ($cot_extrafields[files_model_File::getTableName()] as $exfld) {
+                            $uname = strtoupper($exfld['field_name']);
+                            $exfld_name = 'file_'.$exfld['field_name'];
+                            $exfld_element = cot_build_extrafields('file_' . $exfld['field_name'], $exfld, '');
+                            $exfld_title = isset(cot::$L['files_' . $exfld['field_name'] . '_title']) ?
+                                cot::$L['files_' . $exfld['field_name'] . '_title'] : $exfld['field_description'];
+
+                            $file->{$exfld_name} = cot_build_extrafields_data('files', $exfld, '');
+                            $editForm[] = array(
+                                'title'   => $exfld_title,
+                                'element' => $exfld_element,
+                            );
+                        }
+                    }
+                    // /Extra fields
+                    $file->editForm = $editForm;
 
                 }else{
                     unset($file->path);

@@ -15,11 +15,13 @@ Hooks=admin.extrafields.first
 defined('COT_CODE') or die('Wrong URL');
 
 require_once cot_incfile('files', 'module');
+
 $extra_whitelist[$db_files] = array(
 	'name' => $db_files,
-	'caption' => $L['Module'].' Files',
+	'caption' => cot::$L['Module'].' Files',
 	'type' => 'module',
 	'code' => 'files',
+    'help' => cot::$L['files_extrafields_hint'],
 	'tags' => array(
 
 	)
@@ -27,7 +29,7 @@ $extra_whitelist[$db_files] = array(
 
 $extra_whitelist[$db_files_folders] = array(
     'name' => $db_files_folders,
-    'caption' => $L['Module'].' Files',
+    'caption' => cot::$L['Module'].' Files',
     'type' => 'module',
     'code' => 'files',
     'tags' => array(

@@ -1128,7 +1128,6 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
         if(is_null($uid)) $uid = $usr['id'];
     }
 
-    $jsFunc = (!defined('COT_HEADER_COMPLETE')) ? 'cot_rc_link_file': 'cot_rc_link_footer';
     $nc = $cot_modules['files']["version"];
 
     // Подключаем jQuery-templates только один раз
@@ -1146,15 +1145,14 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
         $modUrl = cot::$cfg['modules_dir'].'/files';
 
         // Generic page styles
-        $jsFunc($modUrl.'/tpl/filebox.css');
+        Resources::linkFile($modUrl.'/tpl/filebox.css');
 
         // Bootstrap Image Gallery styles
         //$jsFunc($cfg['plugins_dir'].'/attach2/lib/Gallery/css/blueimp-gallery.min.css');
 
         // CSS to style the file input field as button and adjust the Bootstrap progress bars
-        $jsFunc($modUrl.'/lib/upload/css/jquery.fileupload.css');
-        $jsFunc($modUrl.'/lib/upload/css/jquery.fileupload-ui.css');
-
+        Resources::linkFile($modUrl.'/lib/upload/css/jquery.fileupload.css');
+        Resources::linkFile($modUrl.'/lib/upload/css/jquery.fileupload-ui.css');
 
         /* === Java Scripts === */
         // The jQuery UI widget factory, can be omitted if jQuery UI is already included
