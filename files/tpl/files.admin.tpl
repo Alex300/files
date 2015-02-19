@@ -2,6 +2,8 @@
 
 <div class="block button-toolbar">
     <a title="{PHP.L.Configuration}" href="{PHP|cot_url('admin', 'm=config&n=edit&o=module&p=files')}" class="button">{PHP.L.Configuration}</a>
+    <a href="{PHP|cot_url('admin', 'm=extrafields&n=cot_files')}" class="button">{PHP.L.files_extrafields_files}</a>
+    <a href="{PHP|cot_url('admin', 'm=extrafields&n=cot_files_folders')}" class="button">{PHP.L.files_extrafields_folders}</a>
     <a href="{PHP|cot_url('admin', 'm=files&a=allpfs')}" class="button">{PHP.L.files_allpfs}</a>
     <a href="{PHP|cot_url('files', 'm=pfs&uid=0')}" class="button">{PHP.L.SFS}</a>
     <a href="{PHP|cot_url('admin', 'm=files&a=cleanup')}" onclick="return confirm('{PHP.L.files_cleanup_conf}')"

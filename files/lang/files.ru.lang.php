@@ -74,7 +74,8 @@ $L['files_userfilespace_desc'] = 'Это Ваши файлы. Подставте
 $L['files_userpublic_albums'] = 'Публичные изображения и альбомы пользователя';
 $L['files_userpublic_files'] = 'Публичные файлы и каталоги пользователя';
 $L['files_extrafields_hint'] = 'Экстраполя должны иметь класс «file-edit» для редактирования их значений через Ajax';
-
+$L['files_extrafields_files'] = 'Экстраполя для файлов';
+$L['files_extrafields_folders'] = 'Экстраполя для папок';
 /**
  * Errors & Messages
  */
