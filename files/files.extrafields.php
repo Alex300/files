@@ -23,7 +23,8 @@ $extra_whitelist[$db_files] = array(
 	'code' => 'files',
     'help' => cot::$L['files_extrafields_hint']."<br />".cot::$L['adm_help_info'],
 	'tags' => array(
-
+        'files.gallery.tpl' => '{FILES_ROW_XXXXX}, {FILES_ROW_XXXXX_TITLE}',
+        'files.downloads.tpl' => '{FILES_ROW_XXXXX}, {FILES_ROW_XXXXX_TITLE}',
 	)
 );
 
