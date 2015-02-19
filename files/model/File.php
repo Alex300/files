@@ -296,7 +296,7 @@ class files_model_File extends Som_Model_Abstract
      *
      */
     public static function generateTags($item, $tagPrefix = '', $cacheitem = true){
-        global $cfg, $L, $usr, $cot_countries;
+        global $usr, $cot_extrafields;
 
         static $extp_first = null, $extp_main = null;
         static $cacheArr = array();
@@ -350,6 +350,18 @@ class files_model_File extends Som_Model_Abstract
                     'ICON' => $item->icon,
                 );
 
+                // Extrafields
+                if (isset($cot_extrafields[static::$_tbname])) {
+                    foreach ($cot_extrafields[static::$_tbname] as $exfld) {
+                        $tag = mb_strtoupper($exfld['field_name']);
+                        $field = 'file_'.$exfld['field_name'];
+                        $temp_array[$tag.'_TITLE'] = isset(cot::$L['files_'.$exfld['field_name'].'_title']) ?
+                            cot::$L['files_'.$exfld['field_name'].'_title'] : $exfld['field_description'];
+                        $temp_array[$tag] = cot_build_extrafields_data('files', $exfld, $item->{$field});
+                        $temp_array[$tag.'_VALUE'] = $item->{$field};
+                    }
+                }
+
                 /* === Hook === */
                 foreach ($extp_main as $pl)
                 {
@@ -371,5 +383,4 @@ class files_model_File extends Som_Model_Abstract
     }
 
 }
-
 files_model_File::__init();

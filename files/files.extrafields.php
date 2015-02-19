@@ -21,7 +21,7 @@ $extra_whitelist[$db_files] = array(
 	'caption' => cot::$L['Module'].' Files',
 	'type' => 'module',
 	'code' => 'files',
-    'help' => cot::$L['files_extrafields_hint'],
+    'help' => cot::$L['files_extrafields_hint']."<br />".cot::$L['adm_help_info'],
 	'tags' => array(
 
 	)
