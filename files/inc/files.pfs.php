@@ -37,13 +37,13 @@ class PfsController{
         $uid = cot_import('uid', 'G', 'INT');  // user ID or 0
         if($uid === null) $uid = $usr['id'];
 
-        $standalone = FALSE;
+        $standalone = 0;
 
         $urlParams = array('m' => 'pfs');
         if(!$f && $uid != $usr['id']) $urlParams['uid'] = $uid;
 
         if (!empty($c1) || !empty($c2)){
-            $standalone = TRUE;
+            $standalone = 1;
             if(!empty($c1)) $urlParams['c1'] = $c1;
             if(!empty($c2)) $urlParams['c2'] = $c2;
             if(!empty($parser)) $urlParams['parser'] = $parser;
@@ -103,7 +103,7 @@ class PfsController{
             if(empty($urr) && !$usr['isadmin']) cot_die_message(404);   // Вдруг пользователь удален, а вайлы остались?
 
             if($uid == $usr['id']){
-                if(!$standalone) $crumbs[] = array(cot_url('users', 'm=details'), cot::$L['files_mypage']);
+                if($standalone == 0) $crumbs[] = array(cot_url('users', 'm=details'), cot::$L['files_mypage']);
                 if($folder){
                     $crumbs[] = array(cot_url('files', $urlParams), cot::$L['Mypfs']);
                     $crumbs[] = $title = $folder->ff_title;
@@ -126,7 +126,7 @@ class PfsController{
             }
         }
 
-        $tpl = ($standalone) ? cot_tplfile(array('files', 'pfs', 'standalone'), 'module') : cot_tplfile(array('files', 'pfs'), 'module');
+        $tpl = ($standalone == 1) ? cot_tplfile(array('files', 'pfs', 'standalone'), 'module') : cot_tplfile(array('files', 'pfs'), 'module');
         $t = new XTemplate($tpl);
 
         // ========== Statistics =========
@@ -345,7 +345,7 @@ class PfsController{
         if(!$c2) $c2 = cot_import('c2', 'P', 'ALP');
         $parser = cot_import('parser', 'G', 'ALP');	// custom parser
         if(!$parser) $parser = cot_import('parser', 'P', 'ALP');
-        $standalone = FALSE;                        // is in popup window
+        $standalone = 0;                        // is in popup window
         $isSFS = false;                             // is Site File Space
 
         $act = cot_import('act', 'P', 'ALP');
@@ -371,7 +371,7 @@ class PfsController{
         if(!$f && $uid != $usr['id']) $urlParams['uid'] = $uid;
 
         if (!empty($c1) || !empty($c2)){
-            $standalone = TRUE;
+            $standalone = 1;
             if(!empty($c1)) $urlParams['c1'] = $c1;
             if(!empty($c2)) $urlParams['c2'] = $c2;
             if(!empty($parser)) $urlParams['parser'] = $parser;
@@ -424,7 +424,7 @@ class PfsController{
             $tmp = $urlParams;
             if($uid != $usr['id']) $tmp['uid'] = $uid;
             if($uid == $usr['id']){
-                if(!$standalone) $crumbs[] = array(cot_url('users', 'm=details'), cot::$L['files_mypage']);
+                if($standalone == 0) $crumbs[] = array(cot_url('users', 'm=details'), cot::$L['files_mypage']);
                 $crumbs[] = array(cot_url('files', $tmp), cot::$L['Mypfs']);
                 if($f){
                     $tmp['f'] = $folder->ff_id;
@@ -531,7 +531,7 @@ class PfsController{
             'BREADCRUMBS' => cot_breadcrumbs($crumbs, !$standalone && cot::$cfg['homebreadcrumb']),
         ));
 
-        if ($standalone){
+        if ($standalone == 1){
 
             $outHeaderFooter = false;
 
@@ -615,7 +615,7 @@ class PfsController{
         if(!$c2) $c2 = cot_import('c2', 'P', 'ALP');
         $parser = cot_import('parser', 'G', 'ALP');	// custom parser
         if(!$parser) $parser = cot_import('parser', 'P', 'ALP');
-        $standalone = FALSE;                        // is in popup window
+        $standalone = 0;                        // is in popup window
         $isSFS = false;                             // is Site File Space
 
         if($uid == 0) $isSFS = true;
@@ -626,7 +626,7 @@ class PfsController{
         if($uid != $usr['id']) $urlParams['uid'] = $uid;
 
         if (!empty($c1) || !empty($c2)){
-            $standalone = TRUE;
+            $standalone = 1;
             if(!empty($c1)) $urlParams['c1'] = $c1;
             if(!empty($c2)) $urlParams['c2'] = $c2;
             if(!empty($parser)) $urlParams['parser'] = $parser;

@@ -34,10 +34,10 @@
     <!-- Shim to make HTML5 elements usable in older Internet Explorer versions -->
     <!--[if lt IE 9]><script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
 </head>
-<body>
+<body class="files-widget">
 <div class="container">
     <!-- The file upload form used as target for the file upload widget -->
-    <form class="fileupload" id="fileupload_{UPLOAD_SOURCE}_{UPLOAD_ITEM}_{UPLOAD_FIELD}" data-url="{UPLOAD_ACTION}""
+    <form class="fileupload" id="fileupload_{UPLOAD_SOURCE}_{UPLOAD_ITEM}_{UPLOAD_FIELD}" data-url="{UPLOAD_ACTION}"
           method="POST" enctype="multipart/form-data" data-url="{UPLOAD_ACTION}">
         <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
         <div class="row fileupload-buttonbar">

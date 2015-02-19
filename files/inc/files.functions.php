@@ -1106,7 +1106,7 @@ function cot_files_downloads($source, $item, $field = '', $tpl = 'files.download
  *      -1 - use plugin config value
  *       0 - unlimited
  * @param string $tpl Template code
- * @param bool $standalone
+ * @param int $standalone 0 - normal, 1 in new window like pfs, 2 - in iframe like cot_files_widget
  * @param int $userId   for admins only
  * @return string
  *
@@ -1114,7 +1114,7 @@ function cot_files_downloads($source, $item, $field = '', $tpl = 'files.download
  * @todo generate formUnikey
  */
 function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -1, $tpl = 'files.filebox',
-                           $standalone = false, $userId = null)
+                           $standalone = 0, $userId = null)
 {
     global $R, $cot_modules, $usr;
 
@@ -1136,7 +1136,7 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
     if(!$jQtemplatesOut){
         $templates = new XTemplate(cot_tplfile('files.templates', 'module'));
         $templates->assign(array(
-            'IS_STANDALONE' => ($standalone) ? 1 : 0,
+            'IS_STANDALONE' => ($standalone == 1) ? 1 : 0,
         ));
         $templates->parse();
         $jQtemplates = $templates->text();
@@ -1279,6 +1279,12 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
         'UPLOAD_THUMB_HEIGHT' => (int)cot::$cfg['files']['thumb_height'],
         'UPLOAD_X'       => cot::$sys['xk'],
     ));
+
+    if($standalone == 2) {
+        $html = Resources::render();
+        if($html) cot::$out['head_head'] = $html.cot::$out['head_head'];
+        cot::$out['footer_rc'] .= Resources::renderFooter();
+    }
 
     $t->parse();
     return $formUnikey.$t->text().$jQtemplates;

@@ -24,7 +24,7 @@ class FilesController{
         if(!$type) $type = 'all';
 
 
-        $html = cot_files_filebox($source, $item, $field, $type, $limit, 'files.files');
+        $html = cot_files_filebox($source, $item, $field, $type, $limit, 'files.files', 2);
 
         echo $html;
         exit;
