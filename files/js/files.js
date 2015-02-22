@@ -265,15 +265,16 @@ $(function () {
     $('.fileupload').on('click', '.pasteImage', function(e) {
         e.preventDefault();
 
-        var parentTr =  $(this).parents('tr.template-download');
+        var parentTr =  $(this).parents('.template-download');
         var id = parentTr.attr('data-id');
         parentTr = $('tr#file_'+id);
 
-        var url = parentTr.attr('data-url');
-        var desc = parentTr.find('input.files-edit-title').val();
-        var name = parentTr.attr('data-name');
-        addpix(url, desc, name);
+        var url = parentTr.attr('data-url'),
+            title = parentTr.find('input[name="file_title"]').val(),
+            name = parentTr.attr('data-name');
+        title = title || '';
 
+        addpix(url, title, name);
         return false;
     });
 
@@ -283,16 +284,16 @@ $(function () {
     $('.fileupload').on('click', '.pasteThumb', function(e) {
         e.preventDefault();
 
-        var parentTr =  $(this).parents('tr.template-download');
+        var parentTr =  $(this).parents('.template-download');
         var id = parentTr.attr('data-id');
         parentTr = $('tr#file_'+id);
 
-        var url = parentTr.attr('data-url');
-        var desc = parentTr.find('input.files-edit-title').val();
-        var name = parentTr.attr('data-name');
-        var thumb = parentTr.attr('data-thumbnail');
-        addthumb(url, desc, name, thumb);
-
+        var url = parentTr.attr('data-url'),
+            title = parentTr.find('input[name="file_title"]').val(),
+            name = parentTr.attr('data-name'),
+            thumb = parentTr.attr('data-thumbnail');
+        title = title || '';
+        addthumb(url, title, name, thumb);
         return false;
     });
 
@@ -302,15 +303,16 @@ $(function () {
     $('.fileupload').on('click', '.pasteFile', function(e) {
         e.preventDefault();
 
-        var parentTr =  $(this).parents('tr.template-download');
+        var parentTr =  $(this).parents('.template-download');
         var id = parentTr.attr('data-id');
         parentTr = $('tr#file_'+id);
 
-        var url = parentTr.attr('data-url');
-        var desc = parentTr.find('input.files-edit-title').val();
-        var name = parentTr.attr('data-name');
-        var thumb = parentTr.attr('data-thumbnail');
-        addfile(url, desc, name, thumb);
+        var url = parentTr.attr('data-url'),
+            title = parentTr.find('input[name="file_title"]').val(),
+            name = parentTr.attr('data-name'),
+            thumb = parentTr.attr('data-thumbnail');
+        title = title || '';
+        addfile(url, title, name, thumb);
 
         return false;
     });
