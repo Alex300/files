@@ -2,11 +2,12 @@
 defined('COT_CODE') or die('Wrong URL.');
 
 /**
- * Модель Group
+ * Модель File Folder
  *
  * Описание модели
  *
  * @method static files_model_Folder getById($pk);
+ * @method static files_model_Folder fetchOne($conditions = array(), $order = '')
  * @method static files_model_Folder[] find($conditions = array(), $limit = 0, $offset = 0, $order = '');
  *
  * @property int    $ff_id
@@ -23,7 +24,6 @@ defined('COT_CODE') or die('Wrong URL.');
 class files_model_Folder extends Som_Model_Abstract
 {
     protected  static $_db = null;
-    protected  static $_columns = null;
     protected  static $_tbname = '';
     protected  static $_primary_key = 'ff_id';
 

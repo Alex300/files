@@ -75,9 +75,9 @@ avatar_framing=53:select:height,width,auto,border_auto,crop:crop:Default avatar 
  * в ограничениях 0 - не ограничено, -1 - запрещено
  *
  * Файлы по папкам делятся так:
- * area = 'pfs' / 'sfs'
- * item = id папки
- * user_id = id пользователя реально добавившего файл или 0 для sfs
+ * file_source = 'pfs' / 'sfs'
+ * file_item   = id папки
+ * user_id     = id пользователя реально добавившего файл или 0 для sfs
  *
  * В свой pfs добавлять файлы пользователь может только сам
  */

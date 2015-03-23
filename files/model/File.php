@@ -2,11 +2,12 @@
 defined('COT_CODE') or die('Wrong URL.');
 
 /**
- * Модель Group
+ * Модель File
  *
  * Описание модели
  *
  * @method static files_model_File getById($pk);
+ * @method static files_model_File fetchOne($conditions = array(), $order = '')
  * @method static files_model_File[] find($conditions = array(), $limit = 0, $offset = 0, $order = '');
  *
  * @property int    $file_id
@@ -34,7 +35,6 @@ class files_model_File extends Som_Model_Abstract
      * @var Som_Model_Mapper_Abstract
      */
     protected  static $_db = null;
-    protected  static $_columns = null;
     protected  static $_tbname = '';
     protected  static $_primary_key = 'file_id';
 
