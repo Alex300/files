@@ -10,7 +10,7 @@ Hooks=admin
  *
  * @package Files
  * @author Cotonti Team
- * @copyright (c) Cotonti Team 2014
+ * @copyright (c) Cotonti Team
  */
 (defined('COT_CODE') && defined('COT_ADMIN')) or die('Wrong URL.');
 
