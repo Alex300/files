@@ -8,7 +8,7 @@ Hooks=admin
 /**
  * Files admin panel
  *
- * @package shop
+ * @package Files
  * @author Cotonti Team
  * @copyright (c) Cotonti Team 2014
  */
