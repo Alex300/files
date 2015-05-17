@@ -1313,9 +1313,10 @@ function cot_files_gallery($source, $item, $field = '', $tpl = 'files.gallery', 
  * @param string $frame
  * @return string
  */
-function cot_files_user_avatar($file_id, $urr = 0, $width = 0, $height = 0, $frame = ''){
+function cot_files_user_avatar($file_id = 0, $urr = 0, $width = 0, $height = 0, $frame = ''){
 
     $avatar = cot_rc('files_user_default_avatar');
+    if($file_id == 0 && is_array($urr) && isset($urr['user_avatar'])) $file_id = $urr['user_avatar'];
     $url = cot_files_user_avatar_url($file_id, $width, $height, $frame = '');
     $alt = cot::$L['Avatar'];
     if(is_array($urr)) $alt = htmlspecialchars(cot_user_full_name($urr));
