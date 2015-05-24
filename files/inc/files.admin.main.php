@@ -68,7 +68,6 @@ class MainController{
 
         $urlParams = array('m'=>'files', 'a'=> 'allpfs');
         $perPage = cot::$cfg['maxrowsperpage'];
-        $perPage = 1;
         list($pg, $d, $durl) = cot_import_pagenav('d', $perPage);
 
         /* === Hook === */
