@@ -112,8 +112,8 @@ class UploadController{
                 )
             );
             // Extra fields
-            if(!empty($cot_extrafields[files_model_File::getTableName()])) {
-                foreach ($cot_extrafields[files_model_File::getTableName()] as $exfld) {
+            if(!empty($cot_extrafields[files_model_File::tableName()])) {
+                foreach ($cot_extrafields[files_model_File::tableName()] as $exfld) {
                     $uname = strtoupper($exfld['field_name']);
                     $exfld_name = 'file_'.$exfld['field_name'];
                     $exfld_element = cot_build_extrafields('file_' . $exfld['field_name'], $exfld, $row->{$exfld_name});
@@ -585,8 +585,8 @@ class UploadController{
                         )
                     );
                     // Extra fields
-                    if(!empty($cot_extrafields[files_model_File::getTableName()])) {
-                        foreach ($cot_extrafields[files_model_File::getTableName()] as $exfld) {
+                    if(!empty($cot_extrafields[files_model_File::tableName()])) {
+                        foreach ($cot_extrafields[files_model_File::tableName()] as $exfld) {
                             $uname = strtoupper($exfld['field_name']);
                             $exfld_name = 'file_'.$exfld['field_name'];
                             $exfld_element = cot_build_extrafields('file_' . $exfld['field_name'], $exfld, '');

@@ -176,7 +176,7 @@ class FilesController{
 
         $response = array( 'error' => '');
 
-        $extFields = $cot_extrafields[files_model_File::getTableName()];
+        $extFields = $cot_extrafields[files_model_File::tableName()];
 
         $id = cot_import('id', 'P', 'INT');
         $field = cot_import('key', 'P', 'ALP');
