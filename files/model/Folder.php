@@ -216,7 +216,7 @@ class files_model_Folder extends Som_Model_Abstract
                     $itemEditUrl = cot_url('files', $tmp);
 
                     $tmp['a'] = 'deleteFolder';
-                    $itemDelUrl  = cot_confirm_url(cot_url('files', $tmp), 'vuz', 'topic_deleteConfirm');
+                    $itemDelUrl  = cot_confirm_url(cot_url('files', $tmp));
                 }
 
                 $date_format = 'datetime_medium';
