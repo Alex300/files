@@ -13,7 +13,7 @@ Hooks=users.edit.update.delete
  */
 defined('COT_CODE') or die('Wrong URL');
 
-require_once cot_incfile('advert', 'module');
+require_once cot_incfile('files', 'module');
 
 // Удалить все файлы PFS пользователя
 $condition = array(
@@ -34,6 +34,20 @@ $condition = array(
     array('user_id', $id)
 );
 $items = files_model_Folder::find($condition);
+if(!empty($items)) {
+    foreach($items as $itemRow) {
+        $itemRow->delete();
+        unset($itemRow);
+    }
+    unset($items);
+}
+
+// Удалить все файлы связанные с пользователем
+$condition = array(
+    array('file_source', 'user'),
+    array('file_item', $id)
+);
+$items = files_model_File::find($condition);
 if(!empty($items)) {
     foreach($items as $itemRow) {
         $itemRow->delete();

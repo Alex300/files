@@ -907,7 +907,7 @@ function cot_files_avatarbox($userId = null, $tpl = 'files.avatarbox' ){
         if(is_null($uid)) $uid = $usr['id'];
     }
 
-    $jsFunc = (!defined('COT_HEADER_COMPLETE')) ? 'cot_rc_link_file': 'cot_rc_link_footer';
+    $jsFunc = (!defined('COT_HEADER_COMPLETE')) ? 'linkFile': 'linkFileFooter';
     $nc = $cot_modules['files']["version"];
 
     // Подключаем jQuery-templates только один раз
@@ -916,14 +916,14 @@ function cot_files_avatarbox($userId = null, $tpl = 'files.avatarbox' ){
     $modUrl = cot::$cfg['modules_dir'].'/files';
 
     // CSS to style the file input field as button and adjust the Bootstrap progress bars
-    $jsFunc($modUrl.'/lib/upload/css/jquery.fileupload.css');
-    $jsFunc($modUrl.'/lib/upload/css/jquery.fileupload-ui.css');
+    Resources::$jsFunc($modUrl.'/lib/upload/css/jquery.fileupload.css');
+    Resources::$jsFunc($modUrl.'/lib/upload/css/jquery.fileupload-ui.css');
 
     /* === Java Scripts === */
     // The jQuery UI widget factory, can be omitted if jQuery UI is already included
-    cot_rc_link_footer($modUrl.'/lib/upload/js/vendor/jquery.ui.widget.js?nc='.$nc);
-    cot_rc_link_footer($modUrl.'/lib/upload/js/jquery.iframe-transport.js?nc='.$nc);
-    cot_rc_link_footer($modUrl.'/lib/upload/js/jquery.fileupload.js?nc='.$nc);
+    Resources::linkFileFooter($modUrl.'/lib/upload/js/vendor/jquery.ui.widget.js?nc='.$nc, 'js');
+    Resources::linkFileFooter($modUrl.'/lib/upload/js/jquery.iframe-transport.js?nc='.$nc);
+    Resources::linkFileFooter($modUrl.'/lib/upload/js/jquery.fileupload.js?nc='.$nc);
 
     $formId = "{$source}_{$item}_{$filed}";
     $type = array('image');
