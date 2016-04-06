@@ -8,5 +8,5 @@ CHANGE `file_count` `file_count` INT(11) UNSIGNED NULL DEFAULT '0',
 CHANGE `file_unikey` `file_unikey` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NULL DEFAULT '';
 
 ALTER TABLE `cot_files` ADD INDEX `cot_files_img_idx` (`file_img`);
-ALTER TABLE `cot_files` DROP INDEX `file_source`, ADD INDEX `cot_files_source` (`file_source`, `file_item`) USING BTREE;
-ALTER TABLE `cot_files` DROP INDEX `file_source_2`, ADD INDEX `cot_files_source_2` (`file_source`, `file_item`) USING BTREE;
+ALTER TABLE `cot_files` DROP INDEX `file_source`, ADD INDEX `cot_files_source_idx` (`file_source`, `file_item`) USING BTREE;
+ALTER TABLE `cot_files` DROP INDEX `file_source_2`, ADD INDEX `cot_files_source_2_idx` (`file_source`, `file_item`) USING BTREE;
