@@ -5,19 +5,20 @@ CREATE TABLE IF NOT EXISTS `cot_files` (
 	`file_source` VARCHAR(64) NOT NULL,
 	`file_item` INT NOT NULL,
 	`file_field` varchar(255) DEFAULT '' COMMENT 'Item field',
-	`file_path` VARCHAR(255) NOT NULL,
+	`file_path` VARCHAR(255) DEFAULT '',
 	`file_name` VARCHAR(255) NOT NULL,
-	`file_ext` VARCHAR(16) NOT NULL,
-	`file_img` TINYINT NOT NULL DEFAULT 0,
-	`file_size` INT NOT NULL,
-	`file_title` VARCHAR(255) NOT NULL,
-	`file_count` INT NOT NULL DEFAULT 0,
-	`file_order` SMALLINT NOT NULL DEFAULT 0,
+	`file_ext` VARCHAR(16) DEFAULT '',
+	`file_img` TINYINT(1) DEFAULT 0,
+	`file_size` INT DEFAULT 0,
+	`file_title` VARCHAR(255) DEFAULT '',
+	`file_count` INT DEFAULT 0,
+	`file_order` SMALLINT DEFAULT 0,
 	`file_updated` datetime DEFAULT NULL,
-	`file_unikey` varchar(255)  DEFAULT '',
+	`file_unikey` varchar(255) DEFAULT '',
 	PRIMARY KEY(`file_id`),
 	KEY `file_source` (`file_source`, `file_item`),
-	KEY `file_source_2` (`file_source`, `file_item`, `file_field`)
+	KEY `file_source_2` (`file_source`, `file_item`, `file_field`),
+	KEY `file_img` (`file_img`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 

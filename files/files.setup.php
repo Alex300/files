@@ -5,10 +5,10 @@ Code=files
 Name=Files
 Description=Personal File Space and attach files to posts and pages
 Category=files-media
-Version=1.0.1
-Date=2015-01-19
+Version=1.0.2
+Date=2016-04-07
 Author=Cotonti Team
-Copyright=(c) Cotonti Team 2014-2015
+Copyright=(c) Cotonti Team 2014-2016
 Notes=DO NOT FORGET to create a writable folder for the files
 Auth_guests=R
 Lock_guests=12345A
@@ -69,7 +69,7 @@ avatar_framing=53:select:height,width,auto,border_auto,crop:crop:Default avatar 
  *
  * @package Files
  * @author Cotonti Team
- * @copyright (c) Cotonti Team 2014-2015
+ * @copyright (c) Cotonti Team 2014-2016
  *
  * В настройках все размеры указываются в байтах
  * в ограничениях 0 - не ограничено, -1 - запрещено
