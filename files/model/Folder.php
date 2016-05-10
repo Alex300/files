@@ -21,7 +21,7 @@ defined('COT_CODE') or die('Wrong URL.');
  * @property string $ff_updated  Дата последнего изменения
  *
  */
-class files_model_Folder extends Som_Model_Abstract
+class files_model_Folder extends Som_Model_ActiveRecord
 {
     protected  static $_db = null;
     protected  static $_tbname = '';

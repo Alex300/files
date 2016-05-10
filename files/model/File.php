@@ -29,7 +29,7 @@ defined('COT_CODE') or die('Wrong URL.');
  * @property string $icon   File icon url
  *
  */
-class files_model_File extends Som_Model_Abstract
+class files_model_File extends Som_Model_ActiveRecord
 {
     /**
      * @var Som_Model_Mapper_Abstract
