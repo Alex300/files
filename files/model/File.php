@@ -16,7 +16,7 @@ defined('COT_CODE') or die('Wrong URL.');
  * @property int    $file_item      id элемента, к которому привязан файл
  * @property string $file_field     Поле элемента (поционально), например 'logo'
  * @property string $file_path      Имя файла с путем относительно корня сервера
- * @property string $file_name  Исходное имя файла
+ * @property string $file_name      Исходное имя файла
  * @property string $file_ext       Расширение
  * @property bool   $file_img       Является ли изображением
  * @property int    $file_size      Размер
