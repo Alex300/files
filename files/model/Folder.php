@@ -1,10 +1,13 @@
 <?php
 defined('COT_CODE') or die('Wrong URL.');
 
+if(empty($GLOBALS['db_files_folders'])) {
+    cot::$db->registerTable('files_folders');
+    cot_extrafields_register_table('files_folders');
+}
+
 /**
  * Модель File Folder
- *
- * Описание модели
  *
  * @method static files_model_Folder getById($pk);
  * @method static files_model_Folder fetchOne($conditions = array(), $order = '')
@@ -30,11 +33,11 @@ class files_model_Folder extends Som_Model_ActiveRecord
 
     /**
      * Static constructor
+     * @param string $db Data base connection config name
      */
-    public static function __init($db = 'db'){
-        global $db_files_folders;
-
-        static::$_tbname = $db_files_folders;
+    public static function __init($db = 'db')
+    {
+        static::$_tbname = cot::$db->files_folders;
         parent::__init($db);
     }
 

@@ -1,10 +1,13 @@
 <?php
 defined('COT_CODE') or die('Wrong URL.');
 
+if(empty($GLOBALS['db_files'])) {
+    cot::$db->registerTable('files');
+    cot_extrafields_register_table('files');
+}
+
 /**
  * Модель File
- *
- * Описание модели
  *
  * @method static files_model_File getById($pk);
  * @method static files_model_File fetchOne($conditions = array(), $order = '')
@@ -40,11 +43,11 @@ class files_model_File extends Som_Model_ActiveRecord
 
     /**
      * Static constructor
+     * @param string $db Data base connection config name
      */
-    public static function __init($db = 'db'){
-        global $db_files;
-
-        static::$_tbname = $db_files;
+    public static function __init($db = 'db')
+    {
+        static::$_tbname = cot::$db->files;
         parent::__init($db);
     }
 
@@ -56,7 +59,8 @@ class files_model_File extends Som_Model_ActiveRecord
         $iconUrl = '';
         if(isset(cot::$R["files_icon_type_{$size}_{$ext}"])){
             $iconUrl = cot::$R["files_icon_type_{$size}_{$ext}"];
-        }elseif(isset(cot::$R["files_icon_type_48_{$ext}"])){
+            
+        } elseif(isset(cot::$R["files_icon_type_48_{$ext}"])){
             $iconUrl = cot::$R["files_icon_type_48_{$ext}"];
         }
 

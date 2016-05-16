@@ -15,20 +15,20 @@ Loader::register();
 // Additional API requirements
 require_once cot_incfile('uploads');
 require_once './datas/extensions.php';
+require_once cot_incfile('extrafields');
 require_once cot_incfile('forms');
 
 if(!function_exists('cot_user_data')) require_once cot_incfile('users', 'module');
 
 // Self requirements
 require_once cot_langfile('files', 'module');
-require_once  cot_incfile('files', 'module', 'resources');
+require_once cot_incfile('files', 'module', 'resources');
 
-// Global variables
-global $db_files, $db_files_folders, $db_x;
+cot::$db->registerTable('files');
+cot_extrafields_register_table('files');
 
-$db_files           = (isset($db_files)) ? $db_files : $db_x . 'files';
-$db_files_folders   = (isset($db_files_folders)) ? $db_files_folders : $db_x . 'files_folders';
-
+cot::$db->registerTable('files_folders');
+cot_extrafields_register_table('files_folders');
 
 /**
  * Terminates further script execution with a given
