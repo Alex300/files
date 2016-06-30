@@ -799,13 +799,14 @@ class UploadController{
         }
 
         if(!isset($params['field'])) $params['field'] = $field;
-        if(!isset($params['limit'])){
+        if(!isset($params['limit'])) {
             if($limits['count_left'] == 0){
                 $file->error = cot::$L['files_err_count'];
                 return false;
             }
-        }else{
-            if ($params['limit'] > 0 && ($this->count_file_objects($source, $item, $params['field']) >= $params['limit'])){
+        } else {
+            // Это не касается несуществующих объяектов
+            if ($item > 0 && $params['limit'] > 0 && ($this->count_file_objects($source, $item, $params['field']) >= $params['limit'])) {
                 $file->error = cot::$L['files_err_count'];
                 return false;
             }
