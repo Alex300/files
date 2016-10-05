@@ -24,7 +24,8 @@ $(function () {
             previewMaxWidth: filesConfig.previewMaxWidth,
             previewMaxHeight: filesConfig.previewMaxHeight,
             maxChunkSize: filesConfig[uplId]['chunk'],
-            sequentialUploads: filesConfig.sequential
+            sequentialUploads: filesConfig.sequential,
+			maxNumberOfFiles: filesConfig[uplId]['limit']
         });
 
         // Enable iframe cross-domain access via redirect option:
