@@ -94,6 +94,7 @@ class UploadController{
             $file = array(
                 'id'          => $row->file_id,
                 'name'        => $row->file_name,
+                'ext'  => htmlspecialchars($row->file_ext),                
                 'size'        => (int)$row->file_size,
                 'url'         => cot::$cfg['mainurl'] . '/' . cot_files_path($source, $item, $row->file_id, $row->file_ext),
                 'deleteType'  => 'POST',
