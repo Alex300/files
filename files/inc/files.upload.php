@@ -138,6 +138,14 @@ class UploadController{
                 $file['thumbnail'] = cot::$cfg['mainurl'] . '/' . cot_files_thumb($row->file_id);
             }else{
                 $file['thumbnailUrl'] = cot::$cfg['mainurl'] . '/' . $row->icon;
+                
+                    /* === Hook === */
+                    foreach (cot_getextplugins('files.upload.row.img') as $pl)
+                    {
+                         include $pl;
+                    }
+                    /* ===== */                
+                
             }
 
             if (!$multi){
