@@ -585,6 +585,12 @@ class UploadController{
                         '&_method=DELETE&x='.cot::$sys['xk'];
                     $file->deleteType = 'POST';
 
+                    /* === Hook === */
+                     foreach (cot_getextplugins('files.upload.objfile.save') as $pl)
+                     {
+                          include $pl;
+                     }
+                    /* ===== */                    
 
                     $editForm = array(
                         0 => array(
