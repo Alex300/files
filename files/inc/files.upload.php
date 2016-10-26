@@ -138,6 +138,14 @@ class UploadController{
                 $file['thumbnail'] = cot::$cfg['mainurl'] . '/' . cot_files_thumb($row->file_id);
             }else{
                 $file['thumbnailUrl'] = cot::$cfg['mainurl'] . '/' . $row->icon;
+                
+                    /* === Hook === */
+                    foreach (cot_getextplugins('files.upload.row.img') as $pl)
+                    {
+                         include $pl;
+                    }
+                    /* ===== */                
+                
             }
 
             if (!$multi){
@@ -590,6 +598,12 @@ class UploadController{
                         '&_method=DELETE&x='.cot::$sys['xk'];
                     $file->deleteType = 'POST';
 
+                    /* === Hook === */
+                     foreach (cot_getextplugins('files.upload.objfile.save') as $pl)
+                     {
+                          include $pl;
+                     }
+                    /* ===== */                    
 
                     $editForm = array(
                         0 => array(
