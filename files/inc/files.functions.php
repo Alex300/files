@@ -572,11 +572,17 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
         if($watermark && !empty(cot::$cfg['files']['thumb_watermark']) && file_exists(cot::$cfg['files']['thumb_watermark'])){
             list($th_width, $th_height) = getimagesize($thumb_path);
 
-            if($th_width >= cot::$cfg['files']['thumb_wm_widht'] || cot::$cfg['files']['thumb_wm_height']){
+            if($th_width >= cot::$cfg['files']['thumb_wm_widht'] && $th_height >= cot::$cfg['files']['thumb_wm_height']){
                 cot_files_watermark($thumb_path, $thumb_path, cot::$cfg['files']['thumb_watermark']);
             }
         }
     }
+
+    /* === Hook === */
+    foreach (cot_getextplugins('files.thumbnail.done') as $pl) {
+        include $pl;
+    }
+    /* ===== */
 
     return $thumb_path;
 }

@@ -94,7 +94,7 @@ class UploadController{
             $file = array(
                 'id'          => $row->file_id,
                 'name'        => $row->file_name,
-                'ext'  => htmlspecialchars($row->file_ext),                
+                'ext'         => htmlspecialchars($row->file_ext),
                 'size'        => (int)$row->file_size,
                 'url'         => cot::$cfg['mainurl'] . '/' . cot_files_path($source, $item, $row->file_id, $row->file_ext),
                 'deleteType'  => 'POST',
@@ -200,6 +200,13 @@ class UploadController{
                 $content_range
             );
         }
+
+        /* === Hook === */
+        foreach (cot_getextplugins('files.upload.done') as $pl) {
+            include $pl;
+        }
+        /* ===== */
+
         return $this->generate_response(
             array($param_name => $files),
             $print_response
@@ -547,6 +554,12 @@ class UploadController{
                     if($unikey) $objFile->file_unikey = $unikey;
                 }
 
+                /* === Hook === */
+                foreach (cot_getextplugins('files.upload.before_save') as $pl) {
+                    include $pl;
+                }
+                /* ===== */
+
                 if($id = $objFile->save()){
                     $file->name = $file->file_name;
                     $objFile->file_path = cot_files_path($source, $item, $objFile->file_id, $file->ext, $objFile->user_id);
@@ -604,7 +617,13 @@ class UploadController{
                     // /Extra fields
                     $file->editForm = $editForm;
 
-                }else{
+                    /* === Hook === */
+                    foreach (cot_getextplugins('files.upload.after_save') as $pl) {
+                        include $pl;
+                    }
+                    /* ===== */
+
+                } else {
                     unset($file->path);
                     unset($file->file_name);
                     $file->error = cot::$L['files_err_upload'];
@@ -623,6 +642,7 @@ class UploadController{
         }
         unset($file->path);
         unset($file->file_name);
+
         return $file;
     }
 
