@@ -143,13 +143,13 @@ class UploadController{
             }else{
                 $file['thumbnailUrl'] = cot::$cfg['mainurl'] . '/' . $row->icon;
             }
-            
-        /* === Hook - Part2 : Include === */
+	
+	    /* === Hook - Part2 : Include === */
 		foreach ($extp as $pl)
 		{
 			include $pl;
 		}
-		/* ===== */
+	    /* ===== */
         
             if (!$multi){
                 return $this->generate_response($file, $print_response);
