@@ -89,7 +89,11 @@ class UploadController{
         if (!$files){
             return $this->generate_response(array(), $print_response);
         }
-
+        
+	/* === Hook - Part1 : Set === */
+	$extp = cot_getextplugins('files.upload.row');
+	/* ===== */
+    
         foreach ($files as $row){
             $file = array(
                 'id'          => $row->file_id,
@@ -139,7 +143,14 @@ class UploadController{
             }else{
                 $file['thumbnailUrl'] = cot::$cfg['mainurl'] . '/' . $row->icon;
             }
-
+            
+        /* === Hook - Part2 : Include === */
+		foreach ($extp as $pl)
+		{
+			include $pl;
+		}
+		/* ===== */
+        
             if (!$multi){
                 return $this->generate_response($file, $print_response);
             }else{
