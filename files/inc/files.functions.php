@@ -1070,16 +1070,43 @@ function cot_files_display($source, $item, $field = '',  $tpl = 'files.display',
     $files = files_model_File::find($condition, $limit, 0, $order);
 
     $num = 1;
-    if($files){
+    if($files) {
+        $t->assign(array(
+            'FILES_COUNT'  => count($files),
+        ));
+
+        /* === Hook - Part1 : Set === */
+        $extp = cot_getextplugins('files.display.loop');
+        /* ===== */
+
         foreach ($files as $row){
             $t->assign(files_model_File::generateTags($row, 'FILES_ROW_'));
             $t->assign(array(
                 'FILES_ROW_NUM'      => $num,
             ));
+
+            /* === Hook - Part2 : Include === */
+            foreach ($extp as $pl) {
+                include $pl;
+            }
+            /* ===== */
+
             $t->parse('MAIN.FILES_ROW');
             $num++;
         }
+
+    } else {
+        $t->assign(array(
+            'FILES_COUNT'  => 0,
+        ));
     }
+
+    /* === Hook === */
+    foreach (cot_getextplugins('files.display.tags') as $pl) {
+        include $pl;
+    }
+    /* ===== */
+
     $t->parse();
 
     return $t->text();
