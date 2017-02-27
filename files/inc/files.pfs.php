@@ -4,7 +4,7 @@ defined('COT_CODE') or die('Wrong URL.');
 /**
  * PFS Controller class for the Files module
  *
- *  Edititing actions
+ *  Editing actions
  * 
  * @package Files
  * @subpackage pfs
@@ -345,19 +345,22 @@ class PfsController{
         if(!$c2) $c2 = cot_import('c2', 'P', 'ALP');
         $parser = cot_import('parser', 'G', 'ALP');	// custom parser
         if(!$parser) $parser = cot_import('parser', 'P', 'ALP');
-        $standalone = 0;                        // is in popup window
+        $standalone = 0;                            // is in popup window
         $isSFS = false;                             // is Site File Space
 
         $act = cot_import('act', 'P', 'ALP');
-        if(!$f){
+        if(!$f) {
             $f = 0;
             $folder = new files_model_Folder();
-            if($uid === 0){
+            if($uid === null) $uid = cot::$usr['id'];
+            if($uid === 0) {
                 $isSFS = true;
-            }elseif($uid === null){
-                $uid = $usr['id'];
+
+            } else {
+                $folder->user_id = $uid;
             }
-        }else{
+
+        } else {
             $folder = files_model_Folder::getById($f);
             if(!$folder) cot_die_message(404, TRUE);
             $folderData = $folder->toArray();
@@ -365,7 +368,7 @@ class PfsController{
             if($uid == 0) $isSFS = true;
         }
 
-        if( ($isSFS || $folder->user_id != $usr['id']) && ! $usr['isadmin']) cot_die_message(404, TRUE);
+        if( ($isSFS || $folder->user_id != cot::$usr['id']) && !$usr['isadmin']) cot_die_message(404, TRUE);
 
         $urlParams = array('m' => 'pfs');
         if(!$f && $uid != $usr['id']) $urlParams['uid'] = $uid;
@@ -377,53 +380,53 @@ class PfsController{
             if(!empty($parser)) $urlParams['parser'] = $parser;
         }
 
-        if ($act == 'save'){
+        if ($act == 'save') {
             $item = array();
             $item['ff_title'] = cot_import('ff_title', 'P', 'TXT');
             cot_check(empty($item['ff_title']), cot::$L['files_foldertitlemissing'], 'ff_title');
 
-            $item['ff_desc'] = cot_import('ff_desc', 'P', 'TXT');
-            $item['ff_album'] = cot_import('ff_album', 'P', 'BOL');
+            $item['ff_desc']   = cot_import('ff_desc', 'P', 'TXT');
+            $item['ff_album']  = cot_import('ff_album', 'P', 'BOL');
             $item['ff_public'] = cot_import('ff_public', 'P', 'BOL');
-            $item['user_id'] = ($isSFS) ? 0 : $uid;
+            $item['user_id']   = ($isSFS) ? 0 : $uid;
 
             $folder->setData($item);
 
-            if(!cot_error_found()){
+            if(!cot_error_found()) {
                 $redirUrl = $urlParams;
                 $redirUrl['a'] = 'editFolder';
-                if($f) $redirUrl['f'] = $f;
-                if ($f = $folder->save()){
+                if ($f) $redirUrl['f'] = $f;
+                if ($f = $folder->save()) {
                     cot_message(cot::$L['files_saved']);
                     $redirUrl['f'] = $f;
                 }
                 cot_redirect(cot_url('files', $redirUrl, '', true));
             }
-
         }
 
         $limits = cot_files_getLimits($uid);
 
         if($isSFS){
             $tmp = $urlParams;
-            if($uid != $usr['id']) $tmp['uid'] = $uid;
-            if($f){
+            if($uid != cot::$usr['id']) $tmp['uid'] = $uid;
+            if($f) {
                 $crumbs[] = array(cot_url('files', $tmp), cot::$L['SFS']);
                 $tmp['f'] = $folder->ff_id;
                 unset($tmp['uid']);
                 $crumbs[] = array(cot_url('files', $tmp), $folderData['ff_title']);
-            }else{
+
+            } else {
                 $crumbs[] = array(cot_url('files', $urlParams), cot::$L['SFS']);
             }
 
-        }else{
-            cot_block(($limits['maxfile'] > 0 && $limits['maxtotal'] > 0) || $usr['isadmin']);
+        } else {
+            cot_block(($limits['size_maxfile'] > 0 && $limits['size_maxtotal'] > 0) || $usr['isadmin']);
 
             $urr = cot_user_data($uid);
 
             $tmp = $urlParams;
-            if($uid != $usr['id']) $tmp['uid'] = $uid;
-            if($uid == $usr['id']){
+            if($uid != cot::$usr['id']) $tmp['uid'] = $uid;
+            if($uid == cot::$usr['id']) {
                 if($standalone == 0) $crumbs[] = array(cot_url('users', 'm=details'), cot::$L['files_mypage']);
                 $crumbs[] = array(cot_url('files', $tmp), cot::$L['Mypfs']);
                 if($f){
@@ -431,24 +434,25 @@ class PfsController{
                     $crumbs[] = array(cot_url('files', $tmp), $folderData['ff_title']);
                 }
                 cot::$out['subtitle'] = cot::$L['Mypfs'];
-            }else{
+
+            } else {
                 $crumbs[] = array(cot_url('users'), cot::$L['Users']);
                 $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
                     cot_user_full_name($urr));
                 $crumbs[] = array(cot_url('files', $tmp), cot::$L['Files']);
-                if($f){
+                if($f) {
                     $crumbs[] = array(cot_url('files', array('m'=>'pfs', 'f' => $folder->ff_id)), $folderData['ff_title']);
                 }
                 cot::$out['subtitle'] = cot::$L['Files'].' - '.$urr['user_name'];
             }
         }
 
-        if(!$f){
+        if(!$f) {
             $isAlbum = cot_import('ff_album', 'P', 'BOL');
             $crumbs[] = $title = ($isAlbum) ? cot::$L['files_newalbum'] : cot::$L['files_newfolder'];
             cot::$out['subtitle'] = $title.' - '.cot::$out['subtitle'];
 
-        }else{
+        } else {
             $isAlbum = cot_import('ff_album', 'P', 'BOL');
             $crumbs[] = cot::$L['Edit'];
             $title = $folderData['ff_title'].': '.cot::$L['Edit'];
@@ -462,9 +466,9 @@ class PfsController{
 
         $folderFormHidden = cot_inputbox('hidden', 'uid', $uid).cot_inputbox('hidden', 'f', $f).
             cot_inputbox('hidden', 'act', 'save');
-        if($f > 0){
+        if($f > 0) {
             $t->assign(files_model_Folder::generateTags($folder, 'FOLDER_', $urlParams));
-        }else{
+        } else {
             $folder->ff_public = 1;
             $folder->ff_album = 1;
         }
@@ -511,7 +515,7 @@ class PfsController{
         foreach($cot_extensions as $row){
             $descriptions[$row[0]]  = $row[1];
         }
-        foreach($allowedExts as $ext){
+        foreach($allowedExts as $ext) {
             $t->assign(array(
                 'ALLOWED_ROW_ICON_URL' => files_model_File::typeIcon($ext),
                 'ALLOWED_ROW_EXT' => $ext,
@@ -539,7 +543,8 @@ class PfsController{
                 $pfs_code_addfile = "' + gfile + '";
                 $pfs_code_addthumb = "' + gthumb +'";
                 $pfs_code_addpix = "' + gfile + '";
-            }else{
+
+            } else {
                 $pfs_code_addfile = cot_rc('files_pfs_code_addfile');
                 $pfs_code_addthumb = cot_rc('files_pfs_code_addthumb');
                 $pfs_code_addpix = cot_rc('files_pfs_code_addpix');
@@ -572,16 +577,14 @@ class PfsController{
             $t->parse('MAIN.STANDALONE_FOOTER');
 
             /* === Hook === */
-            foreach (cot_getextplugins('files.pfs.standalone') as $pl)
-            {
+            foreach (cot_getextplugins('files.pfs.standalone') as $pl) {
                 include $pl;
             }
             /* ===== */
 
-        }else{
+        } else {
             /* === Hook === */
-            foreach (cot_getextplugins('files.pfs.tags') as $pl)
-            {
+            foreach (cot_getextplugins('files.pfs.tags') as $pl) {
                 include $pl;
             }
             /* ===== */
