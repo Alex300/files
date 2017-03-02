@@ -527,6 +527,62 @@ function cot_files_path($source, $item, $id, $ext = '', $uid = 0){
 }
 
 /**
+ * Strips all unsafe characters from file base name and converts it to latin
+ *
+ * Like cot_safename() but don't use cot_unique in file name. So it can be used in chunks file uploading
+ *
+ * @param string $basename File base name
+ * @param bool $underscore Convert spaces to underscores
+ * @param string $postfix Postfix appended to filename
+ * @return string
+ *
+ * @see cot_safename()
+ */
+function cot_files_safeName($basename, $underscore = true, $postfix = '')
+{
+    global $lang, $cot_translit;
+
+    if(!$cot_translit && $lang != 'en' && file_exists(cot_langfile('translit', 'core'))) {
+        require_once cot_langfile('translit','core');
+    }
+
+    $fname = mb_substr($basename, 0, mb_strrpos($basename, '.'));
+    $ext = mb_substr($basename, mb_strrpos($basename, '.') + 1);
+    if($lang != 'en' && is_array($cot_translit)) {
+        $fname = strtr($fname, $cot_translit);
+    }
+    if($underscore) $fname = str_replace(' ', '_', $fname);
+    $fname = str_replace('..', '.', $fname);
+    $fname = preg_replace('#[^a-zA-Z0-9\-_\.\ \+]#', '', $fname);
+//    if(empty($safename) || $safename != $fname) $fname = $safename.cot_unique();
+    return $fname . $postfix . '.' . mb_strtolower($ext);
+}
+
+/**
+ * Temporary folder to file upload
+ * @param bool $create Create folder if not exists?
+ * @return string
+ */
+function cot_files_tempDir($create = true)
+{
+    $tmpDir = sys_get_temp_dir();
+
+    if(is_writable($tmpDir)) {
+        $uplDir = $tmpDir.DIRECTORY_SEPARATOR.'files_'.mb_substr(md5(cot::$cfg['secret_key']), 10).'_upload';
+        if(!$create) return $uplDir;
+
+        if(!file_exists($uplDir)) mkdir($uplDir, cot::$cfg['dir_perms'], true);
+        if(is_writable($uplDir)) return $uplDir;
+    }
+
+    // Fall back
+    $uplDir = cot::$cfg['files']['folder'] .DIRECTORY_SEPARATOR. '/' . mb_substr(md5(cot::$cfg['secret_key']), 10).'_upload';
+    if($create && !file_exists($uplDir)) mkdir($uplDir, cot::$cfg['dir_perms'], true);
+
+    return $uplDir;
+}
+
+/**
  * Returns attachment thumbnail path. Generates the thumbnail first if
  * it does not exist.
  * @param  mixed   $id     File ID or instance of files_model_File.
@@ -849,12 +905,13 @@ function cot_files_watermark($source, $target, $watermark = '', $jpegquality = 8
 }
 
 /**
+ * Garbage collect
  * Сборка мусора от несохраненных форм
  */
 function cot_files_formGarbageCollect(){
 
     $yesterday = (int)(cot::$sys['now'] - 60 * 60 * 24);
-    if($yesterday < 100) return 0;  // мало ли ))
+    if($yesterday < 100) return 0;  // Just in case
 
     //$dateTo = date('Y-m-d H:i:s',  );   // До вчерашнего дня
     $condition = array(
@@ -873,11 +930,29 @@ function cot_files_formGarbageCollect(){
         }
     }
 
+    $tmpDir = cot_files_tempDir(false);
+    if (is_dir($tmpDir)) {
+        $objects = scandir($tmpDir);
+        $yesterday2 = (int)(cot::$sys['now'] - 60 * 60 * 24);
+        if($yesterday2 < 100) return 0;
+        foreach ($objects as $file) {
+            if ($file != "." && $file != "..") {
+                if (filetype($tmpDir.DIRECTORY_SEPARATOR.$file) != "dir") {
+                    // Delete old temporary files
+                    $currentModified = filectime($tmpDir.DIRECTORY_SEPARATOR.$file);
+                    if($currentModified < $yesterday2) {
+                        @unlink($tmpDir.DIRECTORY_SEPARATOR.$file);
+                    }
+                }
+            }
+        }
+    }
+
     return $cnt;
 }
 
 /**
- * workaround for splitting basename whith beginning utf8 multibyte char
+ * Workaround for splitting basename whith beginning utf8 multibyte char
  */
 function mb_basename($filepath, $suffix = NULL)
 {

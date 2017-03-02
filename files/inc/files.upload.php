@@ -31,17 +31,21 @@ class UploadController{
             case 'HEAD':
                 $this->head();
                 break;
+
             case 'GET':
                 $this->get();
                 break;
+
             case 'PATCH':
             case 'PUT':
             case 'POST':
                 $this->post();
                 break;
+
             case 'DELETE':
                 $this->delete();
                 break;
+
             default:
                 header('HTTP/1.1 405 Method Not Allowed');
         }
@@ -79,9 +83,8 @@ class UploadController{
         {
             $multi = true;
             $files = files_model_File::find($condition, 0, 0, 'file_order ASC');
-        }
-        else
-        {
+
+        } else {
             $multi = false;
             $condition[] = array('file_name', $filename);
             $files = files_model_File::find($condition, 1);
@@ -142,7 +145,8 @@ class UploadController{
 
             if (!$multi){
                 return $this->generate_response($file, $print_response);
-            }else{
+
+            } else {
                 $res['files'][] = $file;
             }
         }
@@ -187,6 +191,7 @@ class UploadController{
                     $content_range
                 );
             }
+
         } else {
             // param_name is a single object identifier like "file",
             // $_FILES is a one-dimensional array:
@@ -293,17 +298,18 @@ class UploadController{
         return $content;
     }
 
-    protected function get_file_name($file_path, $name, $size, $type, $error,
-                                     $index, $content_range) {
-        return $this->get_unique_filename($this->trim_file_name($file_path, $name, $size, $type, $error,
-                $index, $content_range), $content_range
-        );
+    protected function get_file_name($file_path, $name, $source, $item, $type, $content_range)
+    {
+        $tmp = cot_files_safeName($source.'_'.$item.'_'.$this->trim_file_name($file_path, $name, $type));
+
+        return $this->get_unique_filename($tmp, $content_range);
     }
 
     protected function get_file_size($file_path, $clear_stat_cache = false) {
         if ($clear_stat_cache) {
             if (version_compare(PHP_VERSION, '5.3.0') >= 0) {
                 clearstatcache(true, $file_path);
+
             } else {
                 clearstatcache();
             }
@@ -311,24 +317,22 @@ class UploadController{
         return $this->fix_integer_overflow(filesize($file_path));
     }
 
-    protected function get_unique_filename($name, $content_range) {
-
-        global $source, $item;
-
+    protected function get_unique_filename($name, $content_range)
+    {
         // Keep an existing filename if this is part of a chunked upload:
         $uploaded_bytes = $this->fix_integer_overflow(intval($content_range[1]));
-        while(is_file($this->get_upload_path($source, $item).'/'.$name)) {
-            if ($uploaded_bytes === $this->get_file_size( $this->get_upload_path($source, $item).'/'.$name)) {
+        while(is_file(cot_files_tempDir().DIRECTORY_SEPARATOR.$name)) {
+            if ($uploaded_bytes === $this->get_file_size( cot_files_tempDir().DIRECTORY_SEPARATOR.$name)) {
                 break;
             }
             $name = $this->upcount_name($name);
         }
+
         return $name;
     }
 
     protected function get_upload_path($source, $item) {
         return cot::$cfg['files']['folder'] . '/' . $source . '/' . $item;
-
     }
 
     protected function get_server_var($id) {
@@ -475,7 +479,7 @@ class UploadController{
 
         $file = new stdClass();
         $file->file_name = trim(mb_basename(stripslashes($name)));
-        $file->name = $this->get_file_name($uploaded_file, $name, $size, $type, $error,  $index, $content_range);
+        $file->name = $this->get_file_name($uploaded_file, $name, $source, $item, $type, $content_range);
         $file->size = $this->fix_integer_overflow(intval($size));
         $file->type = $type;
 
@@ -486,11 +490,11 @@ class UploadController{
 
             $this->handle_form_data($file, $index);
 
-            $upload_dir = $this->get_upload_path($source, $item);
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, cot::$cfg['dir_perms'], true);
-            }
+            $upload_dir = cot_files_tempDir();
+            if (!is_dir($upload_dir)) mkdir($upload_dir, cot::$cfg['dir_perms'], true);
+
             $file_path = $upload_dir. '/'.$file->name;
+
             $append_file = $content_range && is_file($file_path) && $file->size > $this->get_file_size($file_path);
             if ($uploaded_file && is_uploaded_file($uploaded_file)) {
                 // multipart/formdata uploads (POST method uploads)
@@ -503,6 +507,7 @@ class UploadController{
                 } else {
                     move_uploaded_file($uploaded_file, $file_path);
                 }
+
             } else {
                 // Non-multipart uploads (PUT method support)
                 file_put_contents(
@@ -697,42 +702,48 @@ class UploadController{
      *  Remove path information and dots around the filename, to prevent uploading
      *  into different directories or replacing hidden system files.
      *  Also remove control characters and spaces (\x00..\x20) around the filename:
+     *
      * @param $file_path
      * @param $name
-     * @param $size
      * @param $type
-     * @param $error
-     * @param $index
-     * @param $content_range
+     *
      * @return mixed|string
      */
-    protected function trim_file_name($file_path, $name, $size, $type, $error,
-                                      $index, $content_range) {
+    protected function trim_file_name($file_path, $name, $type)
+    {
         // Remove path information and dots around the filename, to prevent uploading
         // into different directories or replacing hidden system files.
         // Also remove control characters and spaces (\x00..\x20) around the filename:
         $name = trim(basename(stripslashes($name)), ".\x00..\x20");
+
+        $valid_exts = explode(',', cot::$cfg['files']['exts']);
+        $valid_exts = array_map('trim', $valid_exts);
+        if(!in_array('php', $valid_exts)) str_replace('.php.', '.pp.', $name);
+
         // Use a timestamp for empty filenames:
-        if (!$name) {
-            $name = str_replace('.', '-', microtime(true));
-        }
+        if (!$name) $name = str_replace('.', '-', microtime(true));
+
         // Add missing file extension for known image types:
         if (strpos($name, '.') === false &&
             preg_match('/^image\/(gif|jpe?g|png)/', $type, $matches)) {
             $name .= '.'.$matches[1];
         }
+
         if (function_exists('exif_imagetype')) {
             switch(@exif_imagetype($file_path)){
                 case IMAGETYPE_JPEG:
                     $extensions = array('jpg', 'jpeg');
                     break;
+
                 case IMAGETYPE_PNG:
                     $extensions = array('png');
                     break;
+
                 case IMAGETYPE_GIF:
                     $extensions = array('gif');
                     break;
             }
+
             // Adjust incorrect image file extensions:
             if (!empty($extensions)) {
                 $parts = explode('.', $name);
@@ -744,6 +755,7 @@ class UploadController{
                 }
             }
         }
+
         return $name;
     }
 
