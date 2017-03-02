@@ -270,12 +270,13 @@ class FilesController{
      * @todo все отправить в UploadController::handle_image_file()
      * @see UploadController::handle_image_file()
      */
-    public function replaceAction(){
+    public function replaceAction()
+    {
         $id = cot_import('id', 'P', 'INT');
 
         $response = array( 'error' => '');
 
-        if(!$id){
+        if(!$id) {
             cot_sendheaders('application/json', cot_files_ajax_get_status(404));
             exit;
         }
@@ -291,12 +292,32 @@ class FilesController{
 
         cot_sendheaders('application/json', cot_files_ajax_get_status(200));
 
-        if (cot_files_checkFile($file->file_ext) && !cot_error_found()){
+        //if (cot_files_checkFile($file->file_ext) && !cot_error_found()){
+        if (cot_files_isExtensionAllowed($file->file_ext) && !cot_error_found()){
             if (!cot_auth('files', 'a', 'A') && $file->user_id != cot::$usr['id']){
                 $response['error'] = cot::$L['files_err_perms'];
                 echo json_encode($response);
                 exit;
             }
+
+            if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+                $uploaded_file = $_FILES['file']['tmp_name'];
+                if ($uploaded_file && is_uploaded_file($uploaded_file)) {
+                    $valid_exts = explode(',', cot::$cfg['files']['exts']);
+                    $valid_exts = array_map('trim', $valid_exts);
+
+                    $handle = fopen($uploaded_file, "rb");
+                    $tmp = fread ($handle , 10);
+                    fclose($handle);
+                    if(!in_array('php', $valid_exts) && (mb_stripos(trim($tmp), '<?php') === 0))  {
+                        $response['error'] = cot::$L['files_err_type'];
+                        echo json_encode($response);
+                        exit;
+                    }
+
+                }
+            }
+
             $path = $file->file_path;
             $file->remove_thumbs();
             if(file_exists($path)){
@@ -409,11 +430,12 @@ class FilesController{
             }
             return $input;
 
-        }else{
+        } else {
             $input = fopen('php://input', 'r');
             $temp = '';
-            while (!feof($input))
+            while (!feof($input)) {
                 $temp .= fread($input, att_get_filesize(''));
+            }
             $temp = tmpfile();
             $size = stream_copy_to_stream($input, $temp);
             fclose($input);
@@ -421,7 +443,7 @@ class FilesController{
             if (!$size){
                 cot_error(cot::$L['files_err_upload']);
 
-            }else{
+            } else {
                 if ($size > $limits['size_maxfile']){
                     cot_error(cot::$L['files_err_toobig']);
                 }
@@ -447,12 +469,11 @@ class FilesController{
         if (cot_error_found()){
             return false;
         }
-        if ($_SERVER['REQUEST_METHOD'] == 'POST')
-        {
+
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             return move_uploaded_file($_FILES[$input]['tmp_name'], $path);
-        }
-        else
-        {
+
+        } else {
             $target = fopen($path, 'w');
             if (!$target)
             {

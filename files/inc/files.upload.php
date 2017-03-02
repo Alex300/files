@@ -775,7 +775,7 @@ class UploadController{
         }
 
         $file_ext = cot_files_get_ext($file->name);
-        if (!cot_files_checkFile($file_ext)) {
+        if (!cot_files_isExtensionAllowed($file_ext)) {
             $file->error = cot::$L['files_err_type'];
             return false;
         }
@@ -785,9 +785,22 @@ class UploadController{
         ));
         if ($uploaded_file && is_uploaded_file($uploaded_file)) {
             $file_size = $this->get_file_size($uploaded_file);
+
+            $valid_exts = explode(',', cot::$cfg['files']['exts']);
+            $valid_exts = array_map('trim', $valid_exts);
+
+            $handle = fopen($uploaded_file, "rb");
+            $tmp = fread ($handle , 10);
+            fclose($handle);
+            if(!in_array('php', $valid_exts) && (mb_stripos(trim($tmp), '<?php') === 0))  {
+                $file->error = cot::$L['files_err_type'];
+                return false;
+            }
+
         } else {
             $file_size = $content_length;
         }
+
         $limits = cot_files_getLimits(cot::$usr['id'], $source, $item);
         if ($file_size > $limits['size_maxfile'] || $file->size > $limits['size_maxfile']) {
             $file->error = cot::$L['files_err_toobig'];

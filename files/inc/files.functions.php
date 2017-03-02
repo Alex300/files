@@ -111,18 +111,40 @@ function cot_files_formGroupClass($name){
  * Checks if file extension is allowed for upload. Returns error message or empty string.
  * Emits error messages via cot_error().
  *
+ * @param  string  $file  Full file name
+ * @return boolean        true if all checks passed, false if something was wrong
+ */
+function cot_files_checkFile($file)
+{
+    $file_ext = cot_files_get_ext($file);
+    if(!cot_files_isExtensionAllowed($file_ext)) return false;
+
+    $valid_exts = explode(',', cot::$cfg['files']['exts']);
+    $valid_exts = array_map('trim', $valid_exts);
+
+    $handle = fopen($file, "rb");
+    $tmp = fread ( $handle , 10 );
+    fclose($handle);
+    if(!in_array('php', $valid_exts) && mb_stripos(trim($tmp), '<?php' === 0))  return false;
+
+    return true;
+}
+
+/**
+ * Checks if file extension is allowed for upload. Returns error message or empty string.
+ * Emits error messages via cot_error().
+ *
  * @param  string  $ext   File extension
  * @return boolean        true if all checks passed, false if something was wrong
  */
-function cot_files_checkFile($ext)
+function cot_files_isExtensionAllowed($ext)
 {
     $valid_exts = explode(',', cot::$cfg['files']['exts']);
     $valid_exts = array_map('trim', $valid_exts);
-    if (empty($ext) || !in_array($ext, $valid_exts))
-    {
-        //cot_error('att_err_type');
+    if (empty($ext) || !in_array($ext, $valid_exts)) {
         return false;
     }
+
     return true;
 }
 
