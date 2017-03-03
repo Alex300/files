@@ -566,8 +566,7 @@ function cot_files_safeName($basename, $underscore = true, $postfix = '')
 function cot_files_tempDir($create = true)
 {
     $tmpDir = sys_get_temp_dir();
-
-    if(is_writable($tmpDir)) {
+    if(!empty($tmpDir) && is_writable($tmpDir)) {
         $uplDir = $tmpDir.DIRECTORY_SEPARATOR.'files_'.mb_substr(md5(cot::$cfg['secret_key']), 10).'_upload';
         if(!$create) return $uplDir;
 
