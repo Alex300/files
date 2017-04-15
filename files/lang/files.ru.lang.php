@@ -50,12 +50,12 @@ $L['files_youhavenotfolders'] = 'Вы пока не добавили ни одн
 /**
  * Admin
  */
-$L['adm_maxsizesingle'] = $L['files_maxsizesingle'] = 'Максимальный размер одного файла в разделе &laquo;'.$L['PFS'].
-        '&raquo; ('.$L['bytes'].'),<br /> 0 - неограничено, -1 - отключено';
-$L['adm_maxsizeallpfs'] = $L['files_maxsizeallpfs'] = 'Максимальный размер всех файлов в разделе &laquo;'.$L['PFS'].
-        '&raquo; ('.$L['bytes'].'),<br /> 0 - неограничено, -1 - отключено';
-$L['files_allpfs'] = 'Разделы &laquo;'.$L['PFS'].'&raquo; всех пользователей';
-$L['files_allpfs_help'] = 'Разделы &laquo;'.$L['PFS'].'&raquo; всех пользователей';
+$L['adm_maxsizesingle'] = $L['files_maxsizesingle'] = 'Максимальный размер одного файла в разделе «'.$L['PFS'].
+        '» ('.$L['bytes'].'),<br /> 0 - неограничено, -1 - отключено';
+$L['adm_maxsizeallpfs'] = $L['files_maxsizeallpfs'] = 'Максимальный размер всех файлов в разделе «'.$L['PFS'].
+        '» ('.$L['bytes'].'),<br /> 0 - неограничено, -1 - отключено';
+$L['files_allpfs'] = 'Разделы «'.$L['PFS'].'» всех пользователей';
+$L['files_allpfs_help'] = 'Разделы «'.$L['PFS'].'» всех пользователей';
 $L['files_cleanup'] = 'Уборка мусора';
 $L['files_cleanup_conf'] = 'Это удалит все файлы, прикрепленные к более не существующим сообщениям. Продолжить?';
 $L['files_cleanup_desc'] = 'Удалит вложения к несуществующим более страницам и постам на форуме, если по какой-то
