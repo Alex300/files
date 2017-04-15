@@ -195,7 +195,7 @@ class MainController{
 
             $res = cot::$db->query("SELECT file_id FROM $db_files $condition")->fetchAll(PDO::FETCH_COLUMN);
             if($res){
-                $files = files_model_File::find(array(array('file_id', $res)));
+                $files = files_model_File::findByCondition(array(array('file_id', $res)));
                 if($files){
                     foreach($files as $fileRow){
                         $count++;
@@ -214,7 +214,7 @@ class MainController{
 
             $res = cot::$db->query("SELECT file_id FROM $db_files $condition")->fetchAll(PDO::FETCH_COLUMN);
             if($res){
-                $files = files_model_File::find(array(array('file_id', $res)));
+                $files = files_model_File::findByCondition(array(array('file_id', $res)));
                 if($files){
                     foreach($files as $fileRow){
                         $count++;

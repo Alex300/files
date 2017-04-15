@@ -9,9 +9,9 @@ if(empty($GLOBALS['db_files_folders'])) {
 /**
  * Модель File Folder
  *
- * @method static files_model_Folder getById($pk);
+ * @method static files_model_Folder getById($pk, $staticCache = true);
  * @method static files_model_Folder fetchOne($conditions = array(), $order = '')
- * @method static files_model_Folder[] find($conditions = array(), $limit = 0, $offset = 0, $order = '');
+ * @method static files_model_Folder[] findByCondition($conditions = array(), $limit = 0, $offset = 0, $order = '')
  *
  * @property int    $ff_id
  * @property int    $user_id     id пользователя - владельца или 0 - если это site file space
@@ -73,7 +73,7 @@ class files_model_Folder extends Som_Model_ActiveRecord
         $source = $isSFS ? 'sfs' : 'pfs';
 
         // Remove all files
-        $files = files_model_File::find(array(
+        $files = files_model_File::findByCondition(array(
             array('file_source', $source),
             array('file_item', $this->_data['ff_id'])
         ));

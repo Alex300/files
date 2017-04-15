@@ -203,7 +203,7 @@ function cot_files_get($source, $item, $field = '', $column = '', $number = 'fir
             array('file_item', $item),
         );
         if($field != '_all_') $cond[] = array('file_field', $field);
-        $file = files_model_File::find($cond, 1, $offset, $order_by);
+        $file = files_model_File::findByCondition($cond, 1, $offset, $order_by);
         if(!$file) return null;
         $a_cache[$source][$item][$number] = current($file);
 
@@ -459,7 +459,7 @@ function cot_files_linkFiles($source, $item){
             array('file_unikey', $unikey)
         );
 
-        $files = files_model_File::find($condition);
+        $files = files_model_File::findByCondition($condition);
 
         if($files){
             foreach($files as $fileRow){
@@ -559,14 +559,14 @@ function cot_files_safeName($basename, $underscore = true, $postfix = '')
 }
 
 /**
- * Temporary folder to file upload
+ * Temporary folder for file upload
  * @param bool $create Create folder if not exists?
  * @return string
  */
 function cot_files_tempDir($create = true)
 {
     $tmpDir = sys_get_temp_dir();
-    if(!empty($tmpDir) && is_writable($tmpDir)) {
+    if(!empty($tmpDir) && @is_writable($tmpDir)) {
         $uplDir = $tmpDir.DIRECTORY_SEPARATOR.'files_'.mb_substr(md5(cot::$cfg['secret_key']), 10).'_upload';
         if(!$create) return $uplDir;
 
@@ -921,7 +921,7 @@ function cot_files_formGarbageCollect(){
 
     $cnt = 0;
 
-    $files = files_model_File::find($condition);
+    $files = files_model_File::findByCondition($condition);
     if($files){
         foreach($files as $fileRow){
             $fileRow->delete();
@@ -1163,7 +1163,7 @@ function cot_files_display($source, $item, $field = '',  $tpl = 'files.display',
     }
     $condition[] = array('file_item', $item);
 
-    $files = files_model_File::find($condition, $limit, 0, $order);
+    $files = files_model_File::findByCondition($condition, $limit, 0, $order);
 
     $num = 1;
     if($files) {

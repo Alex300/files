@@ -26,7 +26,7 @@ if(!empty($sqlusers)){
     reset($sqlusers);
 
     if(!empty($filesIds)){
-        $tmp = files_model_File::find(array(array('file_id', $filesIds)));
+        $tmp = files_model_File::findByCondition(array(array('file_id', $filesIds)));
         $files = array();
         if($tmp){
             foreach($tmp as $fileRow){

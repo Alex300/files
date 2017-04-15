@@ -66,7 +66,7 @@ class PfsController{
             if(!$folder) cot_die_message(404);
             $uid = (int)$folder->user_id;
         }else{
-            $folders = files_model_Folder::find(array(array('user_id', $uid)), $perPage, $df, array(array('ff_title', 'ASC')));
+            $folders = files_model_Folder::findByCondition(array(array('user_id', $uid)), $perPage, $df, array(array('ff_title', 'ASC')));
             $folders_count = files_model_Folder::count(array(array('user_id', $uid)));
             $onPageFoldersCount = count($folders);
         }

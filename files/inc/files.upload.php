@@ -82,12 +82,12 @@ class UploadController{
         if (is_null($filename) || empty($filename))
         {
             $multi = true;
-            $files = files_model_File::find($condition, 0, 0, 'file_order ASC');
+            $files = files_model_File::findByCondition($condition, 0, 0, 'file_order ASC');
 
         } else {
             $multi = false;
             $condition[] = array('file_name', $filename);
-            $files = files_model_File::find($condition, 1);
+            $files = files_model_File::findByCondition($condition, 1);
         }
         if (!$files){
             return $this->generate_response(array(), $print_response);

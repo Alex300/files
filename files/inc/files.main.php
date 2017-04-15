@@ -72,7 +72,7 @@ class MainController{
             if(!$usr['isadmin'] && $uid != $usr['id']){
                 $foldersCond[] = array('ff_public', 1);
             }
-            $folders = files_model_Folder::find($foldersCond, $perPage, $df, array(array('ff_title', 'ASC')));
+            $folders = files_model_Folder::findByCondition($foldersCond, $perPage, $df, array(array('ff_title', 'ASC')));
             $folders_count = files_model_Folder::count($foldersCond);
             $onPageFoldersCount = count($folders);
         }
@@ -153,7 +153,7 @@ class MainController{
         }else{
             $files_count = $folder->ff_count;
         }
-        $files = files_model_File::find($filesCond, 0, 0, 'file_order ASC');
+        $files = files_model_File::findByCondition($filesCond, 0, 0, 'file_order ASC');
 
         // Права на редактирование
         $canEdit = 0;
@@ -235,7 +235,7 @@ class MainController{
                         array('file_item', $folderRow->ff_id),
                     );
                     if($type == 'image') $filesRowCond[] = array('file_img', 1);
-                    $folderFiles = files_model_File::find($filesRowCond, $fLimit, 0, 'file_order ASC');
+                    $folderFiles = files_model_File::findByCondition($filesRowCond, $fLimit, 0, 'file_order ASC');
                     if($folderFiles){
                         $jj = 0;
                         foreach($folderFiles as $fileRow){

@@ -20,7 +20,7 @@ $condition = array(
     array('file_source', 'pfs'),
     array('user_id', $id)
 );
-$items = files_model_File::find($condition);
+$items = files_model_File::findByCondition($condition);
 if(!empty($items)) {
     foreach($items as $itemRow) {
         $itemRow->delete();
@@ -33,7 +33,7 @@ if(!empty($items)) {
 $condition = array(
     array('user_id', $id)
 );
-$items = files_model_Folder::find($condition);
+$items = files_model_Folder::findByCondition($condition);
 if(!empty($items)) {
     foreach($items as $itemRow) {
         $itemRow->delete();
@@ -47,7 +47,7 @@ $condition = array(
     array('file_source', 'user'),
     array('file_item', $id)
 );
-$items = files_model_File::find($condition);
+$items = files_model_File::findByCondition($condition);
 if(!empty($items)) {
     foreach($items as $itemRow) {
         $itemRow->delete();

@@ -23,7 +23,7 @@ if (cot_auth('files', 'a', 'W')){
         array('file_source', 'forums'),
         array('file_item', $p),
     );
-    $files = files_model_File::find($filesCond);
+    $files = files_model_File::findByCondition($filesCond);
     if($files){
         foreach($files as $fileRow) $fileRow->delete();
     }

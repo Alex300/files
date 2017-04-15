@@ -9,9 +9,9 @@ if(empty($GLOBALS['db_files'])) {
 /**
  * Модель File
  *
- * @method static files_model_File getById($pk);
+ * @method static files_model_File getById($pk, $staticCache = true);
  * @method static files_model_File fetchOne($conditions = array(), $order = '')
- * @method static files_model_File[] find($conditions = array(), $limit = 0, $offset = 0, $order = '');
+ * @method static files_model_File[] findByCondition($conditions = array(), $limit = 0, $offset = 0, $order = '')
  *
  * @property int    $file_id
  * @property int    $user_id        id пользователя - владельца или 0 - если это site file space

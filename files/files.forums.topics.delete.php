@@ -27,7 +27,7 @@ if (cot_auth('files', 'a', 'W') && cot::$usr['isadmin'] && !empty($q) && $a == '
             array('file_source', 'forums'),
             array('file_item', $files_post),
         );
-        $files = files_model_File::find($filesCond);
+        $files = files_model_File::findByCondition($filesCond);
         if($files){
             foreach($files as $fileRow) $fileRow->delete();
         }
