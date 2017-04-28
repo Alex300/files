@@ -4,13 +4,9 @@
  *
  * @package Files
  * @author Cotonti Team
- * @copyright (c) Cotonti Team 2008-2014
+ * @author Kalnov Alexey    <kalnovalexey@yandex.ru>
  */
 defined('COT_CODE') or die('Wrong URL.');
-
-// Автозагрузка
-require_once './lib/Loader.php';
-Loader::register();
 
 // Additional API requirements
 require_once cot_incfile('uploads');
@@ -43,17 +39,18 @@ function cot_files_ajax_die($code, $message = null, $response = null)
 {
     $status = cot_files_ajax_get_status($code);
     cot_sendheaders('application/json', $status);
-    if (is_null($message))
-    {
+    if (is_null($message)) {
         $message = substr($status, strpos($status, ' ') + 1);
     }
-    if (is_null($response))
+
+    if (is_null($response)) {
         echo json_encode($message);
-    else
-    {
+
+    } else {
         $response['message'] = $message;
         echo json_encode($response);
     }
+
     exit;
 }
 
@@ -87,10 +84,12 @@ function cot_files_ajax_get_status($code)
         501 => '501 Not Implemented',
         503 => '503 Service Unavailable',
     );
-    if (isset($msg_status[$code]))
+
+    if (isset($msg_status[$code])) {
         return $msg_status[$code];
-    else
-        return "$code Unknown";
+    }
+
+    return "$code Unknown";
 }
 
 /**
@@ -98,10 +97,9 @@ function cot_files_ajax_get_status($code)
  * @param string $name имя элемента
  * @return string
  */
-function cot_files_formGroupClass($name){
-    global $cfg;
-
-    $error = $cfg['msg_separate'] ? cot_implode_messages($name, 'error') : '';
+function cot_files_formGroupClass($name)
+{
+    $error = cot::$cfg['msg_separate'] ? cot_implode_messages($name, 'error') : '';
     if($error) return 'has-error has-feedback';
 
     return '';
@@ -156,7 +154,8 @@ function cot_files_isExtensionAllowed($ext)
  * @param  string $type     Attachment type filter: 'files', 'images'. By default includes all attachments.
  * @return integer          Number of attachments
  */
-function cot_files_count($source, $item, $field = '', $type = 'all'){
+function cot_files_count($source, $item, $field = '', $type = 'all')
+{
 
     static $a_cache = array();
 
@@ -188,8 +187,8 @@ function cot_files_count($source, $item, $field = '', $type = 'all'){
  * @param  string $number   Attachment number within item, or one of these values: 'first', 'rand' or 'last'. Defines which image is selected.
  * @return mixed            Scalar column value, files_model_File object or NULL if no attachments found.
  */
-function cot_files_get($source, $item, $field = '', $column = '', $number = 'first'){
-
+function cot_files_get($source, $item, $field = '', $column = '', $number = 'first')
+{
     static $a_cache;
     if (!isset($a_cache[$source][$item][$number]))
     {
@@ -233,14 +232,17 @@ function cot_files_get_ext($filename)
 
 /**
  * Gets upload space limits.
- * @param int $uid
+ *
+ * @param int $uid User ID. 0 - use current user
  * @param string $source
  * @param int $item
  * @param string $field
  * @return array
+ * @throws Exception
  */
-function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = ''){
-    global $db_attach, $usr, $db, $cfg, $db_groups, $db_groups_users, $db_files;
+function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = '')
+{
+    if(!is_null($uid)) $uid = (int)$uid;
 
     $limits = array(
         'size_maxfile' => 0,
@@ -252,11 +254,33 @@ function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = ''){
         'count_left'=> 0,
     );
 
-    if(!$uid) $uid = cot::$usr['id'];
-    if(!empty($uid)) $urr = cot_user_data($uid);
+    // Use current user
+    if($uid <= 0) {
+        if(cot::$usr['id'] == 0) {
+            // Default guest user data
+            $urr = array(
+                'user_id' => 0,
+                'user_maingrp' => COT_GROUP_GUESTS
+            );
 
-    if($source == 'sfs'){
+        } else {
+            // Get authorized user data
+            $uid = cot::$usr['id'];
+            $urr = cot_user_data($uid);
+        }
 
+    } else {
+        // Get specified user
+        $urr = cot_user_data($uid);
+        if(!$urr) {
+            throw new Exception('User not found');
+            //cot_diefatal('User not found');
+        }
+    }
+
+    if (isset($urr['auth'])) unset($urr['auth']);
+
+    if($source == 'sfs') {
         // Site file space
         if(cot_auth('files', 'a', 'A')){
             $limits['size_maxfile']  = 100000000000000000;
@@ -269,21 +293,29 @@ function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = ''){
 
             return $limits;
         }
-
     }
 
-    $tmp = cot::$db->query("SELECT MAX(g.grp_pfs_maxfile) AS size_maxfile,  MAX(g.grp_pfs_maxtotal) AS size_maxtotal,
+    $sql_condGroup = "g.grp_id={$urr['user_maingrp']}";
+    if($urr['user_id'] > 0) {
+        $sql_condGroup = "g.grp_id IN (SELECT gru_groupid FROM ".cot::$db->groups_users." WHERE gru_userid = {$urr['user_id']})";
+    }
+
+    $sql = "SELECT MAX(g.grp_pfs_maxfile) AS size_maxfile,  MAX(g.grp_pfs_maxtotal) AS size_maxtotal,
             SUM(f.file_size) as size_used, MAX(g.grp_files_perpost) as count_max
-          FROM $db_groups as g
-          LEFT JOIN $db_files as f ON f.file_source!='sfs' AND f.user_id={$urr['user_id']}
-          WHERE g.grp_id IN ( SELECT gru_groupid FROM $db_groups_users WHERE gru_userid = {$urr['user_id']}  )")->fetch();
+          FROM ".cot::$db->groups." as g
+          LEFT JOIN ".cot::$db->files." as f ON f.file_source!='sfs' AND f.user_id={$urr['user_id']}
+          WHERE $sql_condGroup";
+
+    $tmp = cot::$db->query($sql)->fetch();
 
     $limits['size_maxfile']  = (int)$tmp['size_maxfile'];
-    if($limits['size_maxfile'] == -1){
+    if($limits['size_maxfile'] == -1) {
         $limits['size_maxfile'] = 0;
-    }elseif($limits['size_maxfile'] == 0){
+
+    } elseif($limits['size_maxfile'] == 0) {
         $limits['size_maxfile']  = 100000000000000000;
     }
+
     // Ограничения на загрузку файлов через POST
     // пока вынесено в контроллер
 //        if(cot::$cfg['files']['chunkSize'] == 0){
@@ -291,19 +323,23 @@ function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = ''){
 //        }
 
     $limits['size_maxtotal'] = (int)$tmp['size_maxtotal'];
-    if($limits['size_maxtotal'] == -1){
+    if($limits['size_maxtotal'] == -1) {
         $limits['size_maxtotal'] = 0;
-    }elseif($limits['size_maxtotal'] == 0){
+
+    } elseif($limits['size_maxtotal'] == 0) {
         $limits['size_maxtotal']  = 100000000000000000;
     }
 
+    // I'm not sure if we should always set size_used = 0 for guests.
+    // Now you can set unlimit in admin-cp
     $limits['size_used'] = (int)$tmp['size_used'];
     $limits['size_left'] = $limits['size_maxtotal'] - $limits['size_used'];
     if($limits['size_left'] < 0) $limits['size_left'] = 0;
 
 
-    if($source == 'pfs'){
+    if($source == 'pfs') {
         // В PFS не накладывается ограничений на количество файлов, только на размеры
+        // There is no file count limits in PFS, only for file sizes
         $limits['count_max']     = 100000000000000000;
         $limits['count_used']    = 0;
         $limits['count_left']    = 100000000000000000;
@@ -322,9 +358,10 @@ function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = ''){
     }
 
     $limits['count_max'] = (int)$tmp['count_max'];
-    if($limits['count_max'] == -1){
+    if($limits['count_max'] == -1) {
         $limits['count_max'] = 0;
-    }elseif($limits['count_max'] == 0){
+
+    } elseif($limits['count_max'] == 0) {
         $limits['count_max']  = 100000000000000000;
     }
 

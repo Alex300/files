@@ -7,8 +7,8 @@ Description=Personal File Space and attach files to posts and pages
 Category=files-media
 Version=1.0.3
 Date=11 May 2016
-Author=Cotonti Team
-Copyright=(c) Cotonti Team 2014-2016
+Author=Cotonti Team, Kalnov Alexey    <kalnovalexey@yandex.ru>
+Copyright=(c) Cotonti Team, Portal30 Studio http://portal30.ru 2014-2017
 Notes=DO NOT FORGET to create a writable folder for the files
 Auth_guests=R
 Lock_guests=12345A
@@ -68,8 +68,10 @@ avatar_framing=53:select:height,width,auto,border_auto,crop:crop:Default avatar 
  * module Files for Cotonti Siena
  *
  * @package Files
+ *
  * @author Cotonti Team
- * @copyright (c) Cotonti Team 2014-2016
+ * @author Kalnov Alexey    <kalnovalexey@yandex.ru>
+ * @copyright (c) Cotonti Team, Portal30 Studio http://portal30.ru 2014-2017
  *
  * В настройках все размеры указываются в байтах
  * в ограничениях 0 - не ограничено, -1 - запрещено
