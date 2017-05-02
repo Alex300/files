@@ -41,8 +41,8 @@ class files_model_Folder extends Som_Model_ActiveRecord
         parent::__init($db);
     }
 
-    protected function beforeInsert(){
-
+    protected function beforeInsert()
+    {
         if(empty($this->_data['ff_created'])){
             $this->_data['ff_created'] = date('Y-m-d H:i:s', cot::$sys['now']);
         }
@@ -51,21 +51,32 @@ class files_model_Folder extends Som_Model_ActiveRecord
             $this->_data['ff_updated'] = date('Y-m-d H:i:s', cot::$sys['now']);
         }
 
-        return true;
+        return parent::beforeInsert();
     }
 
-    protected function beforeUpdate(){
+    protected function beforeUpdate()
+    {
         $this->_data['ff_updated'] = date('Y-m-d H:i:s', cot::$sys['now']);
 
-        return true;
+        // Update files count in this folder
+        if(!array_key_exists('ff_count', $this->_oldData)) {
+            $source = ($this->_data['user_id'] > 0) ? 'pfs' : 'sfs';
+            $condition = array(
+                array('file_source', $source),
+                array('file_item', $this->_data['ff_id']),
+            );
+
+            $this->_data['ff_count'] = files_model_File::count($condition);
+        }
+        return parent::beforeUpdate();
     }
 
     /**
      * Delete
      * @return bool
      */
-    public function delete(){
-
+    public function delete()
+    {
         $uid = (int)$this->_data['user_id'];
         $isSFS = false;                             // is Site File Space
 
@@ -77,6 +88,7 @@ class files_model_Folder extends Som_Model_ActiveRecord
             array('file_source', $source),
             array('file_item', $this->_data['ff_id'])
         ));
+
         if(!empty($files)){
             foreach($files as $fileRow){
                 $fileRow->delete();

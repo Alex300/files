@@ -30,7 +30,6 @@ if(empty($GLOBALS['db_files'])) {
  * @property string $file_unikey    Ключ формы для хранения временных файлов от несуществующих объектов
  *
  * @property string $icon   File icon url
- *
  */
 class files_model_File extends Som_Model_ActiveRecord
 {
@@ -51,11 +50,13 @@ class files_model_File extends Som_Model_ActiveRecord
         parent::__init($db);
     }
 
-    public function getIcon(){
+    public function getIcon()
+    {
         return files_model_File::typeIcon($this->_data['file_ext']);
     }
 
-    public static function typeIcon($ext, $size = 48){
+    public static function typeIcon($ext, $size = 48)
+    {
         $iconUrl = '';
         if(isset(cot::$R["files_icon_type_{$size}_{$ext}"])){
             $iconUrl = cot::$R["files_icon_type_{$size}_{$ext}"];
@@ -77,7 +78,8 @@ class files_model_File extends Som_Model_ActiveRecord
         }
     }
 
-    public function makeAvatar(){
+    public function makeAvatar()
+    {
         global $db_users;
 
         if($this->_data['file_source'] != 'pfs' || $this->_data['file_img'] == 0 || !$this->_data['user_id']) return false;
@@ -85,7 +87,8 @@ class files_model_File extends Som_Model_ActiveRecord
         static::$_db->update($db_users, array('user_avatar' => $this->_data['file_id']), 'user_id=?', array($this->_data['user_id']));
     }
 
-    protected function beforeInsert(){
+    protected function beforeInsert()
+    {
         if(empty($this->_data['file_updated'])){
             $this->_data['file_updated'] = date('Y-m-d H:i:s', cot::$sys['now']);
         }
@@ -96,35 +99,36 @@ class files_model_File extends Som_Model_ActiveRecord
                     array($this->_data['file_source'], $this->_data['file_item']))->fetchColumn()) + 1;
         }
 
-        return true;
+        return parent::beforeInsert();
     }
 
-    protected function afterInsert(){
+    protected function afterInsert()
+    {
         if(in_array($this->_data['file_source'], array('pfs', 'sfs')) && $this->_data['file_item'] > 0){
-            $field = $this->_data['file_field'];
-//            if($field === null) $field = '';
             $condition = array(
                 array('file_source', $this->_data['file_source']),
                 array('file_item', $this->_data['file_item']),
-//                array('file_field', $field)
             );
 
             $folder = files_model_Folder::getById($this->_data['file_item']);
-            if($folder){
+            if($folder) {
                 $folder->ff_count = files_model_File::count($condition);
                 $folder->save();
             }
-
         }
+
+        return parent::afterInsert();
     }
 
-    protected function beforeUpdate(){
+    protected function beforeUpdate()
+    {
         $this->_data['file_updated'] = date('Y-m-d H:i:s', cot::$sys['now']);
-        return true;
+
+        return parent::beforeUpdate();
     }
 
-    protected function beforeDelete(){
-
+    protected function beforeDelete()
+    {
         $res = true;
 
         $path_parts = pathinfo($this->_data['file_path']);
@@ -135,29 +139,33 @@ class files_model_File extends Som_Model_ActiveRecord
         $res &= $this->remove_thumbs();
         @rmdir(cot::$cfg['files']['folder'] . '/_thumbs/' . $this->_data['file_id']);
 
-        return true;
+        return parent::beforeDelete();
     }
 
-    protected function afterDelete(){
-        if(in_array($this->_data['file_source'], array('pfs', 'sfs')) && $this->_data['file_item'] > 0){
+    protected function afterDelete()
+    {
+        if(in_array($this->_data['file_source'], array('pfs', 'sfs')) && $this->_data['file_item'] > 0) {
             $condition = array(
                 array('file_source', $this->_data['file_source']),
                 array('file_item', $this->_data['file_item']),
             );
 
             $folder = files_model_Folder::getById($this->_data['file_item']);
-            if($folder){
+            if($folder) {
                 $folder->ff_count = files_model_File::count($condition);
                 $folder->save();
             }
         }
+
+        return parent::afterDelete();
     }
 
     /**
      * Removes thumbnails matching the arguments.
      * @return boolean       true on success, false on error
      */
-    public function remove_thumbs(){
+    public function remove_thumbs()
+    {
         $res = true;
 
         $thumbs_folder = cot::$cfg['files']['folder'] . '/_thumbs/' . $this->_data['file_id'];
@@ -171,10 +179,10 @@ class files_model_File extends Som_Model_ActiveRecord
         }
 
         return $res;
-
     }
 
-    public static function fieldList() {
+    public static function fieldList()
+    {
         return array(
             'file_id'  =>
                 array(
@@ -299,7 +307,8 @@ class files_model_File extends Som_Model_ActiveRecord
      * @return array|void
      *
      */
-    public static function generateTags($item, $tagPrefix = '', $cacheitem = true){
+    public static function generateTags($item, $tagPrefix = '', $cacheitem = true)
+    {
         global $usr, $cot_extrafields;
 
         static $extp_first = null, $extp_main = null;
@@ -320,10 +329,12 @@ class files_model_File extends Som_Model_ActiveRecord
 
         if ( ($item instanceof files_model_File) && is_array($cacheArr[$item->file_id]) ) {
             $temp_array = $cacheArr[$item->file_id];
-        }elseif (is_int($item) && is_array($cacheArr[$item])){
+
+        } elseif (is_int($item) && is_array($cacheArr[$item])) {
             $temp_array = $cacheArr[$item];
-        }else{
-            if (is_int($item) && $item > 0){
+
+        } else {
+            if (is_int($item) && $item > 0) {
                 $item = files_model_File::getById($item);
             }
             /** @var files_model_File $item  */
@@ -367,8 +378,7 @@ class files_model_File extends Som_Model_ActiveRecord
                 }
 
                 /* === Hook === */
-                foreach ($extp_main as $pl)
-                {
+                foreach ($extp_main as $pl) {
                     include $pl;
                 }
                 /* ===== */

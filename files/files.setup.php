@@ -71,7 +71,8 @@ avatar_framing=53:select:height,width,auto,border_auto,crop:crop:Default avatar 
  *
  * @author Cotonti Team
  * @author Kalnov Alexey    <kalnovalexey@yandex.ru>
- * @copyright (c) Cotonti Team, Portal30 Studio http://portal30.ru 2014-2017
+ * @copyright (c) Cotonti Team
+ * @copyright (c) Portal30 Studio http://portal30.ru 2014-2017
  *
  * В настройках все размеры указываются в байтах
  * в ограничениях 0 - не ограничено, -1 - запрещено

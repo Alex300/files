@@ -9,16 +9,16 @@ defined('COT_CODE') or die('Wrong URL.');
  * @package Files
  * @subpackage pfs
  * @author Cotonti Team
- * @copyright (c) Cotonti Team 2014
- *
+ * @author Kalnov Alexey    <kalnovalexey@yandex.ru>
  */
-class PfsController{
-
+class PfsController
+{
     /**
-     * файлы пользователя
+     * User files
      * @return string
      */
-    public function indexAction(){
+    public function indexAction()
+    {
         global $usr, $Ls, $db_files, $db_files_folders, $outHeaderFooter, $cot_extensions;
 
         $perPage = cot::$cfg['files']['maxFoldersPerPage'];
@@ -40,9 +40,9 @@ class PfsController{
         $standalone = 0;
 
         $urlParams = array('m' => 'pfs');
-        if(!$f && $uid != $usr['id']) $urlParams['uid'] = $uid;
+        if(!$f && $uid != cot::$usr['id']) $urlParams['uid'] = $uid;
 
-        if (!empty($c1) || !empty($c2)){
+        if (!empty($c1) || !empty($c2)) {
             $standalone = 1;
             if(!empty($c1)) $urlParams['c1'] = $c1;
             if(!empty($c2)) $urlParams['c2'] = $c2;
@@ -50,8 +50,7 @@ class PfsController{
         }
 
         /* === Hook === */
-        foreach (cot_getextplugins('files.pfs.first') as $pl)
-        {
+        foreach (cot_getextplugins('files.pfs.first') as $pl) {
             include $pl;
         }
         /* ===== */
@@ -61,21 +60,23 @@ class PfsController{
         $folders_count = 0;
         $isSFS = false;                        // is Site File Space
 
-        if($f > 0){
+        if($f > 0) {
             $folder = files_model_Folder::getById($f);
             if(!$folder) cot_die_message(404);
             $uid = (int)$folder->user_id;
-        }else{
+
+        } else {
             $folders = files_model_Folder::findByCondition(array(array('user_id', $uid)), $perPage, $df, array(array('ff_title', 'ASC')));
             $folders_count = files_model_Folder::count(array(array('user_id', $uid)));
             $onPageFoldersCount = count($folders);
         }
 
-        if($uid === 0){
+        if($uid === 0) {
             $isSFS = true;
-            cot_block($usr['isadmin']);
-        }elseif($uid != $usr['id']){
-            cot_block($usr['isadmin']);
+            cot_block(cot::$usr['isadmin']);
+
+        } elseif($uid != cot::$usr['id']) {
+            cot_block(cot::$usr['isadmin']);
         }
 
         $limits = cot_files_getLimits($uid);
@@ -88,39 +89,43 @@ class PfsController{
         $title = '';
         if($isSFS){
             $tmp = $urlParams;
-            if($uid != $usr['id']) $tmp['uid'] = $uid;
-            if($folder){
+            if($uid != cot::$usr['id']) $tmp['uid'] = $uid;
+            if($folder) {
                 $crumbs[] = array(cot_url('files', $tmp), cot::$L['SFS']);
                 $crumbs[] = $title = $folder->ff_title;
-            }else{
+
+            } else {
                 $crumbs[] = $title = cot::$L['SFS'];
             }
 
-        }else{
+        } else {
             cot_block(($limits['size_maxfile'] > 0 && $limits['size_maxtotal'] > 0) || $usr['isadmin']);
 
             $urr = cot_user_data($uid);
             if(empty($urr) && !$usr['isadmin']) cot_die_message(404);   // Вдруг пользователь удален, а вайлы остались?
 
-            if($uid == $usr['id']){
+            if($uid == cot::$usr['id']){
                 if($standalone == 0) $crumbs[] = array(cot_url('users', 'm=details'), cot::$L['files_mypage']);
                 if($folder){
                     $crumbs[] = array(cot_url('files', $urlParams), cot::$L['Mypfs']);
                     $crumbs[] = $title = $folder->ff_title;
-                }else{
+
+                } else {
                     $crumbs[] = $title = cot::$L['Mypfs'];
                 }
 
-            }else{
+            } else {
                 $crumbs[] = array(cot_url('users'), cot::$L['Users']);
                 $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
                     cot_user_full_name($urr));
-                if($folder){
+
+                if($folder) {
                     $tmp = $urlParams;
                     if($uid != $usr['id']) $tmp['uid'] = $uid;
                     $crumbs[] = array(cot_url('files', $tmp), cot::$L['Files']);
                     $crumbs[] = $title = $folder->ff_title;
-                }else{
+
+                } else {
                     $crumbs[] = $title = cot::$L['Files'];
                 }
             }
@@ -148,10 +153,10 @@ class PfsController{
 
         $allowedExts = explode(',', str_replace(' ', '', cot::$cfg['files']['exts']));
         $descriptions = array();
-        foreach($cot_extensions as $row){
+        foreach($cot_extensions as $row) {
             $descriptions[$row[0]]  = $row[1];
         }
-        foreach($allowedExts as $ext){
+        foreach($allowedExts as $ext) {
             $t->assign(array(
                 'ALLOWED_ROW_ICON_URL' => files_model_File::typeIcon($ext),
                 'ALLOWED_ROW_EXT' => $ext,
@@ -162,14 +167,15 @@ class PfsController{
 
 
         $source = $isSFS ? 'sfs' : 'pfs';
-        if($f == 0){
+        if($f == 0) {
             $countCond = array(
                 array('file_source', $source),
                 array('file_item', $f),
             );
             if(!$isSFS) $countCond[] = array('user_id', $uid);
             $files_count = intval(files_model_File::count($countCond));
-        }else{
+
+        } else {
             $files_count = $folder->ff_count;
         }
 
