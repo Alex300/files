@@ -334,11 +334,12 @@ class PfsController
     /**
      * Edit folder
      */
-    public function editFolderAction(){
+    public function editFolderAction()
+    {
         global $usr, $Ls, $cot_extensions, $outHeaderFooter;
 
-        list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
-        cot_block($usr['auth_write']);
+        list(cot::$usr['auth_read'], cot::$usr['auth_write'], cot::$usr['isadmin']) = cot_auth('files', 'a');
+        cot_block(cot::$usr['auth_write']);
 
         $f = cot_import('f', 'G', 'INT');           // folder id
         if(!$f) $f = cot_import('f', 'P', 'INT');
@@ -472,22 +473,28 @@ class PfsController
 
         $folderFormHidden = cot_inputbox('hidden', 'uid', $uid).cot_inputbox('hidden', 'f', $f).
             cot_inputbox('hidden', 'act', 'save');
+
         if($f > 0) {
             $t->assign(files_model_Folder::generateTags($folder, 'FOLDER_', $urlParams));
+
         } else {
             $folder->ff_public = 1;
             $folder->ff_album = 1;
         }
+
         $folderFormAlbum = cot_checkbox($folder->ff_album, 'ff_album',  cot::$L['files_isgallery']);
 
         // Если в папке есть файлы не изображения, то это не альбом
         if($f > 0 && files_model_File::count(array(
                             array('file_source', $source), array('file_item', $f), array('file_img', 0))
-                    ) > 0){
+                    ) > 0) {
             $folderFormAlbum = '';
             $folderFormHidden .= cot_inputbox('hidden', 'ff_album', 0);
             $folder->ff_album = 0;
         }
+
+        if(!empty($c1)) $folderFormHidden .= cot_inputbox('hidden', 'c1', $c1);
+        if(!empty($c2)) $folderFormHidden .= cot_inputbox('hidden', 'c2', $c2);
 
         $t->assign(array(
             'FOLDER_FORM_URL'    => cot_url('files', array('m' => 'pfs', 'a' => 'editFolder')),
@@ -625,7 +632,7 @@ class PfsController
         $parser = cot_import('parser', 'G', 'ALP');	// custom parser
         if(!$parser) $parser = cot_import('parser', 'P', 'ALP');
         $standalone = 0;                        // is in popup window
-        $isSFS = false;                             // is Site File Space
+        $isSFS = false;                         // is Site File Space
 
         if($uid == 0) $isSFS = true;
 
