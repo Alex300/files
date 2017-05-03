@@ -673,7 +673,7 @@ class UploadController
             if($exif !== false) {
                 $orientation = (!empty($exif['Orientation'])) ? (int)$exif['Orientation'] : 0;
 
-                if ($orientation >= 2 || $orientation <= 8) {
+                if ($orientation >= 2 && $orientation <= 8) {
 
                     // Gettimg memory size required to process the image
                     $source_size = getimagesize($file->path);
@@ -687,74 +687,76 @@ class UploadController
 
                     $size_ok = function_exists('cot_img_check_memory') ? cot_img_check_memory($file->path,
                         (int)ceil($needExtraMem)) : true;
+
                     if ($size_ok) {
+                        $newImage = null;
                         switch ($file->ext) {
                             case 'gif':
-                                $source_image = imagecreatefromgif($file->path);
+                                $sourceImage = imagecreatefromgif($file->path);
 
                                 // Get a transparent color
-                                $transparent_source_index = imagecolortransparent($source_image);
+                                $transparent_source_index = imagecolortransparent($sourceImage);
                                 if($transparent_source_index !== -1) {
-                                    $transparent_color = imagecolorsforindex($source_image, $transparent_source_index);
+                                    $transparent_color = imagecolorsforindex($sourceImage, $transparent_source_index);
                                 }
 
                                 break;
 
                             case 'png':
-                                $source_image = imagecreatefrompng($file->path);
-                                imagecolortransparent($source_image, imagecolorallocatealpha($source_image, 0, 0, 0, 127));
-                                imagealphablending($source_image, false);
-                                imagesavealpha($source_image, true);
+                                $sourceImage = imagecreatefrompng($file->path);
+                                imagecolortransparent($sourceImage, imagecolorallocatealpha($sourceImage, 0, 0, 0, 127));
+                                imagealphablending($sourceImage, false);
+                                imagesavealpha($sourceImage, true);
                                 break;
 
                             default:
-                                $source_image = imagecreatefromjpeg($file->path);
+                                $sourceImage = imagecreatefromjpeg($file->path);
                                 break;
                         }
 
                         // NOTE: Values 2, 4, 5, 7 are uncommon since they represent "flipped" orientations.
                         switch ($orientation) {
                             case 2:
-                                $newimage = $this->gd_imageflip($source_image,
+                                $newImage = $this->gd_imageflip($sourceImage,
                                     defined('IMG_FLIP_VERTICAL') ? IMG_FLIP_VERTICAL : 2
                                 );
                                 break;
 
                             case 3:
                                 // 180 rotate left
-                                $newimage = imagerotate($source_image, 180, 0);
+                                $newImage = imagerotate($sourceImage, 180, 0);
                                 break;
 
                             case 4:
-                                $newimage = $this->gd_imageflip($source_image,
+                                $newImage = $this->gd_imageflip($sourceImage,
                                     defined('IMG_FLIP_HORIZONTAL') ? IMG_FLIP_HORIZONTAL : 1
                                 );
                                 break;
 
                             case 5:
-                                $tmp_img = $this->gd_imageflip($source_image,
+                                $tmp_img = $this->gd_imageflip($sourceImage,
                                     defined('IMG_FLIP_HORIZONTAL') ? IMG_FLIP_HORIZONTAL : 1
                                 );
-                                $newimage = imagerotate($tmp_img, 270, 0);
+                                $newImage = imagerotate($tmp_img, 270, 0);
                                 imagedestroy($tmp_img);
                                 break;
 
                             case 6:
                                 // 90 rotate right
-                                $newimage = imagerotate($source_image, -90, 0);
+                                $newImage = imagerotate($sourceImage, -90, 0);
                                 break;
 
                             case 7:
-                                $tmp_img = $this->gd_imageflip($source_image,
+                                $tmp_img = $this->gd_imageflip($sourceImage,
                                     defined('IMG_FLIP_VERTICAL') ? IMG_FLIP_VERTICAL : 2
                                 );
-                                $newimage = imagerotate($tmp_img, 270, 0);
+                                $newImage = imagerotate($tmp_img, 270, 0);
                                 imagedestroy($tmp_img);
                                 break;
 
                             case 8:
                                 // 90 rotate left
-                                $newimage = imagerotate($source_image, 90, 0);
+                                $newImage = imagerotate($sourceImage, 90, 0);
                                 break;
                         }
 
@@ -763,27 +765,27 @@ class UploadController
                                 // Chek if we have a transparency
                                 if($transparent_source_index !== -1) {
                                     // Add color to the palette of the new image, and set it as transparent
-                                    $transparent_destination_index = imagecolorallocatealpha($newimage,
+                                    $transparent_destination_index = imagecolorallocatealpha($newImage,
                                         $transparent_color['red'], $transparent_color['green'], $transparent_color['blue'],
                                         $transparent_color['alpha']);
-                                    imagecolortransparent($newimage, $transparent_destination_index);
+                                    imagecolortransparent($newImage, $transparent_destination_index);
                                 }
-                                imagegif($newimage, $file->path);
+                                imagegif($newImage, $file->path);
                                 break;
 
                             case 'png':
-                                imagealphablending($newimage, false);
-                                imagesavealpha($newimage, true);
-                                imagepng($newimage, $file->path);
+                                imagealphablending($newImage, false);
+                                imagesavealpha($newImage, true);
+                                imagepng($newImage, $file->path);
                                 break;
 
                             default:
-                                imagejpeg($newimage, $file->path, 96);
+                                imagejpeg($newImage, $file->path, 96);
                                 break;
                         }
 
-                        imagedestroy($source_image);
-                        if(!empty($newimage)) imagedestroy($newimage);
+                        imagedestroy($sourceImage);
+                        if(!empty($newImage)) imagedestroy($newImage);
                     }
                 }
             }
