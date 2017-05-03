@@ -104,8 +104,8 @@ $L['cfg_prefix'] = 'File prefix';
 $L['cfg_exts'] = 'Allowed extensions (comma separated, no dots and spaces)';
 $L['cfg_filecheck'] = 'File Check';
 $L['cfg_filecheck_hint'] = 'If Enabled will check any uploaded files through the '.$L['PFS'].', or images through the profile. To insure they are valid files. &quot;Yes&quot; recommended, for security reasons.';
-$L['cfg_pfsnomimepass'] = 'No Mimetype Pass';
-$L['cfg_pfsnomimepass_hint'] = 'If Enabled will it will allow uploaded files to pass even if there is no mimetype in the config file.';
+$L['cfg_nomimepass'] = 'No Mimetype Pass';
+$L['cfg_nomimepass_hint'] = 'If Enabled will it will allow uploaded files to pass even if there is no mimetype in the config file.';
 $L['cfg_maxFoldersPerPage'] = 'Max folders count per page';
 $L['cfg_pfs_winclose'] = 'Close popup window after file insert into editor';
 

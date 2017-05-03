@@ -137,6 +137,8 @@ function cot_files_checkFile($file)
  */
 function cot_files_isExtensionAllowed($ext)
 {
+    if(!cot::$cfg['files']['filecheck']) return true;
+
     $valid_exts = explode(',', cot::$cfg['files']['exts']);
     $valid_exts = array_map('trim', $valid_exts);
     if (empty($ext) || !in_array($ext, $valid_exts)) {
@@ -419,6 +421,7 @@ function cot_files_getMime($path)
         'mp3' => 'audio/mpeg',
         'qt'  => 'video/quicktime',
         'mov' => 'video/quicktime',
+        'mp4' => 'video/mp4',
 
         // adobe
         'pdf' => 'application/pdf',
@@ -444,23 +447,19 @@ function cot_files_getMime($path)
 
     $ext = cot_files_get_ext($path);
 
-    if (function_exists('mime_content_type'))
-    {
+    if (function_exists('mime_content_type')) {
         return mime_content_type($path);
-    }
-    elseif (function_exists('finfo_open'))
-    {
+
+    } elseif (function_exists('finfo_open')) {
         $finfo = finfo_open(FILEINFO_MIME);
         $mimetype = finfo_file($finfo, $path);
         finfo_close($finfo);
         return $mimetype;
-    }
-    elseif (isset($mime_types[$ext]))
-    {
+
+    } elseif (isset($mime_types[$ext])) {
         return $mime_types[$ext];
-    }
-    else
-    {
+
+    } else {
         return 'application/octet-stream';
     }
 }
@@ -814,12 +813,24 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
         $newimage = imagecreatetruecolor($width, $height); //
     }
 
-    if($ext == 'gif' || $ext == 'png'){
-        imagealphablending($newimage, false);
-        $color = imagecolortransparent($newimage, imagecolorallocatealpha($newimage, 0, 0, 0, 127));
-        imagefill($newimage, 0, 0, $color);
-        imagesavealpha($newimage, true);
+    // Handle transparency in GIF and PNG images:
+    switch ($ext) {
+        case 'gif':
+            imagecolortransparent($newimage, imagecolorallocatealpha($newimage, 0, 0, 0, 127));
+
+        case 'png':
+            imagecolortransparent($newimage, imagecolorallocatealpha($newimage, 0, 0, 0, 127));
+            imagealphablending($newimage, false);
+            imagesavealpha($newimage, true);
+            break;
     }
+
+//    if($ext == 'gif' || $ext == 'png') {
+//        imagealphablending($newimage, false);
+//        $color = imagecolortransparent($newimage, imagecolorallocatealpha($newimage, 0, 0, 0, 127));
+//        imagefill($newimage, 0, 0, $color);
+//        imagesavealpha($newimage, true);
+//    }
 
     switch ($ext)
     {
@@ -1284,9 +1295,9 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
 {
     global $R, $cot_modules, $usr;
 
-    list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
+    list(cot::$usr['auth_read'], cot::$usr['auth_write'], cot::$usr['isadmin']) = cot_auth('files', 'a');
 
-    $uid = $usr['id'];
+    $uid = cot::$usr['id'];
     if($source == 'pfs' && $usr['isadmin']){
         $uid = $userId;
 
@@ -1352,7 +1363,7 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
         Resources::linkFileFooter($modUrl.'/lib/upload/js/jquery.fileupload-audio.js?nc='.$nc);
 
         // The File Upload video preview plugin
-        //cot_rc_link_footer($cfg['plugins_dir'].'/attach2/lib/upload/js/jquery.fileupload-video.js');
+        Resources::linkFileFooter($modUrl.'/lib/upload/js/jquery.fileupload-video.js?nc='.$nc);
 
         // The File Upload validation plugin
         Resources::linkFileFooter($modUrl.'/lib/upload/js/jquery.fileupload-validate.js?nc='.$nc);
@@ -1567,4 +1578,40 @@ function cot_files_widget($source, $item, $field = '', $tpl = 'files.widget', $w
     $files_widget_present = true;
 
     return $t->text();
+}
+
+/**
+ * TPL files not allows to execute php code
+ * So it will be here
+ *
+ * Todo not needed with View template engine
+ * Todo remove checking if method exists after Cotonti 0.9.20 release
+ */
+function cot_files_loadBootstrap()
+{
+    $ret = '<!-- 654654654 -->';
+
+    $canCheck = method_exists('Resources', 'isFileAdded');
+
+    //if(Resources::getAlias('@bootstrap.js') !== null) $ret = Resources::getAlias('@bootstrap.js');
+    $cssAlias = Resources::getAlias('@bootstrap.css');
+    if($cssAlias) {
+        if (!$canCheck || !Resources::isFileAdded('@bootstrap.css')) {
+            $ret .= cot_rc("code_rc_css_file", array(
+                    'url' => Resources::getAlias('@bootstrap.css')
+                )) . "\n";
+
+        }
+    }
+
+    $themeAlias = Resources::getAlias('@bootstrapTheme.css');
+    if($themeAlias) {
+        if (!$canCheck || !Resources::isFileAdded('@bootstrapTheme.css')) {
+            $ret .= cot_rc("code_rc_css_file", array(
+                    'url' => Resources::getAlias('@bootstrapTheme.css')
+                )) . "\n";
+        }
+    }
+
+    return $ret;
 }

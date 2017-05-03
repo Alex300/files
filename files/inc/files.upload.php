@@ -6,8 +6,7 @@ $item = cot_import('item', 'R', 'INT');
 $field = (string)cot_import('field', 'R', 'TXT');
 
 $filename = cot_import('file', 'R', 'TXT');
-if (!is_null($filename))
-{
+if (!is_null($filename)) {
     $filename = mb_basename(stripslashes($filename));
 }
 
@@ -17,15 +16,36 @@ if (!is_null($filename))
  * @package Files
  * @subpackage pfs
  * @author Cotonti Team
- * @copyright (c) Cotonti Team 2008-2014
+ * @author Kalnov Alexey    <kalnovalexey@yandex.ru>
  */
-class UploadController{
+class UploadController
+{
+    protected $options = array(
+            'input_stream' => 'php://input',
+
+            // Use exif_imagetype on all files to correct file extensions.
+            'correct_image_extensions' => true,
+
+            // Add development info in output. Turn it off on production sites.
+            'debug' => false
+        );
 
     /**
-     * файлы пользователя
+     * UploadController constructor.
+     * @param array $options
+     */
+    public function __construct($options = null, $initialize = true, $error_messages = null)
+    {
+        if ($options) {
+            $this->options = $options + $this->options;
+        }
+    }
+
+    /**
      * @return string
      */
-    public function indexAction(){
+    public function indexAction()
+    {
         switch ($this->get_server_var('REQUEST_METHOD')) {
             case 'OPTIONS':
             case 'HEAD':
@@ -57,7 +77,8 @@ class UploadController{
      *
      * @return array             Data for JSON response
      */
-    public function get($print_response = true) {
+    public function get($print_response = true)
+    {
         global $source, $item, $field, $filename, $cot_extrafields;
 
         $uid = cot_import('uid', 'G', 'INT');
@@ -155,7 +176,8 @@ class UploadController{
         return $this->generate_response($res, $print_response);
     }
 
-    public function post($print_response = true) {
+    public function post($print_response = true)
+    {
         if (isset($_REQUEST['_method']) && $_REQUEST['_method'] === 'DELETE') {
             return $this->delete($print_response);
         }
@@ -176,6 +198,7 @@ class UploadController{
         $content_range = $this->get_server_var('HTTP_CONTENT_RANGE') ?
             preg_split('/[^0-9]+/', $this->get_server_var('HTTP_CONTENT_RANGE')) : null;
         $size =  $content_range ? $content_range[3] : null;
+
         $files = array();
         if ($upload && is_array($upload['tmp_name'])) {
             // param_name is an array identifier like "files[]",
@@ -222,7 +245,8 @@ class UploadController{
      * Ajax delete file
      * @param bool $print_response
      */
-    public function delete($print_response = true) {
+    public function delete($print_response = true)
+    {
         $res = array(
             'success' => false
         );
@@ -255,7 +279,8 @@ class UploadController{
      * @param  string $field
      * @return integer
      */
-    protected function count_file_objects($source, $item, $field = '_all_'){
+    protected function count_file_objects($source, $item, $field = '_all_')
+    {
         $condition = array(
             array('file_source', $source),
             array('file_item', $item),
@@ -274,7 +299,8 @@ class UploadController{
         return $size;
     }
 
-    protected function generate_response($content, $print_response = true) {
+    protected function generate_response($content, $print_response = true)
+    {
         if ($print_response) {
             $json = json_encode($content);
             $redirect = isset($_REQUEST['redirect']) ?
@@ -300,12 +326,14 @@ class UploadController{
 
     protected function get_file_name($file_path, $name, $source, $item, $type, $content_range)
     {
-        $tmp = cot_files_safeName($source.'_'.$item.'_'.$this->trim_file_name($file_path, $name, $type));
+        $name = $this->trim_file_name($file_path, $name, $type);
+        $tmp = cot_files_safeName($source.'_'.$item.'_'.$this->fix_file_extension($file_path, $name, $type));
 
         return $this->get_unique_filename($tmp, $content_range);
     }
 
-    protected function get_file_size($file_path, $clear_stat_cache = false) {
+    protected function get_file_size($file_path, $clear_stat_cache = false)
+    {
         if ($clear_stat_cache) {
             if (version_compare(PHP_VERSION, '5.3.0') >= 0) {
                 clearstatcache(true, $file_path);
@@ -319,10 +347,15 @@ class UploadController{
 
     protected function get_unique_filename($name, $content_range)
     {
+        $tmpDir = cot_files_tempDir().DIRECTORY_SEPARATOR;
+        while(is_dir($tmpDir.$name)) {
+            $name = $this->upcount_name($name);
+        }
+
         // Keep an existing filename if this is part of a chunked upload:
         $uploaded_bytes = $this->fix_integer_overflow(intval($content_range[1]));
-        while(is_file(cot_files_tempDir().DIRECTORY_SEPARATOR.$name)) {
-            if ($uploaded_bytes === $this->get_file_size( cot_files_tempDir().DIRECTORY_SEPARATOR.$name)) {
+        while(is_file($tmpDir.$name)) {
+            if ($uploaded_bytes === $this->get_file_size( $tmpDir.$name)) {
                 break;
             }
             $name = $this->upcount_name($name);
@@ -331,132 +364,14 @@ class UploadController{
         return $name;
     }
 
-    protected function get_upload_path($source, $item) {
+    protected function get_upload_path($source, $item)
+    {
         return cot::$cfg['files']['folder'] . '/' . $source . '/' . $item;
     }
 
-    protected function get_server_var($id) {
+    protected function get_server_var($id)
+    {
         return isset($_SERVER[$id]) ? $_SERVER[$id] : '';
-    }
-
-    protected function handle_image_file($file) {
-
-        // Проверяем размер изображения и пробуем расчитать необходимый объем оперативы
-        if(!cot_img_check_memory($file->path)){
-            @unlink($file->path);
-            $file->error = cot::$L['files_err_toobig'];
-            return $file;
-        }
-
-        // Automatic JPG conversion feature
-        if (cot::$cfg['files']['image_convert'] && $file->ext != 'jpg' && $file->ext != 'jpeg')
-        {
-            $input_file = $file->path;
-
-            $newName = pathinfo($file->name, PATHINFO_FILENAME) . '.jpg';
-            $output_file = dirname($file->path).'/'.$newName;
-            if ($file->ext == 'png')
-                $input = imagecreatefrompng($input_file);
-            else
-                $input = imagecreatefromgif($input_file);
-            list($width, $height) = getimagesize($input_file);
-            $output = imagecreatetruecolor($width, $height);
-            $white = imagecolorallocate($output,  255, 255, 255);
-            imagefilledrectangle($output, 0, 0, $width, $height, $white);
-            imagecopy($output, $input, 0, 0, 0, 0, $width, $height);
-            imagejpeg($output, $output_file);
-
-            @unlink($input_file);
-
-            $file->path = $output_file;
-            $file->size = $this->get_file_size($file->path);
-            $file->ext = 'jpg';
-            $file->name = pathinfo($file->name, PATHINFO_FILENAME) . '.jpg';
-        }
-
-        // Fix image orientation via EXIF if possible
-        if (function_exists('exif_read_data'))
-        {
-            $exif = @exif_read_data($file->path);
-            if($exif !== false){
-
-                // Gettimg memory size required to process the image
-                $source_size = getimagesize($file->path);
-
-                $width = $source_size[0];
-                $height = $source_size[1];
-                $depth = ($source_size['bits'] > 8) ? ($source_size['bits'] / 8) : 1;
-                $channels = $source_size['channels'] > 0 ? $source_size['channels'] : 4;
-                // imagerotate потребляет много памяти. Попросим в 1.5 раза больше
-                $needExtraMem = $width * $height * $depth * $channels / 1048576 * 1.5;
-
-                $size_ok = function_exists('cot_img_check_memory') ? cot_img_check_memory($file->path, (int)ceil($needExtraMem)) : true;
-                if ($size_ok && isset($exif['Orientation']) && !empty($exif['Orientation']) && in_array($exif['Orientation'], array(3, 6, 8)))
-                {
-                    switch ($file->ext)
-                    {
-                        case 'gif':
-                            $newimage = imagecreatefromgif($file->path);
-                            break;
-                        case 'png':
-                            $newimage = imagecreatefrompng($file->path);
-                            imagealphablending($newimage, false);
-                            imagesavealpha($newimage, true);
-                            break;
-                        default:
-                            $newimage = imagecreatefromjpeg($file->path);
-                            break;
-                    }
-                    switch ($exif['Orientation'])
-                    {
-                        case 3:
-                            $newimage = imagerotate($newimage, 180, 0);
-                            break;
-                        case 6:
-                            $newimage = imagerotate($newimage, -90, 0);
-                            break;
-                        case 8:
-                            $newimage = imagerotate($newimage, 90, 0);
-                            break;
-                    }
-                    switch ($file->ext)
-                    {
-                        case 'gif':
-                            imagegif($newimage, $file->path);
-                            break;
-                        case 'png':
-                            imagepng($newimage, $file->path);
-                            break;
-                        default:
-                            imagejpeg($newimage, $file->path, 96);
-                            break;
-                    }
-                }
-            }
-        }
-
-        // Image resize
-        if(cot::$cfg['files']['image_resize']){
-            list($width_orig, $height_orig) = getimagesize($file->path);
-            if ($width_orig > cot::$cfg['files']['image_maxwidth'] || $height_orig > cot::$cfg['files']['image_maxheight']){
-                // Проверяем размер изображения и пробуем расчитать необходимый объем оперативы
-                if(!cot_img_check_memory($file->path, (int)ceil(cot::$cfg['files']['image_maxwidth'] *
-                    cot::$cfg['files']['image_maxheight'] * 4 / 1048576))){
-                    @unlink($file->path);
-                    $file->error = cot::$L['files_err_toobig'];
-                    return $file;
-                }
-
-                $input_file = $file->path;
-                $tmp_file =  $file->path.'tmp.'.$file->ext;
-                cot_files_thumbnail($input_file, $tmp_file, cot::$cfg['files']['image_maxwidth'],
-                    cot::$cfg['files']['image_maxheight'], 'auto', (int)cot::$cfg['files']['quality']);
-                @unlink($input_file);
-                @rename($tmp_file, $input_file);
-                $file->size = $this->get_file_size($file->path);
-            }
-        }
-
     }
 
     /**
@@ -472,12 +387,12 @@ class UploadController{
      *
      * @todo если пришел uid и пользователь админ, то сохранять файлы от пользователя с указанным uid
      */
-    protected function handle_file_upload($uploaded_file, $name, $size, $type, $error,
-                                          $index = null, $content_range = null) {
-
+    protected function handle_file_upload($uploaded_file, $name, $size, $type, $error, $index = null,
+        $content_range = null)
+    {
         global $source, $item, $field, $usr, $cot_extrafields;
 
-        $file = new stdClass();
+        $file = new \stdClass();
         $file->file_name = trim(mb_basename(stripslashes($name)));
         $file->name = $this->get_file_name($uploaded_file, $name, $source, $item, $type, $content_range);
         $file->size = $this->fix_integer_overflow(intval($size));
@@ -485,7 +400,7 @@ class UploadController{
 
         list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
 
-        if ($this->validate($uploaded_file, $file, $error, $index)) {
+        if ($this->preValidate($uploaded_file, $file, $error, $index)) {
             $file->ext = cot_files_get_ext($file->name);
 
             $this->handle_form_data($file, $index);
@@ -504,6 +419,7 @@ class UploadController{
                         fopen($uploaded_file, 'r'),
                         FILE_APPEND
                     );
+
                 } else {
                     move_uploaded_file($uploaded_file, $file_path);
                 }
@@ -512,23 +428,35 @@ class UploadController{
                 // Non-multipart uploads (PUT method support)
                 file_put_contents(
                     $file_path,
-                    fopen('php://input', 'r'),
+                    fopen($this->options['input_stream'], 'r'),
                     $append_file ? FILE_APPEND : 0
                 );
             }
 
             $file_size = $this->get_file_size($file_path, $append_file);
+
+            // File is uploaded
             if ($file_size === $file->size) {
                 $file->path = $file_path;
                 $file->isImage = false;
                 if (cot_files_isValidImageFile($file_path)) {
                     $file->isImage = true;
-                    $this->handle_image_file($file);
                 }
 
-                if($file->error){
-                    unset($file->path);
-                    unset($file->file_name);
+                // Validate uploaded file
+                if(!$this->validate($file) || $file->error) {
+                    if($file_path && file_exists($file_path)) unlink($file_path);
+                    unset($file->path, $file->file_name);
+                    if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
+                    return $file;
+                }
+
+                if($file->isImage) $this->handle_image_file($file);
+
+                if($file->error) {
+                    if($file_path && file_exists($file_path)) unlink($file_path);
+                    unset($file->path, $file->file_name);
+                    if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
                     return $file;
                 }
 
@@ -565,7 +493,7 @@ class UploadController{
                 }
                 /* ===== */
 
-                if($id = $objFile->save()){
+                if($id = $objFile->save()) {
                     $file->name = $file->file_name;
                     $objFile->file_path = cot_files_path($source, $item, $objFile->file_id, $file->ext, $objFile->user_id);
                     $file_dir = dirname($objFile->file_path);
@@ -574,8 +502,8 @@ class UploadController{
                     }
                     if(!@rename($file->path, $objFile->file_path)){
                         @unlink($file->path);
-                        unset($file->path);
-                        unset($file->file_name);
+                        unset($file->path, $file->file_name);
+                        if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
                         $file->error = cot::$L['files_err_upload'];
                         $objFile->delete();
                         return $file;
@@ -629,8 +557,9 @@ class UploadController{
                     /* ===== */
 
                 } else {
-                    unset($file->path);
-                    unset($file->file_name);
+                    if($file_path && file_exists($file_path)) unlink($file_path);
+                    unset($file->path, $file->file_name);
+                    if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
                     $file->error = cot::$L['files_err_upload'];
                     return $file;
                 }
@@ -647,6 +576,7 @@ class UploadController{
         }
         unset($file->path);
         unset($file->file_name);
+        if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
 
         return $file;
     }
@@ -672,13 +602,15 @@ class UploadController{
         $this->send_content_type_header();
     }
 
-    protected function upcount_name_callback($matches) {
+    protected function upcount_name_callback($matches)
+    {
         $index = isset($matches[1]) ? intval($matches[1]) + 1 : 1;
         $ext = isset($matches[2]) ? $matches[2] : '';
         return ' ('.$index.')'.$ext;
     }
 
-    protected function upcount_name($name) {
+    protected function upcount_name($name)
+    {
         return preg_replace_callback(
             '/(?:(?: \(([\d]+)\))?(\.[^.]+))?$/',
             array($this, 'upcount_name_callback'),
@@ -687,13 +619,260 @@ class UploadController{
         );
     }
 
-    protected function send_content_type_header() {
+    protected function send_content_type_header()
+    {
         header('Vary: Accept');
         if (strpos($this->get_server_var('HTTP_ACCEPT'), 'application/json') !== false) {
             header('Content-type: application/json');
         } else {
             header('Content-type: text/plain');
         }
+    }
+
+    protected function handle_image_file($file)
+    {
+        // Проверяем размер изображения и пробуем расчитать необходимый объем оперативы
+        if(!cot_img_check_memory($file->path)){
+            @unlink($file->path);
+            $file->error = cot::$L['files_err_toobig'];
+            return $file;
+        }
+
+        // Automatic JPG conversion feature
+        if (cot::$cfg['files']['image_convert'] && $file->ext != 'jpg' && $file->ext != 'jpeg') {
+            $input_file = $file->path;
+
+            $newName = pathinfo($file->name, PATHINFO_FILENAME) . '.jpg';
+            $output_file = dirname($file->path).'/'.$newName;
+            if ($file->ext == 'png') {
+                $input = imagecreatefrompng($input_file);
+
+            } else {
+                $input = imagecreatefromgif($input_file);
+            }
+            list($width, $height) = getimagesize($input_file);
+            $output = imagecreatetruecolor($width, $height);
+            $white = imagecolorallocate($output,  255, 255, 255);
+            imagefilledrectangle($output, 0, 0, $width, $height, $white);
+            imagecopy($output, $input, 0, 0, 0, 0, $width, $height);
+            imagejpeg($output, $output_file);
+
+            @unlink($input_file);
+            imagedestroy($input);
+            imagedestroy($output);
+
+            $file->path = $output_file;
+            $file->size = $this->get_file_size($file->path);
+            $file->ext = 'jpg';
+            $file->name = pathinfo($file->name, PATHINFO_FILENAME) . '.jpg';
+        }
+
+        // Fix image orientation via EXIF if possible
+        if (function_exists('exif_read_data')) {
+            $exif = @exif_read_data($file->path);
+            if($exif !== false) {
+                $orientation = (!empty($exif['Orientation'])) ? (int)$exif['Orientation'] : 0;
+
+                if ($orientation >= 2 || $orientation <= 8) {
+
+                    // Gettimg memory size required to process the image
+                    $source_size = getimagesize($file->path);
+
+                    $width = $source_size[0];
+                    $height = $source_size[1];
+                    $depth = ($source_size['bits'] > 8) ? ($source_size['bits'] / 8) : 1;
+                    $channels = $source_size['channels'] > 0 ? $source_size['channels'] : 4;
+                    // imagerotate потребляет много памяти. Попросим в 1.5 раза больше
+                    $needExtraMem = $width * $height * $depth * $channels / 1048576 * 1.5;
+
+                    $size_ok = function_exists('cot_img_check_memory') ? cot_img_check_memory($file->path,
+                        (int)ceil($needExtraMem)) : true;
+                    if ($size_ok) {
+                        switch ($file->ext) {
+                            case 'gif':
+                                $source_image = imagecreatefromgif($file->path);
+
+                                // Get a transparent color
+                                $transparent_source_index = imagecolortransparent($source_image);
+                                if($transparent_source_index !== -1) {
+                                    $transparent_color = imagecolorsforindex($source_image, $transparent_source_index);
+                                }
+
+                                break;
+
+                            case 'png':
+                                $source_image = imagecreatefrompng($file->path);
+                                imagecolortransparent($source_image, imagecolorallocatealpha($source_image, 0, 0, 0, 127));
+                                imagealphablending($source_image, false);
+                                imagesavealpha($source_image, true);
+                                break;
+
+                            default:
+                                $source_image = imagecreatefromjpeg($file->path);
+                                break;
+                        }
+
+                        // NOTE: Values 2, 4, 5, 7 are uncommon since they represent "flipped" orientations.
+                        switch ($orientation) {
+                            case 2:
+                                $newimage = $this->gd_imageflip($source_image,
+                                    defined('IMG_FLIP_VERTICAL') ? IMG_FLIP_VERTICAL : 2
+                                );
+                                break;
+
+                            case 3:
+                                // 180 rotate left
+                                $newimage = imagerotate($source_image, 180, 0);
+                                break;
+
+                            case 4:
+                                $newimage = $this->gd_imageflip($source_image,
+                                    defined('IMG_FLIP_HORIZONTAL') ? IMG_FLIP_HORIZONTAL : 1
+                                );
+                                break;
+
+                            case 5:
+                                $tmp_img = $this->gd_imageflip($source_image,
+                                    defined('IMG_FLIP_HORIZONTAL') ? IMG_FLIP_HORIZONTAL : 1
+                                );
+                                $newimage = imagerotate($tmp_img, 270, 0);
+                                imagedestroy($tmp_img);
+                                break;
+
+                            case 6:
+                                // 90 rotate right
+                                $newimage = imagerotate($source_image, -90, 0);
+                                break;
+
+                            case 7:
+                                $tmp_img = $this->gd_imageflip($source_image,
+                                    defined('IMG_FLIP_VERTICAL') ? IMG_FLIP_VERTICAL : 2
+                                );
+                                $newimage = imagerotate($tmp_img, 270, 0);
+                                imagedestroy($tmp_img);
+                                break;
+
+                            case 8:
+                                // 90 rotate left
+                                $newimage = imagerotate($source_image, 90, 0);
+                                break;
+                        }
+
+                        switch ($file->ext) {
+                            case 'gif':
+                                // Chek if we have a transparency
+                                if($transparent_source_index !== -1) {
+                                    // Add color to the palette of the new image, and set it as transparent
+                                    $transparent_destination_index = imagecolorallocatealpha($newimage,
+                                        $transparent_color['red'], $transparent_color['green'], $transparent_color['blue'],
+                                        $transparent_color['alpha']);
+                                    imagecolortransparent($newimage, $transparent_destination_index);
+                                }
+                                imagegif($newimage, $file->path);
+                                break;
+
+                            case 'png':
+                                imagealphablending($newimage, false);
+                                imagesavealpha($newimage, true);
+                                imagepng($newimage, $file->path);
+                                break;
+
+                            default:
+                                imagejpeg($newimage, $file->path, 96);
+                                break;
+                        }
+
+                        imagedestroy($source_image);
+                        if(!empty($newimage)) imagedestroy($newimage);
+                    }
+                }
+            }
+        }
+
+        // Image resize
+        if(cot::$cfg['files']['image_resize']){
+            list($width_orig, $height_orig) = getimagesize($file->path);
+            if ($width_orig > cot::$cfg['files']['image_maxwidth'] || $height_orig > cot::$cfg['files']['image_maxheight']){
+                // Проверяем размер изображения и пробуем расчитать необходимый объем оперативы
+                if(!cot_img_check_memory($file->path, (int)ceil(cot::$cfg['files']['image_maxwidth'] *
+                    cot::$cfg['files']['image_maxheight'] * 4 / 1048576))){
+                    @unlink($file->path);
+                    $file->error = cot::$L['files_err_toobig'];
+                    return $file;
+                }
+
+                $input_file = $file->path;
+                $tmp_file =  $file->path.'tmp.'.$file->ext;
+                cot_files_thumbnail($input_file, $tmp_file, cot::$cfg['files']['image_maxwidth'],
+                    cot::$cfg['files']['image_maxheight'], 'auto', (int)cot::$cfg['files']['quality']);
+                @unlink($input_file);
+                @rename($tmp_file, $input_file);
+                $file->size = $this->get_file_size($file->path);
+            }
+        }
+
+    }
+
+    /**
+     * Flip image
+     *
+     * @param resource  $image
+     * @param int       $mode
+     * @return bool|resource
+     */
+    protected function gd_imageflip($image, $mode)
+    {
+        $new_width = $src_width = imagesx($image);
+        $new_height = $src_height = imagesy($image);
+        $new_img = imagecreatetruecolor($new_width, $new_height);
+
+        imagealphablending($new_img, false);
+        imagesavealpha($new_img, true);
+        $colorTransparent = imagecolorallocatealpha($new_img, 0, 0, 0, 127);
+        imagefill($new_img, 0, 0, $colorTransparent);
+
+        if (function_exists('imageflip')) {
+            imagecopy($new_img, $image, 0,0, 0,0,$new_width, $new_height);
+            imageflip($new_img, $mode);
+            return $new_img;
+        }
+
+        $src_x = 0;
+        $src_y = 0;
+        switch ($mode) {
+            case '1': // flip on the horizontal axis
+                $src_y = $new_height - 1;
+                $src_height = -$new_height;
+                break;
+
+            case '2': // flip on the vertical axis
+                $src_x  = $new_width - 1;
+                $src_width = -$new_width;
+                break;
+
+            case '3': // flip on both axes
+                $src_y = $new_height - 1;
+                $src_height = -$new_height;
+                $src_x  = $new_width - 1;
+                $src_width = -$new_width;
+                break;
+
+            default:
+                return $image;
+        }
+        imagecopyresampled(
+            $new_img,
+            $image,
+            0,
+            0,
+            $src_x,
+            $src_y,
+            $new_width,
+            $new_height,
+            $src_width,
+            $src_height
+        );
+        return $new_img;
     }
 
     protected function set_additional_file_properties($file) { }
@@ -723,14 +902,18 @@ class UploadController{
         // Use a timestamp for empty filenames:
         if (!$name) $name = str_replace('.', '-', microtime(true));
 
+        return $name;
+    }
+
+    protected function fix_file_extension($file_path, $name, $type)
+    {
         // Add missing file extension for known image types:
-        if (strpos($name, '.') === false &&
-            preg_match('/^image\/(gif|jpe?g|png)/', $type, $matches)) {
+        if (strpos($name, '.') === false && preg_match('/^image\/(gif|jpe?g|png)/', $type, $matches)) {
             $name .= '.'.$matches[1];
         }
 
-        if (function_exists('exif_imagetype')) {
-            switch(@exif_imagetype($file_path)){
+        if ($this->options['correct_image_extensions'] && function_exists('exif_imagetype')) {
+            switch (@exif_imagetype($file_path)){
                 case IMAGETYPE_JPEG:
                     $extensions = array('jpg', 'jpeg');
                     break;
@@ -755,21 +938,22 @@ class UploadController{
                 }
             }
         }
-
         return $name;
     }
 
     /**
+     * Preliminary file validation
+     *
+     * At upload stage, chunk
+     *
      * @param $uploaded_file
      * @param $file
      * @param $error
      * @param $index
      * @return bool
-     *
-     * @todo проверка mime-типа
      */
-    protected function validate($uploaded_file, $file, $error, $index) {
-
+    protected function preValidate($uploaded_file, $file, $error, $index)
+    {
         global $source, $item, $field;
 
         if(!cot_auth('files', 'a', 'W')){
@@ -795,22 +979,20 @@ class UploadController{
         $content_length = $this->fix_integer_overflow(intval(
             $this->get_server_var('CONTENT_LENGTH')
         ));
+
+        /** @var int $file_size current file size (chunk size) */
         if ($uploaded_file && is_uploaded_file($uploaded_file)) {
+            if($this->options['debug']) $file->debug['is_uploaded_file'] = true;
             $file_size = $this->get_file_size($uploaded_file);
-
-            $valid_exts = explode(',', cot::$cfg['files']['exts']);
-            $valid_exts = array_map('trim', $valid_exts);
-
-            $handle = fopen($uploaded_file, "rb");
-            $tmp = fread ($handle , 10);
-            fclose($handle);
-            if(!in_array('php', $valid_exts) && (mb_stripos(trim($tmp), '<?php') === 0))  {
-                $file->error = cot::$L['files_err_type'];
-                return false;
-            }
 
         } else {
             $file_size = $content_length;
+        }
+
+        if($this->options['debug']) {
+            $file->debug['file'] = $uploaded_file;
+            $file->debug['current_file_size'] = $file_size;
+            $file->debug['file_size'] = $file->size;
         }
 
         $limits = cot_files_getLimits(cot::$usr['id'], $source, $item);
@@ -824,29 +1006,9 @@ class UploadController{
             return false;
         }
 
-        $params = cot_import('param', 'R', 'HTM');
-        if(!empty($params)){
-            $params = unserialize(base64_decode($params));
-            if(!empty($params['type'])){
-                $params['type'] = json_decode($params['type']);
-                $is_img = (int)in_array($file_ext, array('gif', 'jpg', 'jpeg', 'png'));
-                $typeOk = false;
-                if(in_array('all' , $params['type'])){
-                    $typeOk = true;
-                }elseif(in_array('image' , $params['type']) && $is_img){
-                    $typeOk = true;
-                }
-
-                if(!$typeOk){
-                    $file->error = cot::$L['files_err_type'];
-                    return false;
-                }
-            }
-        }
-
         if(!isset($params['field'])) $params['field'] = $field;
         if(!isset($params['limit'])) {
-            if($limits['count_left'] == 0){
+            if($limits['count_left'] == 0) {
                 $file->error = cot::$L['files_err_count'];
                 return false;
             }
@@ -859,32 +1021,74 @@ class UploadController{
 
         }
 
-//        $max_width = @$this->options['max_width'];
-//        $max_height = @$this->options['max_height'];
-//        $min_width = @$this->options['min_width'];
-//        $min_height = @$this->options['min_height'];
-//        if (($max_width || $max_height || $min_width || $min_height)) {
-//            list($img_width, $img_height) = $this->get_image_size($uploaded_file);
-//        }
-//        if (!empty($img_width)) {
-//            if ($max_width && $img_width > $max_width) {
-//                $file->error = $this->get_error_message('max_width');
-//                return false;
-//            }
-//            if ($max_height && $img_height > $max_height) {
-//                $file->error = $this->get_error_message('max_height');
-//                return false;
-//            }
-//            if ($min_width && $img_width < $min_width) {
-//                $file->error = $this->get_error_message('min_width');
-//                return false;
-//            }
-//            if ($min_height && $img_height < $min_height) {
-//                $file->error = $this->get_error_message('min_height');
-//                return false;
-//            }
-//        }
         return true;
     }
 
+    /**
+     * Uploaded file validation
+     * @param $file
+     * @return bool
+     *
+     * @todo validate mime-type
+     */
+    protected function validate($file)
+    {
+        /* === Hook === */
+        foreach (cot_getextplugins('files.upload.before.validate') as $pl) {
+            include $pl;
+        }
+        /* ===== */
+
+        $valid_exts = explode(',', cot::$cfg['files']['exts']);
+        $valid_exts = array_map('trim', $valid_exts);
+
+        $handle = fopen($file->path, "rb");
+        $tmp = fread ($handle , 10);
+        fclose($handle);
+        if(!in_array('php', $valid_exts) && (mb_stripos(trim($tmp), '<?php') === 0))  {
+            $file->error = cot::$L['files_err_type'];
+            return false;
+        }
+        unset($tmp);
+
+        $mime = cot_files_getMime($file->path);
+
+        if($this->options['debug']) $file->debug['mime'] = $mime;
+
+        $params = cot_import('param', 'R', 'HTM');
+        if(!empty($params)){
+            $params = unserialize(base64_decode($params));
+            if(!empty($params['type'])){
+                $params['type'] = json_decode($params['type']);
+                $typeOk = false;
+                if(in_array('all' , $params['type'])){
+                    $typeOk = true;
+
+                } elseif(in_array('image' , $params['type']) && cot_files_isValidImageFile($file->path)) {
+                    $typeOk = true;
+
+                } elseif(in_array('video' , $params['type']) && mb_stripos($mime, 'video') !== false) {
+                    $typeOk = true;
+
+                } elseif(in_array('audio' , $params['type']) && mb_stripos($mime, 'audio') !== false) {
+                    $typeOk = true;
+                }
+
+                if(!$typeOk) {
+                    $file->error = cot::$L['files_err_type'];
+                    return false;
+                }
+            }
+        }
+
+        $result = true;
+
+        /* === Hook === */
+        foreach (cot_getextplugins('files.upload.validate') as $pl) {
+            include $pl;
+        }
+        /* ===== */
+
+        return $result;
+    }
 }

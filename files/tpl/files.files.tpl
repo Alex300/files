@@ -1,17 +1,5 @@
 <!-- BEGIN: MAIN -->
 <!DOCTYPE HTML>
-<!--
-/*
- * jQuery File Upload Plugin Demo 9.1.0
- * https://github.com/blueimp/jQuery-File-Upload
- *
- * Copyright 2010, Sebastian Tschan
- * https://blueimp.net
- *
- * Licensed under the MIT license:
- * http://www.opensource.org/licenses/MIT
- */
--->
 <html lang="en">
 <head>
     <!-- Force latest IE rendering engine or ChromeFrame if installed -->
@@ -21,9 +9,7 @@
     <meta charset="utf-8">
     <title>{PHP.L.files_attachments}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Bootstrap styles -->
-    <link rel="stylesheet" href="{PHP.cfg.modules_dir}/files/lib/bootstrap/css/bootstrap.min.css?{PHP.cot_modules.files.version}">
-    <link rel="stylesheet" href="{PHP.cfg.modules_dir}/files/lib/bootstrap/css/bootstrap-theme.min.css?{PHP.cot_modules.files.version}">
+    {PHP|cot_files_loadBootstrap()}
     {PHP.out.head_head}
     <!-- Generic page styles -->
     <link rel="stylesheet" href="{PHP.cfg.modules_dir}/files/tpl/widget.css?{PHP.cot_modules.files.version}">
