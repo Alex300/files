@@ -106,6 +106,73 @@ function cot_files_formGroupClass($name)
 }
 
 /**
+ * Allocate memory
+ *
+ * @param int $needMemory Memory to allocate in bytes
+ * @return bool TRUE if enough memory is available, FALSE otherwise
+ */
+function cot_files_memory_allocate($needMemory)
+{
+    if(function_exists('cot_memory_allocate')) return cot_memory_allocate($needMemory);
+
+    $needMemory = (int)$needMemory;
+    if(empty($needMemory)) return false;
+
+    // Getting memory occupied by the script (in bytes)
+    $usedMem = memory_get_usage(true);
+
+    $haveMem = ini_get('memory_limit');
+
+    // no limit set, so we try any way
+    if ($haveMem == '-1')  return true;
+
+    preg_match('/(\d+)(\w+)/', $haveMem, $mtch);
+    if (!empty($mtch[2])) {
+        $mtch[2] = mb_strtoupper($mtch[2]);
+        if ($mtch[2] == 'G') {
+            $haveMem =  $mtch[1] * 1073741824;
+
+        } elseif ($mtch[2] == 'M') {
+            $haveMem =  $mtch[1] * 1048576;
+
+        } elseif ($mtch[2] == 'K') {
+            $haveMem =  $mtch[1] * 1024;
+        }
+    }
+
+    $needMem = intval($needMemory + $usedMem);
+
+    if ($haveMem < $needMem) {
+        // Could not allocate memory
+        if (!ini_set('memory_limit', $needMem)) return false;
+
+    } else {
+        return true;
+    }
+
+    // Making sure we could allocate enough memory
+    $haveMem = ini_get('memory_limit');
+    preg_match('/(\d+)(\w+)/', $haveMem, $mtch);
+    if (!empty($mtch[2])) {
+        $mtch[2] = mb_strtoupper($mtch[2]);
+        if ($mtch[2] == 'G') {
+            $haveMem =  $mtch[1] * 1073741824;
+
+        } elseif ($mtch[2] == 'M') {
+            $haveMem =  $mtch[1] * 1048576;
+
+        } elseif ($mtch[2] == 'K') {
+            $haveMem =  $mtch[1] * 1024;
+        }
+    }
+
+    // No, we couldn't allocate enough memory
+    if ($haveMem < $needMem) return false;
+
+    return true;
+}
+
+/**
  * Checks if file extension is allowed for upload. Returns error message or empty string.
  * Emits error messages via cot_error().
  *
@@ -718,7 +785,6 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
  */
 function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop', $quality = 85, $upscale = false)
 {
-    //$ext = strtolower(pathinfo($source, PATHINFO_EXTENSION));
     $ext = cot_files_get_ext($source);
 
     if(!file_exists($source)) return false;
@@ -740,10 +806,7 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
     $height = (mb_substr($height, -1, 1) == '%') ? (int) ($height_orig * (int) mb_substr($height, 0, -1) / 100) : (int) $height;
 
     // Avoid loading images there's not enough memory for
-    if (function_exists('cot_img_check_memory') && !cot_img_check_memory($source, (int)ceil($width * $height * 4 / 1048576)))
-    {
-        return false;
-    }
+    if (!cot_img_check_memory($source, (int)ceil($width * $height * 4 / 1048576))) return false;
 
     if ($resize == 'crop')
     {
@@ -831,6 +894,9 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
 //        imagefill($newimage, 0, 0, $color);
 //        imagesavealpha($newimage, true);
 //    }
+
+    // Avoid loading images there's not enough memory for
+    if (!cot_img_check_memory($source)) return false;
 
     switch ($ext)
     {

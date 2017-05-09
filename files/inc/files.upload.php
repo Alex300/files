@@ -400,180 +400,202 @@ class UploadController
 
         list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
 
-        if ($this->preValidate($uploaded_file, $file, $error, $index)) {
-            $file->ext = cot_files_get_ext($file->name);
+        if (!$this->preValidate($uploaded_file, $file, $error, $index)) {
+            $file->debug['path'] = $file->path;
+            $file->debug['uploaded_file'] = $uploaded_file;
+            $file->debug['upload_dir'] = cot_files_tempDir();
 
-            $this->handle_form_data($file, $index);
+            $file->error = !empty($file->error) ? $file->error : 'Unknown error';
+            unset($file->path);
+            unset($file->file_name);
+            if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
 
-            $upload_dir = cot_files_tempDir();
-            if (!is_dir($upload_dir)) mkdir($upload_dir, cot::$cfg['dir_perms'], true);
+            return $file;
+        }
 
-            $file_path = $upload_dir. '/'.$file->name;
 
-            $append_file = $content_range && is_file($file_path) && $file->size > $this->get_file_size($file_path);
-            if ($uploaded_file && is_uploaded_file($uploaded_file)) {
-                // multipart/formdata uploads (POST method uploads)
-                if ($append_file) {
-                    file_put_contents(
-                        $file_path,
-                        fopen($uploaded_file, 'r'),
-                        FILE_APPEND
-                    );
+        $file->ext = cot_files_get_ext($file->name);
 
-                } else {
-                    move_uploaded_file($uploaded_file, $file_path);
-                }
+        $this->handle_form_data($file, $index);
 
-            } else {
-                // Non-multipart uploads (PUT method support)
+        $upload_dir = cot_files_tempDir();
+        if (!is_dir($upload_dir)) mkdir($upload_dir, cot::$cfg['dir_perms'], true);
+
+        $file_path = $upload_dir. '/'.$file->name;
+
+        $append_file = $content_range && is_file($file_path) && $file->size > $this->get_file_size($file_path);
+        if ($uploaded_file && is_uploaded_file($uploaded_file)) {
+            // multipart/formdata uploads (POST method uploads)
+            if ($append_file) {
                 file_put_contents(
                     $file_path,
-                    fopen($this->options['input_stream'], 'r'),
-                    $append_file ? FILE_APPEND : 0
+                    fopen($uploaded_file, 'r'),
+                    FILE_APPEND
                 );
+
+            } else {
+                move_uploaded_file($uploaded_file, $file_path);
             }
 
-            $file_size = $this->get_file_size($file_path, $append_file);
+        } else {
+            // Non-multipart uploads (PUT method support)
+            file_put_contents(
+                $file_path,
+                fopen($this->options['input_stream'], 'r'),
+                $append_file ? FILE_APPEND : 0
+            );
+        }
 
-            // File is uploaded
-            if ($file_size === $file->size) {
-                $file->path = $file_path;
-                $file->isImage = false;
-                if (cot_files_isValidImageFile($file_path)) {
-                    $file->isImage = true;
+        $file_size = $this->get_file_size($file_path, $append_file);
+
+        // Fist of all we need memory to process this file
+        // 2 MB for other script processing
+        if(!cot_files_memory_allocate($file_size + 2097152)) {
+            if($file_path && file_exists($file_path)) unlink($file_path);
+            unset($file->path, $file->file_name);
+            if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
+            return $file;
+        }
+
+        // File is uploaded
+        if ($file_size === $file->size) {
+            $file->path = $file_path;
+            $file->isImage = false;
+            if (cot_files_isValidImageFile($file_path)) {
+                $file->isImage = true;
+            }
+
+            // Validate uploaded file
+            if(!$this->validate($file) || $file->error) {
+                if($file_path && file_exists($file_path)) unlink($file_path);
+                unset($file->path, $file->file_name);
+                if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
+                return $file;
+            }
+
+            if($file->isImage) $this->handle_image_file($file);
+
+            if($file->error) {
+                if($file_path && file_exists($file_path)) unlink($file_path);
+                unset($file->path, $file->file_name);
+                if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
+                return $file;
+            }
+
+            $params = cot_import('param', 'R', 'HTM');
+            if(!empty($params)){
+                $params = unserialize(base64_decode($params));
+            }
+
+            $uid = $usr['id'];
+            if($usr['isadmin']){
+                $uid = cot_import('uid', 'G', 'INT');
+                if(is_null($uid)) $uid = $usr['id'];
+            }
+
+            // saving
+            $objFile = new files_model_File();
+            $objFile->file_name = $file->file_name;
+            $objFile->user_id = $uid;
+            $objFile->file_source = $source;
+            $objFile->file_item = $item;
+            $objFile->file_field = $field;
+            $objFile->file_ext = $file->ext;
+            $objFile->file_img = $file->isImage;
+            $objFile->file_size = $file->size;
+
+            if(!in_array($source, array('sfs', 'pfs')) && $item == 0){
+                $unikey = cot_import('unikey', 'G', 'TXT');
+                if($unikey) $objFile->file_unikey = $unikey;
+            }
+
+            /* === Hook === */
+            foreach (cot_getextplugins('files.upload.before_save') as $pl) {
+                include $pl;
+            }
+            /* ===== */
+
+            if($id = $objFile->save()) {
+                $file->name = $file->file_name;
+                $objFile->file_path = cot_files_path($source, $item, $objFile->file_id, $file->ext, $objFile->user_id);
+                $file_dir = dirname($objFile->file_path);
+                if (!is_dir($file_dir)) {
+                    mkdir($file_dir, cot::$cfg['dir_perms'], true);
                 }
-
-                // Validate uploaded file
-                if(!$this->validate($file) || $file->error) {
-                    if($file_path && file_exists($file_path)) unlink($file_path);
+                if(!@rename($file->path, $objFile->file_path)){
+                    @unlink($file->path);
                     unset($file->path, $file->file_name);
                     if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
+                    $file->error = cot::$L['files_err_upload'];
+                    $objFile->delete();
                     return $file;
                 }
+                $objFile->save();
 
-                if($file->isImage) $this->handle_image_file($file);
-
-                if($file->error) {
-                    if($file_path && file_exists($file_path)) unlink($file_path);
-                    unset($file->path, $file->file_name);
-                    if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
-                    return $file;
+                // Avatar support
+                if(!empty($params['avatar']) && $objFile->file_img && $objFile->file_source == 'pfs'){
+                    $objFile->makeAvatar();
                 }
 
-                $params = cot_import('param', 'R', 'HTM');
-                if(!empty($params)){
-                    $params = unserialize(base64_decode($params));
-                }
+                $file->url = cot::$cfg['mainurl'] . '/' . $objFile->file_path;
+                $file->thumbnailUrl = $file->thumbnail = ($file->isImage) ? cot::$cfg['mainurl'] . '/' . cot_files_thumb($id) :
+                    cot::$cfg['mainurl'] . '/' . $objFile->icon;
+                $file->id = $id;
+                $file->deleteUrl = cot::$cfg['mainurl'] . '/index.php?e=files&m=upload&id='.$objFile->file_id.
+                    '&_method=DELETE&x='.cot::$sys['xk'];
+                $file->deleteType = 'POST';
 
-                $uid = $usr['id'];
-                if($usr['isadmin']){
-                    $uid = cot_import('uid', 'G', 'INT');
-                    if(is_null($uid)) $uid = $usr['id'];
-                }
 
-                // saving
-                $objFile = new files_model_File();
-                $objFile->file_name = $file->file_name;
-                $objFile->user_id = $uid;
-                $objFile->file_source = $source;
-                $objFile->file_item = $item;
-                $objFile->file_field = $field;
-                $objFile->file_ext = $file->ext;
-                $objFile->file_img = $file->isImage;
-                $objFile->file_size = $file->size;
+                $editForm = array(
+                    0 => array(
+                        'title'   => cot::$L['Title'],
+                        'element' => cot_inputbox('text', 'file_title', '',
+                            array('class' => 'form-control file-edit', 'placeholder' => cot::$L['Title']))
+                    )
+                );
+                // Extra fields
+                if(!empty($cot_extrafields[files_model_File::tableName()])) {
+                    foreach ($cot_extrafields[files_model_File::tableName()] as $exfld) {
+                        $uname = strtoupper($exfld['field_name']);
+                        $exfld_name = 'file_'.$exfld['field_name'];
+                        $exfld_element = cot_build_extrafields('file_' . $exfld['field_name'], $exfld, '');
+                        $exfld_title = isset(cot::$L['files_' . $exfld['field_name'] . '_title']) ?
+                            cot::$L['files_' . $exfld['field_name'] . '_title'] : $exfld['field_description'];
 
-                if(!in_array($source, array('sfs', 'pfs')) && $item == 0){
-                    $unikey = cot_import('unikey', 'G', 'TXT');
-                    if($unikey) $objFile->file_unikey = $unikey;
+                        $file->{$exfld_name} = cot_build_extrafields_data('files', $exfld, '');
+                        $editForm[] = array(
+                            'title'   => $exfld_title,
+                            'element' => $exfld_element,
+                        );
+                    }
                 }
+                // /Extra fields
+                $file->editForm = $editForm;
 
                 /* === Hook === */
-                foreach (cot_getextplugins('files.upload.before_save') as $pl) {
+                foreach (cot_getextplugins('files.upload.after_save') as $pl) {
                     include $pl;
                 }
                 /* ===== */
 
-                if($id = $objFile->save()) {
-                    $file->name = $file->file_name;
-                    $objFile->file_path = cot_files_path($source, $item, $objFile->file_id, $file->ext, $objFile->user_id);
-                    $file_dir = dirname($objFile->file_path);
-                    if (!is_dir($file_dir)) {
-                        mkdir($file_dir, cot::$cfg['dir_perms'], true);
-                    }
-                    if(!@rename($file->path, $objFile->file_path)){
-                        @unlink($file->path);
-                        unset($file->path, $file->file_name);
-                        if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
-                        $file->error = cot::$L['files_err_upload'];
-                        $objFile->delete();
-                        return $file;
-                    }
-                    $objFile->save();
-
-                    // Avatar support
-                    if(!empty($params['avatar']) && $objFile->file_img && $objFile->file_source == 'pfs'){
-                        $objFile->makeAvatar();
-                    }
-
-                    $file->url = cot::$cfg['mainurl'] . '/' . $objFile->file_path;
-                    $file->thumbnailUrl = $file->thumbnail = ($file->isImage) ? cot::$cfg['mainurl'] . '/' . cot_files_thumb($id) :
-                        cot::$cfg['mainurl'] . '/' . $objFile->icon;
-                    $file->id = $id;
-                    $file->deleteUrl = cot::$cfg['mainurl'] . '/index.php?e=files&m=upload&id='.$objFile->file_id.
-                        '&_method=DELETE&x='.cot::$sys['xk'];
-                    $file->deleteType = 'POST';
-
-
-                    $editForm = array(
-                        0 => array(
-                            'title'   => cot::$L['Title'],
-                            'element' => cot_inputbox('text', 'file_title', '',
-                                array('class' => 'form-control file-edit', 'placeholder' => cot::$L['Title']))
-                        )
-                    );
-                    // Extra fields
-                    if(!empty($cot_extrafields[files_model_File::tableName()])) {
-                        foreach ($cot_extrafields[files_model_File::tableName()] as $exfld) {
-                            $uname = strtoupper($exfld['field_name']);
-                            $exfld_name = 'file_'.$exfld['field_name'];
-                            $exfld_element = cot_build_extrafields('file_' . $exfld['field_name'], $exfld, '');
-                            $exfld_title = isset(cot::$L['files_' . $exfld['field_name'] . '_title']) ?
-                                cot::$L['files_' . $exfld['field_name'] . '_title'] : $exfld['field_description'];
-
-                            $file->{$exfld_name} = cot_build_extrafields_data('files', $exfld, '');
-                            $editForm[] = array(
-                                'title'   => $exfld_title,
-                                'element' => $exfld_element,
-                            );
-                        }
-                    }
-                    // /Extra fields
-                    $file->editForm = $editForm;
-
-                    /* === Hook === */
-                    foreach (cot_getextplugins('files.upload.after_save') as $pl) {
-                        include $pl;
-                    }
-                    /* ===== */
-
-                } else {
-                    if($file_path && file_exists($file_path)) unlink($file_path);
-                    unset($file->path, $file->file_name);
-                    if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
-                    $file->error = cot::$L['files_err_upload'];
-                    return $file;
-                }
-
             } else {
-                $file->size = $file_size;
-//                if (!$content_range && $this->options['discard_aborted_uploads']) {
-                if (!$content_range) {
-                    unlink($file_path);
-                    $file->error = cot::$L['files_err_abort'];
-                }
+                if($file_path && file_exists($file_path)) unlink($file_path);
+                unset($file->path, $file->file_name);
+                if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
+                $file->error = cot::$L['files_err_upload'];
+                return $file;
             }
-            $this->set_additional_file_properties($file);
+
+        } else {
+            $file->size = $file_size;
+//                if (!$content_range && $this->options['discard_aborted_uploads']) {
+            if (!$content_range) {
+                unlink($file_path);
+                $file->error = cot::$L['files_err_abort'];
+            }
         }
+        $this->set_additional_file_properties($file);
+
         unset($file->path);
         unset($file->file_name);
         if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
@@ -631,7 +653,7 @@ class UploadController
 
     protected function handle_image_file($file)
     {
-        // Проверяем размер изображения и пробуем расчитать необходимый объем оперативы
+        // Check the image size and try to calculate and allocate the required RAM amount
         if(!cot_img_check_memory($file->path)){
             @unlink($file->path);
             $file->error = cot::$L['files_err_toobig'];
@@ -685,8 +707,7 @@ class UploadController
                     // imagerotate потребляет много памяти. Попросим в 1.5 раза больше
                     $needExtraMem = $width * $height * $depth * $channels / 1048576 * 1.5;
 
-                    $size_ok = function_exists('cot_img_check_memory') ? cot_img_check_memory($file->path,
-                        (int)ceil($needExtraMem)) : true;
+                    $size_ok = cot_img_check_memory($file->path, (int)ceil($needExtraMem));
 
                     if ($size_ok) {
                         $newImage = null;
@@ -795,7 +816,7 @@ class UploadController
         if(cot::$cfg['files']['image_resize']){
             list($width_orig, $height_orig) = getimagesize($file->path);
             if ($width_orig > cot::$cfg['files']['image_maxwidth'] || $height_orig > cot::$cfg['files']['image_maxheight']){
-                // Проверяем размер изображения и пробуем расчитать необходимый объем оперативы
+                // Check the image size and try to calculate and allocate the required RAM amount
                 if(!cot_img_check_memory($file->path, (int)ceil(cot::$cfg['files']['image_maxwidth'] *
                     cot::$cfg['files']['image_maxheight'] * 4 / 1048576))){
                     @unlink($file->path);
@@ -821,11 +842,18 @@ class UploadController
      * @param resource  $image
      * @param int       $mode
      * @return bool|resource
+     *
+     * @todo get extra memory if needed
      */
     protected function gd_imageflip($image, $mode)
     {
         $new_width = $src_width = imagesx($image);
         $new_height = $src_height = imagesy($image);
+
+        if(!cot_files_memory_allocate($new_width * $new_height * 4 * 1.9)) {
+            return false;
+        }
+
         $new_img = imagecreatetruecolor($new_width, $new_height);
 
         imagealphablending($new_img, false);

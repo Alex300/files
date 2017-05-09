@@ -5,10 +5,11 @@ var dndOffset = 0;
 $(function () {
     'use strict';
 
-    var x = filesConfig['x'];
+    var x = filesConfig['x'],
+        fileUpload = $('.fileupload');
 
     // Initialize the jQuery File Upload widget:
-    $('.fileupload').each(function () {
+    fileUpload.each(function () {
         var fileInput = $(this);
 
         var uplId = $(this).attr('id');
@@ -93,6 +94,7 @@ $(function () {
             url: fileInput.fileupload('option', 'url'),
             dataType: 'json',
             context: $(fileInput)[0]
+
         }).always(function () {
                 $(this).removeClass('fileupload-processing');
             }).done(function (result) {
@@ -151,8 +153,8 @@ $(function () {
 
     if (window.FormData) {
         // Replacement of existing images
-        // Supported on moder browsers only
-        $('.fileupload').on('change', 'input.files-replace-file', function() {
+        // Supported on modern browsers only
+        fileUpload.on('change', 'input.files-replace-file', function() {
             var id   = $(this).attr('data-id');
             var filename = $(this).val();
             var pass = true;
@@ -168,12 +170,13 @@ $(function () {
             }
             if (pass) {
                 $('button.files-replace-button[data-id="'+id+'"]').show();
+
             } else {
                 $('button.files-replace-button[data-id="'+id+'"]').hide();
             }
         });
 
-        $('.fileupload').on('click', 'button.files-replace-button', function() {
+        fileUpload.on('click', 'button.files-replace-button', function() {
             var id   = $(this).attr('data-id');
             var input = document.getElementById("files-file"+id);
             var formdata = new FormData();
@@ -213,9 +216,11 @@ $(function () {
             }, 'json') .fail(function() {
                 $('#files-file'+id).after('<div id="files-error-'+ id +'"><span class="label label-danger">Error</span></div>');
                 $('#files-error-'+ id).fadeOut('slow');
+
             }).always(function() {
                 $(procDiv).remove();
             });
+
             return false;
         });
     }
@@ -223,7 +228,7 @@ $(function () {
     /**
      * Ajax редактирование полей загруженных элементов
      */
-    $('.fileupload').on('change', '.file-edit', function() {
+    fileUpload.on('change', '.file-edit', function() {
         var that  = this,
             me    = $(this),
             row   = $(this).closest('.template-download'),
@@ -258,11 +263,15 @@ $(function () {
 
     });
 
+    fileUpload.on('click', '.delete', function(e) {
+        $('div.tooltip').remove();
+    });
+
 
     /**
      * PFS. Вставка изображения в текст
      */
-    $('.fileupload').on('click', '.pasteImage', function(e) {
+    fileUpload.on('click', '.pasteImage', function(e) {
         e.preventDefault();
 
         var parentTr =  $(this).parents('.template-download');
@@ -281,7 +290,7 @@ $(function () {
     /**
      * PFS. Вставка в текст иконки с ссылкой на изображение
      */
-    $('.fileupload').on('click', '.pasteThumb', function(e) {
+    fileUpload.on('click', '.pasteThumb', function(e) {
         e.preventDefault();
 
         var parentTr =  $(this).parents('.template-download');
@@ -300,7 +309,7 @@ $(function () {
     /**
      * PFS. Вставка в текст ссылки на файл
      */
-    $('.fileupload').on('click', '.pasteFile', function(e) {
+    fileUpload.on('click', '.pasteFile', function(e) {
         e.preventDefault();
 
         var parentTr =  $(this).parents('.template-download');
@@ -328,6 +337,7 @@ $(function () {
         }
         var found = false,
             node = e.target;
+
         do {
             if (node === dropZone[0]) {
                 found = true;
@@ -340,6 +350,7 @@ $(function () {
         } else {
             dropZone.removeClass('hover');
         }
+
         window.dropZoneTimeout = setTimeout(function () {
             window.dropZoneTimeout = null;
             dropZone.removeClass('in hover');
