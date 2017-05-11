@@ -117,7 +117,7 @@ $L['cfg_chunkSize_hint'] = 'Large files can be uploaded in smaller chunks with
     browsers supporting the Blob API. (Leave empty to disable)';
 
 $L['cfg_img_separator'] = 'Image options';
-$L['cfg_image_convert'] = 'Convert all images to JPG on upload';
+$L['cfg_image_convert'] = 'Convert all images to JPG (or JPEG) on upload';
 $L['cfg_image_resize'] = array('Reduce uploaded images', 'Loaded images will be proportionally reduced
     In accordance with the following parameters');
 $L['cfg_image_maxwidth']  = 'Reduce image width to';
