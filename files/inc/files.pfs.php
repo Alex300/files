@@ -68,7 +68,7 @@ class PfsController
         } else {
             $folders = files_model_Folder::findByCondition(array(array('user_id', $uid)), $perPage, $df, array(array('ff_title', 'ASC')));
             $folders_count = files_model_Folder::count(array(array('user_id', $uid)));
-            $onPageFoldersCount = count($folders);
+            $onPageFoldersCount = is_array($folders) ? count($folders) : $folders;
         }
 
         if($uid === 0) {
