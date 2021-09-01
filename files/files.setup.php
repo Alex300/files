@@ -5,10 +5,10 @@ Code=files
 Name=Files
 Description=Personal File Space and attach files to posts and pages
 Category=files-media
-Version=1.0.4
-Date=May 03, 2017
+Version=1.0.5
+Date=Aug 31, 2021
 Author=Cotonti Team, Kalnov Alexey    <kalnovalexey@yandex.ru>
-Copyright=(c) Cotonti Team, Portal30 Studio http://portal30.ru 2014-2017
+Copyright=(c) Cotonti Team, 2014-2021 Lily Software https://lily-software.com (ex. Portal30 Studio)
 Notes=DO NOT FORGET to create a writable folder for the files
 Auth_guests=R
 Lock_guests=12345A
@@ -72,7 +72,7 @@ avatar_framing=53:select:height,width,auto,border_auto,crop:crop:Default avatar 
  * @author Cotonti Team
  * @author Kalnov Alexey    <kalnovalexey@yandex.ru>
  * @copyright (c) Cotonti Team
- * @copyright (c) Portal30 Studio http://portal30.ru 2014-2017
+ * @copyright (c) 2014-2021 Lily Software https://lily-software.com (ex. Portal30 Studio)
  *
  * В настройках все размеры указываются в байтах
  * в ограничениях 0 - не ограничено, -1 - запрещено

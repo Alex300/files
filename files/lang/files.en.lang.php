@@ -11,6 +11,12 @@ defined('COT_CODE') or die('Wrong URL.');
 $L['info_desc'] = 'Personal file space and attach images and files and build galleries using pages and forum posts';
 $L['info_notes'] = 'DO NOT FORGET to create a writable folder for the files. Jquery must be on.';
 
+// if lang/en/main.en.lang.php is not loaded
+if(!isset($L['PFS'])) {
+    $mainLangFile = cot_langfile('main', 'core');
+    if(file_exists($mainLangFile)) include $mainLangFile;
+}
+
 $L['files_add'] = 'Add files';
 $L['files_albums'] = 'Albums';
 $L['files_attach'] = 'Attach files';

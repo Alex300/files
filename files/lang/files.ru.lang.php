@@ -11,6 +11,12 @@ defined('COT_CODE') or die('Wrong URL.');
 $L['info_desc'] = 'Личное файловое хранилище и прикрепление изображений и файлов и создание фотогалерей на страницах и постах';
 $L['info_notes'] = 'НЕ ЗАБУДЬТЕ создать доступную для записи директорию для хранения файлов. Jquery должен быть включен.';
 
+// if lang/ru/main.ru.lang.php is not loaded
+if(!isset($L['PFS'])) {
+    $mainLangFile = cot_langfile('main', 'core');
+    if(file_exists($mainLangFile)) include $mainLangFile;
+}
+
 $L['files_add'] = 'Добавить файлы';
 $L['files_albums'] = 'Альбомы';
 $L['files_attach'] = 'Прикрепить файлы';
