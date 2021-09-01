@@ -29,6 +29,6 @@ if($user_data['user_id'] > 0 && $user_data['user_avatar'] > 0){
         $temp_array['AVATAR'] = cot_files_user_avatar($user_data['user_avatar'], $user_data);
         $temp_array['AVATAR_ID'] = $user_data['user_avatar'];
         $temp_array['AVATAR_URL'] = cot_files_user_avatar_url($user_data['user_avatar_file']);
-        $temp_array['AVATAR_RAW'] = files_model_File::getById($user_data['user_avatar_file']);
+        $temp_array['AVATAR_RAW'] = $user_data['user_avatar_file'];
     }
 }
