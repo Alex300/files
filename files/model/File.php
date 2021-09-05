@@ -327,7 +327,7 @@ class files_model_File extends Som_Model_ActiveRecord
 
         list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
 
-        if ( ($item instanceof files_model_File) && is_array($cacheArr[$item->file_id]) ) {
+        if ( ($item instanceof files_model_File) && isset($cacheArr[$item->file_id]) && is_array($cacheArr[$item->file_id]) ) {
             $temp_array = $cacheArr[$item->file_id];
 
         } elseif (is_int($item) && is_array($cacheArr[$item])) {
