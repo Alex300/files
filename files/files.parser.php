@@ -132,6 +132,8 @@ if (!function_exists('files_thumb_bbcode'))
     }
 }
 
-$text = preg_replace_callback('`\[files_thumb\?(.+?)\]`i', 'files_thumb_bbcode', $text);
-$text = preg_replace_callback('`\[files_image\?(.+?)\]`i', 'files_image_bbcode', $text);
-$text = preg_replace_callback('`\[pfs_gallery\?(.+?)\]`i', 'pfs_gallery_bbcode', $text);
+if (!empty($text)) {
+    $text = preg_replace_callback('`\[files_thumb\?(.+?)\]`i', 'files_thumb_bbcode', $text);
+    $text = preg_replace_callback('`\[files_image\?(.+?)\]`i', 'files_image_bbcode', $text);
+    $text = preg_replace_callback('`\[pfs_gallery\?(.+?)\]`i', 'pfs_gallery_bbcode', $text);
+}
