@@ -787,13 +787,16 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
 {
     $ext = cot_files_get_ext($source);
 
-    if(!file_exists($source)) return false;
-    if(!cot_files_isValidImageFile($source)) return false;
+    if (!file_exists($source)) return false;
+    if (!cot_files_isValidImageFile($source)) return false;
 
+    /**
+     * @var int $width_orig
+     * @var int $height_orig
+     */
     list($width_orig, $height_orig) = getimagesize($source);
 
-    if (!$upscale && $width_orig <= $width && $height_orig <= $height)
-    {
+    if (!$upscale && $width_orig <= $width && $height_orig <= $height) {
         // Do not upscale smaller images, just copy them
         copy($source, $target);
         return true;
@@ -808,78 +811,56 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
     // Avoid loading images there's not enough memory for
     if (!cot_img_check_memory($source, (int)ceil($width * $height * 4 / 1048576))) return false;
 
-    if ($resize == 'crop')
-    {
+    if ($resize == 'crop') {
         $newimage = imagecreatetruecolor($width, $height);
         $width_temp = $width;
         $height_temp = $height;
 
-        if ($width_orig / $height_orig > $width / $height)
-        {
-            $width = $width_orig * $height / $height_orig;
-            $x_pos = -($width - $width_temp) / 2;
+        if ($width_orig / $height_orig > $width / $height) {
+            $width = intval($width_orig * $height / $height_orig);
+            $x_pos = intval(-($width - $width_temp) / 2);
             $y_pos = 0;
-        }
-        else
-        {
-            $height = $height_orig * $width / $width_orig;
-            $y_pos = -($height - $height_temp) / 2;
+        } else {
+            $height = intval($height_orig * $width / $width_orig);
+            $y_pos = intval(-($height - $height_temp) / 2);
             $x_pos = 0;
         }
-    }
-    else
-    {
-        if ($resize == 'width' || $height == 0)
-        {
-            if ($width_orig > $width)
-            {
-                $height = $height_orig * $width / $width_orig;
-            }
-            else
-            {
+    } else {
+        if ($resize == 'width' || $height == 0) {
+            if ($width_orig > $width) {
+                $height = intval($height_orig * $width / $width_orig);
+            } else {
                 $width = $width_orig;
                 $height = $height_orig;
             }
-        }
-        elseif ($resize == 'height' || $width == 0)
-        {
-            if ($height_orig > $height)
-            {
-                $width = $width_orig * $height / $height_orig;
-            }
-            else
-            {
+        } elseif ($resize == 'height' || $width == 0) {
+            if ($height_orig > $height) {
+                $width = intval($width_orig * $height / $height_orig);
+            } else {
                 $width = $width_orig;
                 $height = $height_orig;
             }
-        }
-        elseif ($resize == 'auto')
-        {
-            if ($width_orig < $width && $height_orig < $height)
-            {
+        } elseif ($resize == 'auto') {
+            if ($width_orig < $width && $height_orig < $height) {
                 $width = $width_orig;
                 $height = $height_orig;
-            }
-            else
-            {
-                if ($width_orig / $height_orig > $width / $height)
-                {
-                    $height = $width * $height_orig / $width_orig;
-                }
-                else
-                {
-                    $width = $height * $width_orig / $height_orig;
+            } else {
+                if ($width_orig / $height_orig > $width / $height) {
+                    $height = intval($width * $height_orig / $width_orig);
+                } else {
+                    $width = intval($height * $width_orig / $height_orig);
                 }
             }
         }
 
-        $newimage = imagecreatetruecolor($width, $height); //
+        $newimage = imagecreatetruecolor($width, $height);
     }
 
     // Handle transparency in GIF and PNG images:
     switch ($ext) {
         case 'gif':
             imagecolortransparent($newimage, imagecolorallocatealpha($newimage, 0, 0, 0, 127));
+            break;
 
         case 'png':
             imagecolortransparent($newimage, imagecolorallocatealpha($newimage, 0, 0, 0, 127));
@@ -898,14 +879,15 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
     // Avoid loading images there's not enough memory for
     if (!cot_img_check_memory($source)) return false;
 
-    switch ($ext)
-    {
+    switch ($ext) {
         case 'gif':
             $oldimage = imagecreatefromgif($source);
             break;
+
         case 'png':
             $oldimage = imagecreatefrompng($source);
             break;
+
         default:
             $oldimage = imagecreatefromjpeg($source);
             break;
@@ -913,14 +895,15 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
 
     imagecopyresampled($newimage, $oldimage, $x_pos, $y_pos, 0, 0, $width, $height, $width_orig, $height_orig);
 
-    switch ($ext)
-    {
+    switch ($ext) {
         case 'gif':
             imagegif($newimage, $target);
             break;
+
         case 'png':
             imagepng($newimage, $target);
             break;
+
         default:
             imagejpeg($newimage, $target, $quality);
             break;
@@ -944,12 +927,9 @@ function cot_files_thumb_path($id, $width, $height, $frame){
     $thumbs_folder = cot::$cfg['files']['folder'] . '/_thumbs/' . $id;
     $mask = $thumbs_folder . '/' . cot::$cfg['files']['prefix'] . $id . '-' . $width . 'x' . $height . '-' . $frame . '.*';
     $files = glob($mask, GLOB_NOSORT);
-    if (!$files || count($files) == 0)
-    {
+    if (!$files || count($files) == 0) {
         return false;
-    }
-    else
-    {
+    } else {
         return $files[0];
     }
 }
@@ -1065,11 +1045,13 @@ function cot_files_formGarbageCollect(){
 }
 
 /**
- * Workaround for splitting basename whith beginning utf8 multibyte char
+ * Workaround for splitting basename with beginning utf8 multibyte char
  */
-function mb_basename($filepath, $suffix = NULL)
+function mb_basename($filepath, $suffix = '')
 {
     $splited = preg_split('/\//', rtrim($filepath, '/ '));
+    $suffix = (string) $suffix;
+
     return substr(basename('X' . $splited[count($splited) - 1], $suffix), 1);
 }
 

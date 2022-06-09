@@ -353,8 +353,9 @@ class UploadController
         }
 
         // Keep an existing filename if this is part of a chunked upload:
-        $uploaded_bytes = $this->fix_integer_overflow(intval($content_range[1]));
-        while(is_file($tmpDir.$name)) {
+        $tmp = isset($content_range[1]) ? intval($content_range[1]) : 0;
+        $uploaded_bytes = $this->fix_integer_overflow($tmp);
+        while (is_file($tmpDir.$name)) {
             if ($uploaded_bytes === $this->get_file_size( $tmpDir.$name)) {
                 break;
             }
@@ -466,24 +467,24 @@ class UploadController
             }
 
             // Validate uploaded file
-            if(!$this->validate($file) || $file->error) {
-                if($file_path && file_exists($file_path)) unlink($file_path);
+            if (!$this->validate($file) || !empty($file->error)) {
+                if ($file_path && file_exists($file_path)) unlink($file_path);
                 unset($file->path, $file->file_name);
-                if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
+                if (!$this->options['debug'] && isset($file->debug)) unset($file->debug);
                 return $file;
             }
 
-            if($file->isImage) $this->handle_image_file($file);
+            if ($file->isImage) $this->handle_image_file($file);
 
-            if($file->error) {
-                if($file_path && file_exists($file_path)) unlink($file_path);
+            if (!empty($file->error)) {
+                if ($file_path && file_exists($file_path)) unlink($file_path);
                 unset($file->path, $file->file_name);
-                if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
+                if (!$this->options['debug'] && isset($file->debug)) unset($file->debug);
                 return $file;
             }
 
             $params = cot_import('param', 'R', 'HTM');
-            if(!empty($params)){
+            if (!empty($params)){
                 $params = unserialize(base64_decode($params));
             }
 
@@ -515,14 +516,14 @@ class UploadController
             }
             /* ===== */
 
-            if($id = $objFile->save()) {
+            if ($id = $objFile->save()) {
                 $file->name = $file->file_name;
                 $objFile->file_path = cot_files_path($source, $item, $objFile->file_id, $file->ext, $objFile->user_id);
                 $file_dir = dirname($objFile->file_path);
                 if (!is_dir($file_dir)) {
                     mkdir($file_dir, cot::$cfg['dir_perms'], true);
                 }
-                if(!@rename($file->path, $objFile->file_path)){
+                if (!@rename($file->path, $objFile->file_path)){
                     @unlink($file->path);
                     unset($file->path, $file->file_name);
                     if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);

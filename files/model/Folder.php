@@ -204,25 +204,24 @@ class files_model_Folder extends Som_Model_ActiveRecord
 
         if(empty($urlParams)) $urlParams = array('m' => 'pfs');
 
-        list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
+        list(cot::$usr['auth_read'], cot::$usr['auth_write'], cot::$usr['isadmin']) = cot_auth('files', 'a');
 
-        if ( ($item instanceof files_model_Folder) && is_array($cacheArr[$item->ff_id]) ) {
+        if (($item instanceof files_model_Folder) && isset($cacheArr[$item->ff_id]) && is_array($cacheArr[$item->ff_id])) {
             $temp_array = $cacheArr[$item->ff_id];
-        }elseif (is_int($item) && is_array($cacheArr[$item])){
+        } elseif (is_int($item) && is_array($cacheArr[$item])) {
             $temp_array = $cacheArr[$item];
-        }else{
-            if (is_int($item) && $item > 0){
+        } else {
+            if (is_int($item) && $item > 0) {
                 $item = files_model_Folder::getById($item);
             }
             /** @var files_model_Folder $item  */
-            if ($item){
-
+            if ($item) {
                 $itemUrl = cot_url('files', array('f' => $item->ff_id));
 
                 $itemEditUrl = '';
                 $itemDelUrl = '';
                 $itemPfsUrl = '';
-                if($usr['isadmin'] || ($usr['id'] > 0 && $usr['id'] == $item->user_id)){
+                if ($usr['isadmin'] || ($usr['id'] > 0 && $usr['id'] == $item->user_id)) {
                     $urlParams['f'] = $item->ff_id;
                     $itemPfsUrl = cot_url('files',$urlParams);
 

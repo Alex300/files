@@ -58,17 +58,18 @@ class PfsController
         $folders = null;
         $folder = null;
         $folders_count = 0;
-        $isSFS = false;                        // is Site File Space
+        $isSFS = false;             // is Site File Space
+        $onPageFoldersCount = 0;
 
-        if($f > 0) {
+        if ($f > 0) {
             $folder = files_model_Folder::getById($f);
-            if(!$folder) cot_die_message(404);
+            if (!$folder) cot_die_message(404);
             $uid = (int)$folder->user_id;
 
         } else {
             $folders = files_model_Folder::findByCondition(array(array('user_id', $uid)), $perPage, $df, array(array('ff_title', 'ASC')));
             $folders_count = files_model_Folder::count(array(array('user_id', $uid)));
-            $onPageFoldersCount = count($folders);
+            $onPageFoldersCount = !empty($folders) ? count($folders) : 0;
         }
 
         if($uid === 0) {
@@ -173,7 +174,7 @@ class PfsController
                 array('file_item', $f),
             );
             if(!$isSFS) $countCond[] = array('user_id', $uid);
-            $files_count = intval(files_model_File::count($countCond));
+            $files_count = files_model_File::count($countCond);
 
         } else {
             $files_count = $folder->ff_count;
@@ -195,12 +196,13 @@ class PfsController
         ));
 
         // Если мы находимся в корне, то можем работать с папками
-        if($f == 0){
-            if($folders){
+        if ($f == 0) {
+            $foldersFilesCount = 0;
+            $onPageFoldersFilesCount = 0;
+            if ($folders) {
                 $i = 1;
                 $folderIds = array();
-                $onPageFoldersFilesCount = 0;
-                foreach($folders as $folderRow){
+                foreach ($folders as $folderRow) {
                     $folderIds[] = $folderRow->ff_id;
                 }
 
@@ -215,12 +217,13 @@ class PfsController
                 $sql = cot::$db->query("SELECT SUM(ff_count) as files_count FROM $db_files_folders WHERE user_id=?", $uid);
                 $foldersFilesCount = $sql->fetchColumn();
 
-                foreach($folders as $folderRow){
+                foreach($folders as $folderRow) {
+                    $itemsSize = !empty($ff_filessize[$folderRow->ff_id]) ? (int) $ff_filessize[$folderRow->ff_id] : 0;
                     $t->assign(files_model_Folder::generateTags($folderRow, 'FOLDER_ROW_', $urlParams));
                     $t->assign(array(
                         'FOLDER_ROW_NUM' => $i,
-                        'FOLDER_ROW_ITEMS_SIZE' => cot_build_filesize((int)$ff_filessize[$folderRow->ff_id]),
-                        'FOLDER_ROW_ITEMS_SIZE_RAW' => (int)$ff_filessize[$folderRow->ff_id],
+                        'FOLDER_ROW_ITEMS_SIZE' => cot_build_filesize($itemsSize),
+                        'FOLDER_ROW_ITEMS_SIZE_RAW' => $itemsSize,
                     ));
                     $i++;
                     $t->parse('MAIN.FOLDERS.ROW');
@@ -285,10 +288,12 @@ class PfsController
             cot_sendheaders();
 
             $html = Resources::render();
-            if($html) cot::$out['head_head'] = $html.cot::$out['head_head'];
+            if (!isset(cot::$out['head_head'])) cot::$out['head_head'] = '';
+            if (!empty($html)) cot::$out['head_head'] = $html.cot::$out['head_head'];
 
             $html = Resources::renderFooter();
-            if($html) cot::$out['footer_rc'] = $html.cot::$out['footer_rc'];
+            if (!isset(cot::$out['footer_rc'])) cot::$out['footer_rc'] = '';
+            if (!empty($html)) cot::$out['footer_rc'] = $html . cot::$out['footer_rc'];
 
             $t->assign(array(
                 'PFS_HEAD' => cot::$out['head_head'],
@@ -567,10 +572,12 @@ class PfsController
             cot_sendheaders();
 
             $html = Resources::render();
-            if($html) cot::$out['head_head'] = $html.cot::$out['head_head'];
+            if (!isset(cot::$out['head_head'])) cot::$out['head_head'] = '';
+            if (!empty($html)) cot::$out['head_head'] = $html . cot::$out['head_head'];
 
             $html = Resources::renderFooter();
-            if($html) cot::$out['footer_rc'] = $html.cot::$out['footer_rc'];
+            if (!isset(cot::$out['footer_rc'])) cot::$out['footer_rc'] = '';
+            if (!empty($html)) cot::$out['footer_rc'] = $html . cot::$out['footer_rc'];
 
             $t->assign(array(
                 'PFS_HEAD' => cot::$out['head_head'],
