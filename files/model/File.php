@@ -142,8 +142,17 @@ class files_model_File extends Som_Model_ActiveRecord
         $path_parts = pathinfo($filePath);
         $res &= @unlink($filePath);
         $fCnt = array_sum(array_map('is_file', glob($path_parts['dirname'].'/*')));
-        // Delete folder if it empty
-        if($fCnt === 0)  @rmdir($path_parts['dirname']);
+        // Delete folder if it is empty
+        if ($fCnt === 0)  @rmdir($path_parts['dirname']);
+
+        // Delete user's folder in pfs if it is empty
+        if ($this->_data['file_source'] == 'pfs') {
+            $path = cot::$cfg['files']['folder'] . '/pfs/' . $this->_data['user_id'];
+            $fCnt = array_sum(array_map('is_file', glob($path.'/*')));
+
+            if ($fCnt === 0)  @rmdir($path);
+        }
+
         $res &= $this->remove_thumbs();
         @rmdir(cot::$cfg['files']['folder'] . '/_thumbs/' . $this->_data['file_id']);
 

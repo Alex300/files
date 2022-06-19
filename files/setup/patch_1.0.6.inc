@@ -28,3 +28,6 @@ cot::$db->query("ALTER TABLE `{$db_files_folders}`
     MODIFY `ff_album` TINYINT DEFAULT '0',
     MODIFY `ff_count` INT DEFAULT '0',
     ENGINE=InnoDB;");
+
+cot::$db->query("UPDATE `{$db_files}` 
+DROP INDEX `file_source_2`, ADD INDEX `cot_files_source_2_idx` (`file_source`, `file_item`, `file_field`);");

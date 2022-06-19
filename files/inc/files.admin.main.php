@@ -9,12 +9,14 @@
  * @copyright http://portal30.ru
  *
  */
-class MainController{
+class MainController
+{
 
     /**
      * Main (index) Action.
      */
-    public function indexAction(){
+    public function indexAction()
+    {
         global $adminpath, $adminhelp, $cot_yesno, $adminsubtitle;
 
         $tpl = new XTemplate(cot_tplfile('files.admin.main'));
@@ -59,12 +61,13 @@ class MainController{
      * @return string
      * @todo на будущее, выбор поля для сортировки и фильтры
      */
-    public function allpfsAction(){
+    public function allpfsAction()
+    {
         global $adminpath, $adminhelp, $adminsubtitle, $db_files, $db_users, $cot_extrafields;
 
         $adminpath[] = array(cot_url('admin', 'm=files&s=allpfs'), cot::$L['files_allpfs']);
-        $adminhelp = cot::$L['adm_help_allpfs'];
-        $adminsubtitle = cot::$L['files_allpfs'];
+        $adminhelp = cot::$L['adm_help_allpfs'] ?? '';
+        $adminsubtitle = cot::$L['files_allpfs'] ?? '';
 
         $urlParams = array('m'=>'files', 'a'=> 'allpfs');
         $perPage = cot::$cfg['maxrowsperpage'];
