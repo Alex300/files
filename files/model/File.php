@@ -82,9 +82,15 @@ class files_model_File extends Som_Model_ActiveRecord
     {
         global $db_users;
 
-        if($this->_data['file_source'] != 'pfs' || $this->_data['file_img'] == 0 || !$this->_data['user_id']) return false;
+        if ($this->_data['file_source'] != 'pfs' || $this->_data['file_img'] == 0 || !$this->_data['user_id']) {
+            return false;
+        }
 
-        static::$_db->update($db_users, array('user_avatar' => $this->_data['file_id']), 'user_id=?', array($this->_data['user_id']));
+        static::$_db->update($db_users, array(
+            'user_avatar' => $this->_data['file_id']),
+            'user_id=?',
+            array($this->_data['user_id']
+       ));
     }
 
     protected function beforeInsert()
@@ -131,8 +137,10 @@ class files_model_File extends Som_Model_ActiveRecord
     {
         $res = true;
 
-        $path_parts = pathinfo($this->_data['file_path']);
-        $res &= @unlink($this->_data['file_path']);
+        $filePath = cot::$cfg['files']['folder']. '/' . $this->_data['file_path'];
+
+        $path_parts = pathinfo($filePath);
+        $res &= @unlink($filePath);
         $fCnt = array_sum(array_map('is_file', glob($path_parts['dirname'].'/*')));
         // Delete folder if it empty
         if($fCnt === 0)  @rmdir($path_parts['dirname']);
@@ -144,7 +152,7 @@ class files_model_File extends Som_Model_ActiveRecord
 
     protected function afterDelete()
     {
-        if(in_array($this->_data['file_source'], array('pfs', 'sfs')) && $this->_data['file_item'] > 0) {
+        if (in_array($this->_data['file_source'], array('pfs', 'sfs')) && $this->_data['file_item'] > 0) {
             $condition = array(
                 array('file_source', $this->_data['file_source']),
                 array('file_item', $this->_data['file_item']),
@@ -172,7 +180,7 @@ class files_model_File extends Som_Model_ActiveRecord
         $path = $thumbs_folder . '/' . cot::$cfg['files']['prefix'] . $this->_data['file_id'];
         $thumbPaths =  glob($path . '-*', GLOB_NOSORT);
 
-        if(!empty($thumbPaths) && is_array($thumbPaths)){
+        if (!empty($thumbPaths) && is_array($thumbPaths)) {
             foreach ($thumbPaths as $thumb) {
                 $res &= @unlink($thumb);
             }
@@ -339,7 +347,7 @@ class files_model_File extends Som_Model_ActiveRecord
             }
             /** @var files_model_File $item  */
             if ($item && $item->file_id > 0){
-                $itemUrl = $item->file_img ? $item->file_path : cot_url('files',
+                $itemUrl = $item->file_img ? cot::$cfg['files']['folder'] .'/'. $item->file_path : cot_url('files',
                     array('m' => 'files', 'a'=>'download', 'id' => $item->file_id));
 
                 $date_format = 'datetime_medium';

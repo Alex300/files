@@ -82,7 +82,7 @@ class UploadController
         global $source, $item, $field, $filename, $cot_extrafields;
 
         $uid = cot_import('uid', 'G', 'INT');
-        if(is_null($uid)) $uid = cot::$usr['id'];
+        if (is_null($uid)) $uid = cot::$usr['id'];
 
         $res = array();
         $condition = array(
@@ -91,17 +91,16 @@ class UploadController
             'field'  => array('file_field', $field),
         );
 
-        if($source == 'pfs'){
+        if ($source == 'pfs') {
             if($item == 0) $condition['user'] = array('user_id', $uid);
         }
 
-        if(!in_array($source, array('sfs', 'pfs')) && $item == 0){
+        if (!in_array($source, array('sfs', 'pfs')) && $item == 0){
             $unikey = cot_import('unikey', 'G', 'TXT');
             if($unikey) $condition['unikey'] = array('file_unikey', $unikey);
         }
 
-        if (is_null($filename) || empty($filename))
-        {
+        if (is_null($filename) || empty($filename)) {
             $multi = true;
             $files = files_model_File::findByCondition($condition, 0, 0, 'file_order ASC');
 
@@ -110,24 +109,26 @@ class UploadController
             $condition[] = array('file_name', $filename);
             $files = files_model_File::findByCondition($condition, 1);
         }
-        if (!$files){
+        if (!$files) {
             return $this->generate_response(array(), $print_response);
         }
 
-        foreach ($files as $row){
+        foreach ($files as $row) {
+            $path = cot::$cfg['files']['folder']. '/' . $row->file_path;
+
             $file = array(
                 'id'          => $row->file_id,
                 'name'        => $row->file_name,
                 'ext'         => htmlspecialchars($row->file_ext),
-                'size'        => (int)$row->file_size,
-                'url'         => cot::$cfg['mainurl'] . '/' . cot_files_path($source, $item, $row->file_id, $row->file_ext),
+                'size'        => (int) $row->file_size,
+                'url'         => cot::$cfg['mainurl'] . '/' . $path,
                 'deleteType'  => 'POST',
-                'deleteUrl'   => cot::$cfg['mainurl'] . '/index.php?e=files&m=upload&id='.$row->file_id.'&_method=DELETE&x='.cot::$sys['xk'],
+                'deleteUrl'   => cot::$cfg['mainurl'] .
+                    '/index.php?e=files&m=upload&id='.$row->file_id.'&_method=DELETE&x='.cot::$sys['xk'],
                 'title'       => htmlspecialchars($row->file_title),
                 'lastmod'     => strtotime($row->file_updated),
                 'isImage'     => $row->file_img
             );
-
 
             $editForm = array(
                 0 => array(
@@ -311,7 +312,7 @@ class UploadController
             }
             $this->head();
             if ($this->get_server_var('HTTP_CONTENT_RANGE')) {
-                $files = isset($content[$this->options['param_name']]) ?
+                $files = isset($this->options['param_name']) && isset($content[$this->options['param_name']]) ?
                     $content[$this->options['param_name']] : null;
                 if ($files && is_array($files) && is_object($files[0]) && $files[0]->size) {
                     header('Range: 0-'.(
@@ -399,7 +400,7 @@ class UploadController
         $file->size = $this->fix_integer_overflow(intval($size));
         $file->type = $type;
 
-        list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
+        list(cot::$usr['auth_read'], cot::$usr['auth_write'], cot::$usr['isadmin']) = cot_auth('files', 'a');
 
         if (!$this->preValidate($uploaded_file, $file, $error, $index)) {
             $file->debug['path'] = $file->path;
@@ -413,7 +414,6 @@ class UploadController
 
             return $file;
         }
-
 
         $file->ext = cot_files_get_ext($file->name);
 
@@ -484,14 +484,14 @@ class UploadController
             }
 
             $params = cot_import('param', 'R', 'HTM');
-            if (!empty($params)){
+            if (!empty($params)) {
                 $params = unserialize(base64_decode($params));
             }
 
-            $uid = $usr['id'];
-            if($usr['isadmin']){
+            $uid = cot::$usr['id'];
+            if ($usr['isadmin']){
                 $uid = cot_import('uid', 'G', 'INT');
-                if(is_null($uid)) $uid = $usr['id'];
+                if (is_null($uid)) $uid = $usr['id'];
             }
 
             // saving
@@ -505,7 +505,7 @@ class UploadController
             $objFile->file_img = $file->isImage;
             $objFile->file_size = $file->size;
 
-            if(!in_array($source, array('sfs', 'pfs')) && $item == 0){
+            if (!in_array($source, array('sfs', 'pfs')) && $item == 0){
                 $unikey = cot_import('unikey', 'G', 'TXT');
                 if($unikey) $objFile->file_unikey = $unikey;
             }
@@ -518,15 +518,23 @@ class UploadController
 
             if ($id = $objFile->save()) {
                 $file->name = $file->file_name;
+
+                // Path relative to files root directory
                 $objFile->file_path = cot_files_path($source, $item, $objFile->file_id, $file->ext, $objFile->user_id);
-                $file_dir = dirname($objFile->file_path);
+
+                // Path relative to site root directory
+                $filePath = cot::$cfg['files']['folder'] . '/' . $objFile->file_path;
+                $file_dir = dirname($filePath);
+
                 if (!is_dir($file_dir)) {
                     mkdir($file_dir, cot::$cfg['dir_perms'], true);
                 }
-                if (!@rename($file->path, $objFile->file_path)){
+                if (!@rename($file->path, $filePath)) {
+                    // Fail to move file from temporary directory to the files directory
+                    // Delete temporary file
                     @unlink($file->path);
                     unset($file->path, $file->file_name);
-                    if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
+                    if (!$this->options['debug'] && isset($file->debug)) unset($file->debug);
                     $file->error = cot::$L['files_err_upload'];
                     $objFile->delete();
                     return $file;
@@ -534,11 +542,11 @@ class UploadController
                 $objFile->save();
 
                 // Avatar support
-                if(!empty($params['avatar']) && $objFile->file_img && $objFile->file_source == 'pfs'){
+                if (!empty($params['avatar']) && $objFile->file_img && $objFile->file_source == 'pfs'){
                     $objFile->makeAvatar();
                 }
 
-                $file->url = cot::$cfg['mainurl'] . '/' . $objFile->file_path;
+                $file->url = cot::$cfg['mainurl'] . '/' . $filePath;
                 $file->thumbnailUrl = $file->thumbnail = ($file->isImage) ? cot::$cfg['mainurl'] . '/' . cot_files_thumb($id) :
                     cot::$cfg['mainurl'] . '/' . $objFile->icon;
                 $file->id = $id;

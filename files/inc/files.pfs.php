@@ -33,9 +33,9 @@ class PfsController
         $parser = cot_import('parser', 'G', 'ALP');			// custom parser
 
         $f = cot_import('f', 'G', 'INT');     // folder id
-        if(!$f) $f = 0;
+        if (!$f) $f = 0;
         $uid = cot_import('uid', 'G', 'INT');  // user ID or 0
-        if($uid === null) $uid = $usr['id'];
+        if ($uid === null) $uid = $usr['id'];
 
         $standalone = 0;
 
@@ -72,7 +72,7 @@ class PfsController
             $onPageFoldersCount = !empty($folders) ? count($folders) : 0;
         }
 
-        if($uid === 0) {
+        if ($uid === 0) {
             $isSFS = true;
             cot_block(cot::$usr['isadmin']);
 
@@ -82,13 +82,13 @@ class PfsController
 
         $limits = cot_files_getLimits($uid);
         // Ограничения на загрузку файлов через POST
-        if(cot::$cfg['files']['chunkSize'] == 0){
+        if (cot::$cfg['files']['chunkSize'] == 0){
             $limits['size_maxfile']  = min((int)$limits['size_maxfile'], cot_get_uploadmax() * 1024);
         }
 
         $crumbs = array();
         $title = '';
-        if($isSFS){
+        if ($isSFS) {
             $tmp = $urlParams;
             if($uid != cot::$usr['id']) $tmp['uid'] = $uid;
             if($folder) {
@@ -138,8 +138,8 @@ class PfsController
         // ========== Statistics =========
         $percentage = $limits['size_maxtotal'] > 0 ? round($limits['size_used'] / $limits['size_maxtotal'] * 100) : 100;
         $progressbarClass = 'progress-bar-info';
-        if($percentage > 70) $progressbarClass = 'progress-bar-warning';
-        if($percentage > 90) $progressbarClass = 'progress-bar-danger';
+        if ($percentage > 70) $progressbarClass = 'progress-bar-warning';
+        if ($percentage > 90) $progressbarClass = 'progress-bar-danger';
         $t->assign(array(
             'PFS_TOTALSIZE' => cot_build_filesize($limits['size_used'], 1),
             'PFS_TOTALSIZE_RAW' => $limits['size_used'],
@@ -185,7 +185,7 @@ class PfsController
             'FOLDERS_COUNT_RAW' => $folders_count,
             'FOLDERS_ONPAGE_COUNT' => cot_declension($onPageFoldersCount, $Ls['Folders']),
             'FOLDERS_ONPAGE_COUNT_RAW' => $onPageFoldersCount,
-            'FILES_WIDGET' => cot_files_filebox($source, $f, '', 'all', -1, 'files.filebox', $standalone),
+            'FILES_WIDGET' => cot_files_filebox($source, $f, '', 'all', -1, 'files.filebox', $standalone, $uid),
             'IS_SITE_FILE_SPACE' => $isSFS,
             'PFS_FILES_COUNT' => cot_declension($files_count, $Ls['Files']),
             'PFS_FILES_COUNT_RAW' => $files_count,
@@ -266,12 +266,11 @@ class PfsController
 
             if($pgf > 1) cot::$out['subtitle'] .= " (".cot::$L['Page']." {$pgf})";
 
-        }else{
-            if($folder) $t->assign(files_model_Folder::generateTags($folder, 'FOLDER_', $urlParams));
+        } else {
+            if ($folder) $t->assign(files_model_Folder::generateTags($folder, 'FOLDER_', $urlParams));
         }
 
-        if ($standalone){
-
+        if ($standalone) {
             $outHeaderFooter = false;
 
             if ($c1 == 'pageform' && $c2 == 'rpageurl'){
@@ -319,10 +318,9 @@ class PfsController
             }
             /* ===== */
 
-        }else{
+        } else {
             /* === Hook === */
-            foreach (cot_getextplugins('files.pfs.tags') as $pl)
-            {
+            foreach (cot_getextplugins('files.pfs.tags') as $pl) {
                 include $pl;
             }
             /* ===== */
@@ -361,7 +359,7 @@ class PfsController
         $isSFS = false;                             // is Site File Space
 
         $act = cot_import('act', 'P', 'ALP');
-        if(!$f) {
+        if (!$f) {
             $f = 0;
             $folder = new files_model_Folder();
             if($uid === null) $uid = cot::$usr['id'];
@@ -418,7 +416,7 @@ class PfsController
 
         $limits = cot_files_getLimits($uid);
 
-        if($isSFS){
+        if ($isSFS){
             $tmp = $urlParams;
             if($uid != cot::$usr['id']) $tmp['uid'] = $uid;
             if($f) {
@@ -459,7 +457,7 @@ class PfsController
             }
         }
 
-        if(!$f) {
+        if (!$f) {
             $isAlbum = cot_import('ff_album', 'P', 'BOL');
             $crumbs[] = $title = ($isAlbum) ? cot::$L['files_newalbum'] : cot::$L['files_newfolder'];
             cot::$out['subtitle'] = $title.' - '.cot::$out['subtitle'];

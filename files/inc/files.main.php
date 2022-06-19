@@ -11,7 +11,8 @@ defined('COT_CODE') or die('Wrong URL.');
  * @author Cotonti Team
  * @copyright (c) Cotonti Team 2008-2014
  */
-class MainController{
+class MainController
+{
 
 
     /**
@@ -331,7 +332,6 @@ class MainController{
         }
         /* ===== */
 
-
         // Error and message handling
         cot_display_messages($t);
 
@@ -343,16 +343,16 @@ class MainController{
     /**
      * Альбомы пользователя
      */
-    public function albumAction(){
+    public function albumAction()
+    {
         return $this->indexAction('image');
     }
 
     /**
      * Файлы пользователя
      */
-    public function filesAction(){
+    public function filesAction()
+    {
         return $this->indexAction('file');
     }
-
-
 }

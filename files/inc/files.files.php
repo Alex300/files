@@ -11,18 +11,16 @@ defined('COT_CODE') or die('Wrong URL.');
  * @author Cotonti Team
  * @copyright (c) Cotonti Team 2008-2014
  */
-class FilesController{
-
-
-    public function displayAction(){
+class FilesController
+{
+    public function displayAction() {
         $source = cot_import('source', 'G', 'ALP');
         $item = cot_import('item', 'G', 'INT');
-        $field = (string)cot_import('field', 'G', 'TXT');
+        $field = (string) cot_import('field', 'G', 'TXT');
         $limit = cot_import('limit', 'G', 'INT');
-        if(is_null($limit)) $limit = -1;
-        $type = (string)cot_import('type', 'G', 'TXT');
+        if (is_null($limit)) $limit = -1;
+        $type = (string) cot_import('type', 'G', 'TXT');
         if(!$type) $type = 'all';
-
 
         $html = cot_files_filebox($source, $item, $field, $type, $limit, 'files.files', 2);
 
@@ -33,20 +31,23 @@ class FilesController{
     /**
      * File download
      */
-    public function downloadAction(){
+    public function downloadAction()
+    {
         $id = cot_import('id', 'G', 'INT');
 
-        if(!$id) cot_die_message(404);
+        if (!$id) cot_die_message(404);
 
         $file = files_model_File::getById($id);
-        if(!$file) cot_die_message(404);
+        if (!$file) cot_die_message(404);
 
         // Increase downloads counter
         $file->file_count += 1;
         $file->save();
 
+        $filePath = cot::$cfg['files']['folder'] . ' / ' . $file->file_path;
+
         // Detect MIME type if possible
-        $contenttype = cot_files_getMime($file->file_path);
+        $contenttype = cot_files_getMime($filePath);
 
         // Avoid sending unexpected errors to the client - we should be serving a file,
         // we don't want to corrupt the data we send
@@ -58,75 +59,67 @@ class FilesController{
         }
 
         // Make sure the files exists, otherwise we are wasting our time
-        if (!file_exists($file->file_path)){
+        if (!file_exists($filePath)) {
             $file->delete();
             cot_die_message(404);
         }
 
         // Get the 'Range' header if one was sent
-        if (isset($_SERVER['HTTP_RANGE'])){
+        if (isset($_SERVER['HTTP_RANGE'])) {
             $range = $_SERVER['HTTP_RANGE']; // IIS/Some Apache versions
 
-        }elseif (function_exists('apache_request_headers') && $apache = apache_request_headers()){
+        } elseif (function_exists('apache_request_headers') && $apache = apache_request_headers()) {
             // Try Apache again
             $headers = array();
             foreach ($apache as $header => $val) $headers[strtolower($header)] = $val;
-            if (isset($headers['range']))
-            {
+            if (isset($headers['range'])) {
                 $range = $headers['range'];
-            }else{
+            } else {
                 // We can't get the header/there isn't one set
                 $range = FALSE;
             }
 
-        }else{
+        } else {
             // We can't get the header/there isn't one set
             $range = FALSE;
         }
 
         // Get the data range requested (if any)
-        $filesize = filesize($file->file_path);
-        if ($range){
+        $filesize = filesize($filePath);
+        if ($range) {
             $partial = true;
             list($param, $range) = explode('=', $range);
-            if (strtolower(trim($param)) != 'bytes')
-            {
+            if (strtolower(trim($param)) != 'bytes') {
                 // Bad request - range unit is not 'bytes'
                 cot_die_message(400);
             }
             $range = explode(',', $range);
             $range = explode('-', $range[0]); // We only deal with the first requested range
-            if (count($range) != 2)
-            {
+            if (count($range) != 2) {
                 // Bad request - 'bytes' parameter is not valid
                 cot_die_message(400);
             }
-            if ($range[0] === '')
-            {
+
+            if ($range[0] === '') {
                 // First number missing, return last $range[1] bytes
                 $end = $filesize - 1;
                 $start = $end - intval($range[0]);
-            }
-            elseif ($range[1] === '')
-            {
+            } elseif ($range[1] === '') {
                 // Second number missing, return from byte $range[0] to end
                 $start = intval($range[0]);
                 $end = $filesize - 1;
-            }
-            else
-            {
+            } else {
                 // Both numbers present, return specific range
                 $start = intval($range[0]);
                 $end = intval($range[1]);
-                if ($end >= $filesize || (!$start && (!$end || $end == ($filesize - 1))))
-                {
+                if ($end >= $filesize || (!$start && (!$end || $end == ($filesize - 1)))) {
                     // Invalid range/whole file specified, return whole file
                     $partial = false;
                 }
             }
             $length = $end - $start + 1;
 
-        }else{
+        } else {
             // No range requested
             $partial = false;
         }
@@ -134,44 +127,44 @@ class FilesController{
         // Send standard headers
         header("Content-Type: $contenttype");
         header("Content-Length: $filesize");
-        header('Last-Modified: '.gmdate('D, d M Y H:i:s T', filemtime($file->file_path)));
+        header('Last-Modified: '.gmdate('D, d M Y H:i:s T', filemtime($filePath)));
         header('Content-Disposition: attachment; filename="'.$file->file_name.'"');
         header('Accept-Ranges: bytes');
 
-        if ($partial){
+        if ($partial) {
             // if requested, send extra headers and part of file...
             header('HTTP/1.1 206 Partial Content');
             header("Content-Range: bytes $start-$end/$filesize");
-            if (!$fp = fopen($file->file_path, 'r'))
-            {
+            if (!$fp = fopen($filePath, 'r')) {
                 // Error out if we can't read the file
                 cot_die_message(500);
             }
-            if ($start)
-            {
+
+            if ($start) {
                 fseek($fp,$start);
             }
-            while ($length)
-            {
+
+            while ($length) {
                 // Read in blocks of 8KB so we don't chew up memory on the server
                 $read = ($length > 8192) ? 8192 : $length;
                 $length -= $read;
                 echo fread($fp,$read);
             }
+
             fclose($fp);
-        }
-        else
-        {
+        } else {
             // ...otherwise just send the whole file
-            readfile($file->file_path);
+            readfile($filePath);
         }
+
         exit();
     }
 
     /**
      * Update field value via Ajax
      */
-    public function updateValueAction(){
+    public function updateValueAction()
+    {
         global $cot_extrafields;
 
         $response = array( 'error' => '');
@@ -231,7 +224,8 @@ class FilesController{
 
 
 
-    public function reorderAction(){
+    public function reorderAction()
+    {
         global $db_files;
 
         $source = cot_import('source', 'P', 'ALP');
@@ -309,7 +303,7 @@ class FilesController{
                     $handle = fopen($uploaded_file, "rb");
                     $tmp = fread ($handle , 10);
                     fclose($handle);
-                    if(!in_array('php', $valid_exts) && (mb_stripos(trim($tmp), '<?php') === 0))  {
+                    if (!in_array('php', $valid_exts) && (mb_stripos(trim($tmp), '<?php') === 0))  {
                         $response['error'] = cot::$L['files_err_type'];
                         echo json_encode($response);
                         exit;
@@ -318,56 +312,57 @@ class FilesController{
                 }
             }
 
-            $path = $file->file_path;
+            $path = cot::$cfg['files']['folder'] .'/'. $file->file_path;
             $file->remove_thumbs();
-            if(file_exists($path)){
-                if(!@unlink($path)){
+            if (file_exists($path)) {
+                if (!@unlink($path)) {
                     $response['error'] = cot::$L['files_err_replace'];
                     echo json_encode($response);
                     exit;
                 }
             }
 
-            $file->file_path = cot_files_path($file->file_source, $file->file_item, $file->file_id, $file->file_ext);
+            $file->file_path = cot_files_path($file->file_source, $file->file_item, $file->file_id, $file->file_ext, $file->user_id);
+            $filePath = cot::$cfg['files']['folder'] .'/'. $file->file_path;
 
-            if ($this->saveUploadedFile($upload, $file->file_path)){
-                $file->file_size = filesize($file->file_path);
-                $file->file_img = cot_files_isValidImageFile($file->file_path) ? 1 : 0;
+            if ($this->saveUploadedFile($upload, $filePath)) {
+                $file->file_size = filesize($filePath);
+                $file->file_img = cot_files_isValidImageFile($filePath) ? 1 : 0;
 
-                if($file->file_img){
+                if ($file->file_img) {
                     // @todo все отправить в handle_image_file()
                     // Image resize
-                    if(cot::$cfg['files']['image_resize']){
-                        list($width_orig, $height_orig) = getimagesize($file->file_path);
-                        if ($width_orig > cot::$cfg['files']['image_maxwidth'] || $height_orig > cot::$cfg['files']['image_maxheight']){
-                            $input_file = $file->file_path;
-                            $tmp_file =  $file->file_path.'tmp.'.$file->file_ext;
+                    if (cot::$cfg['files']['image_resize']) {
+                        list($width_orig, $height_orig) = getimagesize($filePath);
+                        if ($width_orig > cot::$cfg['files']['image_maxwidth'] || $height_orig > cot::$cfg['files']['image_maxheight']) {
+                            $input_file = $filePath;
+                            $tmp_file   = $filePath.'tmp.'.$file->file_ext;
                             cot_files_thumbnail($input_file, $tmp_file, cot::$cfg['files']['image_maxwidth'],
-                                cot::$cfg['files']['image_maxheight'], 'auto', (int)cot::$cfg['files']['quality']);
+                                cot::$cfg['files']['image_maxheight'], 'auto', (int) cot::$cfg['files']['quality']);
                             @unlink($input_file);
                             @rename($tmp_file, $input_file);
-                            $file->file_size = filesize($file->file_path);
+                            $file->file_size = filesize($filePath);
                         }
                     }
                 }
+
                 $file->save();
 
-            }else{
+            } else {
                 $response['error'] = cot::$L['files_err_move'];
                 echo json_encode($response);
                 exit;
             }
-        }else{
+        } else {
             $messages = cot_get_messages();
             $errors = array();
-            foreach ($messages as $msg){
+            foreach ($messages as $msg) {
                 $errors[] = isset(cot::$L[$msg['text']]) ? cot::$L[$msg['text']] : $msg['text'];
             }
             cot_clear_messages();
 
-            if(empty($errors)) $errors[] = cot::$L['error'];
+            if (empty($errors)) $errors[] = cot::$L['error'];
             $response['error'] = implode(',', $errors);
-
         }
 
         echo json_encode($response);
@@ -465,8 +460,9 @@ class FilesController{
      *
      * @todo убедиться, что не остается мусора, если файл залит не через $_POST
      */
-    protected  function saveUploadedFile($input, $path){
-        if (cot_error_found()){
+    protected  function saveUploadedFile($input, $path)
+    {
+        if (cot_error_found()) {
             return false;
         }
 
@@ -475,8 +471,7 @@ class FilesController{
 
         } else {
             $target = fopen($path, 'w');
-            if (!$target)
-            {
+            if (!$target) {
                 return false;
             }
             fseek($input, 0, SEEK_SET);
@@ -485,5 +480,4 @@ class FilesController{
             return true;
         }
     }
-
 }

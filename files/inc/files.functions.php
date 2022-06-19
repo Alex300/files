@@ -110,13 +110,14 @@ function cot_files_formGroupClass($name)
  *
  * @param int $needMemory Memory to allocate in bytes
  * @return bool TRUE if enough memory is available, FALSE otherwise
+ * @deprecated use cot_memory_allocate instead
  */
 function cot_files_memory_allocate($needMemory)
 {
-    if(function_exists('cot_memory_allocate')) return cot_memory_allocate($needMemory);
+    if (function_exists('cot_memory_allocate')) return cot_memory_allocate($needMemory);
 
     $needMemory = (int)$needMemory;
-    if(empty($needMemory)) return false;
+    if (empty($needMemory)) return false;
 
     // Getting memory occupied by the script (in bytes)
     $usedMem = memory_get_usage(true);
@@ -127,6 +128,7 @@ function cot_files_memory_allocate($needMemory)
     if ($haveMem == '-1')  return true;
 
     preg_match('/(\d+)(\w+)/', $haveMem, $mtch);
+
     if (!empty($mtch[2])) {
         $mtch[2] = mb_strtoupper($mtch[2]);
         if ($mtch[2] == 'G') {
@@ -259,6 +261,7 @@ function cot_files_count($source, $item, $field = '', $type = 'all')
 function cot_files_get($source, $item, $field = '', $column = '', $number = 'first')
 {
     static $a_cache;
+
     if (!isset($a_cache[$source][$item][$number]))
     {
         $order_by = $number == 'rand' ? 'RAND()' : 'file_order';
@@ -285,18 +288,15 @@ function cot_files_get($source, $item, $field = '', $column = '', $number = 'fir
 /**
  * Extracts filename extension with tar (.tar.gz, tar.bz2, etc.) support.
  * @param  string $filename File name
- * @return string           File extension or false on error
+ * @return string|false    File extension or false on error
  */
 function cot_files_get_ext($filename)
 {
-    if (preg_match('#((\.tar)?\.\w+)$#', $filename, $m))
-    {
+    if (preg_match('#((\.tar)?\.\w+)$#', $filename, $m)) {
         return mb_strtolower(mb_substr($m[1], 1));
     }
-    else
-    {
-        return false;
-    }
+
+    return false;
 }
 
 /**
@@ -564,20 +564,21 @@ function cot_files_linkFiles($source, $item){
 
         $files = files_model_File::findByCondition($condition);
 
-        if($files){
+        if ($files) {
             foreach($files as $fileRow){
-                $oldPath = $fileRow->file_path;
+                $oldFullPath = cot::$cfg['files']['folder']. '/' . $fileRow->file_path;
                 $newPath = cot_files_path($source, $item, $fileRow->file_id, $fileRow->file_ext, $fileRow->user_id);
+                $newFullPath = cot::$cfg['files']['folder']. '/' . $newPath;
 
-                $file_dir = dirname($newPath);
+                $file_dir = dirname($newFullPath);
                 if (!is_dir($file_dir)) {
                     mkdir($file_dir, cot::$cfg['dir_perms'], true);
                 }
-                if(!@rename($oldPath, $newPath)){
+                if (!@rename($oldFullPath, $newFullPath)) {
                     cot_error(cot::$L['files_err_upload']);
                     $fileRow->delete();
 
-                }else{
+                } else {
                     $fileRow->file_item = $item;
                     $fileRow->file_path = $newPath;
                     $fileRow->file_unikey = '';
@@ -594,37 +595,34 @@ function cot_files_linkFiles($source, $item){
 
 /**
  * Calculates attachment path.
+ * Return path relative to cot::$cfg['files']['folder']
+ *
  * @param  string $source Module or plugin code
  * @param  int    $item Parent item ID
  * @param  int    $id   Attachment ID
  * @param  string $ext  File extension. Leave it empty to auto-detect.
  * @param  int    $uid   User ID for pfs
- * @return string       Path for the file on disk
+ * @return string|false  Path for the file on disk
  */
-function cot_files_path($source, $item, $id, $ext = '', $uid = 0){
+function cot_files_path($source, $item, $id, $ext = '', $uid = 0)
+{
 
-    $filesPath = cot::$cfg['files']['folder'] . '/' . $source . '/' . $item;
-    if($source == 'pfs'){
-        if($uid == 0) $uid = cot::$usr['id'];
-        $filesPath = cot::$cfg['files']['folder'] . '/' . $source . '/'. $uid. '/' . $item;
+    $filesPath = $source . '/' . $item;
+    if ($source == 'pfs') {
+        if ($uid == 0) $uid = cot::$usr['id'];
+        $filesPath = $source . '/'. $uid. '/' . $item;
     }
 
-    if (empty($ext))
-    {
+    if (empty($ext)) {
         // Auto-detect extension
         $mask = $filesPath . '/' . cot::$cfg['files']['prefix'] . $id . '.*';
         $files = glob($mask, GLOB_NOSORT);
-        if (!$files || count($files) == 0)
-        {
+        if (!$files || count($files) == 0) {
             return false;
-        }
-        else
-        {
+        } else {
             return $files[0];
         }
-    }
-    else
-    {
+    } else {
         return $filesPath . '/' . cot::$cfg['files']['prefix'] . $id . '.' . $ext;
     }
 }
@@ -701,58 +699,56 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
 //        $id = $row['file_id'];
 //    }
 
-    if($id instanceof files_model_File){
+    if ($id instanceof files_model_File) {
         $row = $id;
         $id = $row->file_id;
     }
 
     // Validate arguments
-    if (!is_numeric($id) || $id <= 0)
-    {
+    if (!is_numeric($id) || $id <= 0) {
         return '';
     }
 
-    if($watermark === '0' || mb_strtolower($watermark) === 'false') $watermark = false;
+    if ($watermark === '0' || mb_strtolower($watermark) === 'false') $watermark = false;
 
     if (empty($frame) || !in_array($frame, array('width', 'height', 'auto', 'crop', 'border_auto'))){
         $frame = cot::$cfg['files']['thumb_framing'];
     }
 
-    if ($width <= 0)  $width  = (int)cot::$cfg['files']['thumb_width'];
-    if ($height <= 0) $height = (int)cot::$cfg['files']['thumb_height'];
+    if ($width <= 0)  $width  = (int) cot::$cfg['files']['thumb_width'];
+    if ($height <= 0) $height = (int) cot::$cfg['files']['thumb_height'];
 
 
     // Attempt to load from cache
     $thumbs_folder = cot::$cfg['files']['folder'] . '/_thumbs';
     $cache_folder  = $thumbs_folder . '/' . $id;
-    if (!file_exists($cache_folder)){
+    if (!file_exists($cache_folder)) {
         mkdir($cache_folder, cot::$cfg['dir_perms'], true);
     }
     $thumb_path = cot_files_thumb_path($id, $width, $height, $frame);
 
-    if (!$thumb_path || !file_exists($thumb_path))
-    {
+    if (!$thumb_path || !file_exists($thumb_path)) {
         // Generate a new thumbnail
         if (!isset($row)){
             $row = files_model_File::getById($id);
         }
         if (!$row || !$row->file_img) return false;
 
-        $orig_path = $row->file_path;
-        if(!file_exists($orig_path) || !is_readable($orig_path)) return false;
+        $orig_path = cot::$cfg['files']['folder'] .'/'. $row->file_path;
+        if (!file_exists($orig_path) || !is_readable($orig_path)) return false;
 
         $thumbs_folder = $thumbs_folder . '/' . $id;
         $thumb_path = $thumbs_folder . '/'
             . cot::$cfg['files']['prefix'] . $id . '-' . $width . 'x' . $height . '-' . $frame . '.' . $row->file_ext;
 
-        cot_files_thumbnail($orig_path, $thumb_path, $width, $height, $frame, (int)cot::$cfg['files']['quality'],
-            (int)cot::$cfg['files']['upscale']);
+        cot_files_thumbnail($orig_path, $thumb_path, $width, $height, $frame, (int) cot::$cfg['files']['quality'],
+            (int) cot::$cfg['files']['upscale']);
 
         // Watermark
-        if($watermark && !empty(cot::$cfg['files']['thumb_watermark']) && file_exists(cot::$cfg['files']['thumb_watermark'])){
+        if ($watermark && !empty(cot::$cfg['files']['thumb_watermark']) && file_exists(cot::$cfg['files']['thumb_watermark'])) {
             list($th_width, $th_height) = getimagesize($thumb_path);
 
-            if($th_width >= cot::$cfg['files']['thumb_wm_widht'] && $th_height >= cot::$cfg['files']['thumb_wm_height']){
+            if ($th_width >= cot::$cfg['files']['thumb_wm_widht'] && $th_height >= cot::$cfg['files']['thumb_wm_height']) {
                 cot_files_watermark($thumb_path, $thumb_path, cot::$cfg['files']['thumb_watermark']);
             }
         }
@@ -1346,11 +1342,11 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
     list(cot::$usr['auth_read'], cot::$usr['auth_write'], cot::$usr['isadmin']) = cot_auth('files', 'a');
 
     $uid = cot::$usr['id'];
-    if($source == 'pfs' && $usr['isadmin']){
+    if ($source == 'pfs' && $usr['isadmin']) {
         $uid = $userId;
 
-        if(is_null($uid)) $uid = cot_import('uid', 'G', 'INT');
-        if(is_null($uid)) $uid = $usr['id'];
+        if (is_null($uid)) $uid = cot_import('uid', 'G', 'INT');
+        if (is_null($uid)) $uid = $usr['id'];
     }
 
     $nc = $cot_modules['files']["version"];
@@ -1358,7 +1354,7 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
     // Подключаем jQuery-templates только один раз
     static $jQtemplatesOut = false;
     $jQtemplates = '';
-    if(!$jQtemplatesOut){
+    if (!$jQtemplatesOut) {
         $templates = new XTemplate(cot_tplfile('files.templates', 'module'));
         $templates->assign(array(
             'IS_STANDALONE' => ($standalone == 1) ? 1 : 0,
@@ -1432,9 +1428,9 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
 
     $formId = "{$source}_{$item}_{$name}";
     $type = str_replace(' ', '', $type);
-    if(empty($type)){
+    if (empty($type)) {
         $type = array('all');
-    }else{
+    } else {
         $type = explode(',', $type);
     }
     $type = json_encode($type);
@@ -1442,9 +1438,9 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
     $t = new XTemplate(cot_tplfile($tpl, 'module'));
 
     $limits = cot_files_getLimits($usr['id'], $source, $item, $name);
-    if($limit == 0){
+    if ($limit == 0) {
         $limit = 100000000000000000;
-    }elseif($limit == -1){
+    } elseif($limit == -1) {
         $limit = $limits['count_max'];
     }
 
@@ -1457,19 +1453,19 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
     );
 
     $action = 'index.php?e=files&m=upload&source='.$source.'&item='.$item;
-    if(!empty($name)) $action .= '&field='.$name;
+    if (!empty($name)) $action .= '&field='.$name;
 
     static $unikey = '';
 
     $formUnikey = '';
-    if(!in_array($source, array('sfs', 'pfs')) && $item == 0){
+    if (!in_array($source, array('sfs', 'pfs')) && $item == 0) {
         $unikeyName = "cf_{$source}_{$item}";
 
-        if(empty($unikey)){
+        if (empty($unikey)) {
             $unikey = cot_import($unikeyName, 'P', 'TXT');
-            if(!$unikey) $unikey = cot_import($unikeyName, 'G', 'TXT');
+            if (!$unikey) $unikey = cot_import($unikeyName, 'G', 'TXT');
             $unikey = cot_import_buffered($unikeyName, $unikey);
-            if(!$unikey)  $unikey = mb_substr(md5("{$source}_{$item}" . '_'.cot::$usr['id'] . rand(0, 99999999)), 0, 15);
+            if (!$unikey)  $unikey = mb_substr(md5("{$source}_{$item}" . '_'.cot::$usr['id'] . rand(0, 99999999)), 0, 15);
         }
         $params['unikey'] = $unikey;
         $formUnikey = cot_inputbox('hidden', $unikeyName, $unikey);
@@ -1479,7 +1475,7 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
 
     $params = base64_encode(serialize($params));
 
-    if($uid != $usr['id']){
+    if ($uid != $usr['id']) {
         $t->assign(array(
             'UPLOAD_UID'     => $uid,
         ));
@@ -1495,19 +1491,19 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
         'UPLOAD_LIMIT'   => $limit,
         'UPLOAD_TYPE'    => $type,
         'UPLOAD_PARAM'   => $params,
-        'UPLOAD_CHUNK'   => (int)cot::$cfg['files']['chunkSize'],
+        'UPLOAD_CHUNK'   => (int) cot::$cfg['files']['chunkSize'],
         'UPLOAD_EXTS'    => preg_replace('#[^a-zA-Z0-9,]#', '', cot::$cfg['files']['exts']),
 //        'UPLOAD_ACCEPT'  => preg_replace('#[^a-zA-Z0-9,*/-]#', '',cot::$cfg['plugin']['attach2']['accept']),
         'UPLOAD_MAXSIZE' => $limits['size_maxfile'],
         'UPLOAD_ACTION'  => $action,
-        'UPLOAD_THUMB_WIDTH' => (int)cot::$cfg['files']['thumb_width'],
-        'UPLOAD_THUMB_HEIGHT' => (int)cot::$cfg['files']['thumb_height'],
+        'UPLOAD_THUMB_WIDTH' => (int) cot::$cfg['files']['thumb_width'],
+        'UPLOAD_THUMB_HEIGHT' => (int) cot::$cfg['files']['thumb_height'],
         'UPLOAD_X'       => cot::$sys['xk'],
     ));
 
-    if($standalone == 2) {
+    if ($standalone == 2) {
         $html = Resources::render();
-        if($html) cot::$out['head_head'] = $html.cot::$out['head_head'];
+        if ($html) cot::$out['head_head'] = $html.cot::$out['head_head'];
         cot::$out['footer_rc'] .= Resources::renderFooter();
     }
 
