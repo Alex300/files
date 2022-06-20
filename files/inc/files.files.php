@@ -453,7 +453,7 @@ class FilesController
 
     /**
      * Saves an uploaded file regardless of request method.
-     * @param  mixed   $input A value returned by FilesController::getUploadedFile
+     * @param  string   $input A value returned by FilesController::getUploadedFile
      * @see FilesController::getUploadedFile()
      * @param  string  $path  Target path
      * @return boolean        true on success, false on error
@@ -467,7 +467,10 @@ class FilesController
         }
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            return move_uploaded_file($_FILES[$input]['tmp_name'], $path);
+            if (file_exists($_FILES[$input]['tmp_name']) && file_exists($path) && is_writable($path)) {
+                return move_uploaded_file($_FILES[$input]['tmp_name'], $path);
+            }
+            return false;
 
         } else {
             $target = fopen($path, 'w');
