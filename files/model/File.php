@@ -55,27 +55,39 @@ class files_model_File extends Som_Model_ActiveRecord
         return files_model_File::typeIcon($this->_data['file_ext']);
     }
 
+    /**
+     * Get file type icon by extension
+     * @param string $ext
+     * @param int $size
+     * @return string
+     */
     public static function typeIcon($ext, $size = 48)
     {
         $iconUrl = '';
-        if(isset(cot::$R["files_icon_type_{$size}_{$ext}"])){
+        if (isset(cot::$R["files_icon_type_{$size}_{$ext}"])){
             $iconUrl = cot::$R["files_icon_type_{$size}_{$ext}"];
             
         } elseif(isset(cot::$R["files_icon_type_48_{$ext}"])){
             $iconUrl = cot::$R["files_icon_type_48_{$ext}"];
         }
 
-        if(!empty($iconUrl)) return $iconUrl;
+        if (!empty($iconUrl)) {
+            return $iconUrl;
+        }
 
         if (!file_exists(cot::$cfg['modules_dir'] . "/files/img/types/$size")){
             $size = 48;
         }
-        if (file_exists(cot::$cfg['modules_dir'] . "/files/img/types/$size/{$ext}.png")){
-            return cot::$cfg['modules_dir'] . "/files/img/types/$size/{$ext}.png";
 
-        }else{
-            return cot::$cfg['modules_dir'] . "/files/img/types/$size/archive.png";
+        if (file_exists(cot::$cfg['modules_dir'] . "/files/img/types/$size/{$ext}.png")) {
+            return cot::$cfg['modules_dir'] . "/files/img/types/$size/{$ext}.png";
         }
+
+        if (in_array($ext, ['avif','bmp','gd2','gd','gif','jpg','jpeg','png','tga','tpic','wbmp','webp','xbm'])) {
+            return cot::$cfg['modules_dir'] . "/files/img/types/$size/image.png";
+        }
+
+        return cot::$cfg['modules_dir'] . "/files/img/types/$size/archive.png";
     }
 
     public function makeAvatar()
@@ -331,20 +343,24 @@ class files_model_File extends Som_Model_ActiveRecord
         static $extp_first = null, $extp_main = null;
         static $cacheArr = array();
 
-        if (is_null($extp_first)){
+        if (is_null($extp_first)) {
             $extp_first = cot_getextplugins('files.files.tags.first');
             $extp_main  = cot_getextplugins('files.files.tags.main');
         }
 
         /* === Hook === */
-        foreach ($extp_first as $pl){
+        foreach ($extp_first as $pl) {
             include $pl;
         }
         /* ===== */
 
-        list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
+        list(cot::$usr['auth_read'], cot::$usr['auth_write'], cot::$usr['isadmin']) = cot_auth('files', 'a');
 
-        if ( ($item instanceof files_model_File) && isset($cacheArr[$item->file_id]) && is_array($cacheArr[$item->file_id]) ) {
+        if (
+            ($item instanceof files_model_File) &&
+            isset($cacheArr[$item->file_id]) &&
+            is_array($cacheArr[$item->file_id])
+        ) {
             $temp_array = $cacheArr[$item->file_id];
 
         } elseif (is_int($item) && is_array($cacheArr[$item])) {
@@ -356,7 +372,7 @@ class files_model_File extends Som_Model_ActiveRecord
             }
             /** @var files_model_File $item  */
             if ($item && $item->file_id > 0){
-                $itemUrl = $item->file_img ? cot::$cfg['files']['folder'] .'/'. $item->file_path : cot_url('files',
+                $itemUrl = $item->file_img ? cot::$cfg['files']['folder'] . '/' . $item->file_path : cot_url('files',
                     array('m' => 'files', 'a'=>'download', 'id' => $item->file_id));
 
                 $date_format = 'datetime_medium';

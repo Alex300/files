@@ -451,7 +451,7 @@ class UploadController
 
         // Fist of all we need memory to process this file
         // 2 MB for other script processing
-        if(!cot_files_memory_allocate($file_size + 2097152)) {
+        if (!cot_memory_allocate($file_size + 2097152)) {
             if($file_path && file_exists($file_path)) unlink($file_path);
             unset($file->path, $file->file_name);
             if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
@@ -474,7 +474,9 @@ class UploadController
                 return $file;
             }
 
-            if ($file->isImage) $this->handle_image_file($file);
+            if ($file->isImage) {
+                $this->handle_image_file($file);
+            }
 
             if (!empty($file->error)) {
                 if ($file_path && file_exists($file_path)) unlink($file_path);
@@ -563,7 +565,7 @@ class UploadController
                     )
                 );
                 // Extra fields
-                if(!empty($cot_extrafields[files_model_File::tableName()])) {
+                if (!empty($cot_extrafields[files_model_File::tableName()])) {
                     foreach ($cot_extrafields[files_model_File::tableName()] as $exfld) {
                         $uname = strtoupper($exfld['field_name']);
                         $exfld_name = 'file_'.$exfld['field_name'];
@@ -588,9 +590,13 @@ class UploadController
                 /* ===== */
 
             } else {
-                if($file_path && file_exists($file_path)) unlink($file_path);
+                if ($file_path && file_exists($file_path)) {
+                    unlink($file_path);
+                }
                 unset($file->path, $file->file_name);
-                if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
+                if (!$this->options['debug'] && isset($file->debug)) {
+                    unset($file->debug);
+                }
                 $file->error = cot::$L['files_err_upload'];
                 return $file;
             }
@@ -607,7 +613,9 @@ class UploadController
 
         unset($file->path);
         unset($file->file_name);
-        if(!$this->options['debug'] && isset($file->debug)) unset($file->debug);
+        if(!$this->options['debug'] && isset($file->debug)) {
+            unset($file->debug);
+        }
 
         return $file;
     }
@@ -663,171 +671,178 @@ class UploadController
     protected function handle_image_file($file)
     {
         // Check the image size and try to calculate and allocate the required RAM amount
-        if(!cot_img_check_memory($file->path)){
+        if (!cot_img_check_memory($file->path)) {
             @unlink($file->path);
             $file->error = cot::$L['files_err_toobig'];
             return $file;
         }
 
+        $exif = false;
+        if (function_exists('exif_read_data')) {
+            $exif = @exif_read_data($file->path);
+        }
+
         // Automatic JPG conversion feature
         if (cot::$cfg['files']['image_convert'] && $file->ext != 'jpg' && $file->ext != 'jpeg') {
-            $input_file = $file->path;
+            $inputFile = $file->path;
+            list($width, $height, $type) = getimagesize($inputFile);
 
-            $newName = pathinfo($file->name, PATHINFO_FILENAME) . '.jpg';
-            $output_file = dirname($file->path).'/'.$newName;
-            if ($file->ext == 'png') {
-                $input = imagecreatefrompng($input_file);
+            $input = cot_files_imageCreate($inputFile);
+            if (!empty($input)) {
+                $newName = pathinfo($file->name, PATHINFO_FILENAME) . '.jpg';
+                $outputFile = dirname($file->path) . '/' . $newName;
 
-            } else {
-                $input = imagecreatefromgif($input_file);
+                $output = imagecreatetruecolor($width, $height);
+                $white = imagecolorallocate($output, 255, 255, 255);
+                imagefilledrectangle($output, 0, 0, $width, $height, $white);
+                imagecopy($output, $input, 0, 0, 0, 0, $width, $height);
+                imagejpeg($output, $outputFile);
+
+                @unlink($inputFile);
+                imagedestroy($input);
+                imagedestroy($output);
+
+                $file->path = $outputFile;
+                $file->size = $this->get_file_size($file->path);
+                $file->ext = 'jpg';
+                $file->name = $newName . '.' . $file->ext;
+                $file->file_name = pathinfo($file->file_name, PATHINFO_FILENAME) . '.' . $file->ext;
             }
-            list($width, $height) = getimagesize($input_file);
-            $output = imagecreatetruecolor($width, $height);
-            $white = imagecolorallocate($output,  255, 255, 255);
-            imagefilledrectangle($output, 0, 0, $width, $height, $white);
-            imagecopy($output, $input, 0, 0, 0, 0, $width, $height);
-            imagejpeg($output, $output_file);
-
-            @unlink($input_file);
-            imagedestroy($input);
-            imagedestroy($output);
-
-            $file->path = $output_file;
-            $file->size = $this->get_file_size($file->path);
-            $file->ext = 'jpg';
-            $file->name = pathinfo($file->name, PATHINFO_FILENAME) . '.jpg';
         }
 
         // Fix image orientation via EXIF if possible
-        if (function_exists('exif_read_data')) {
-            $exif = @exif_read_data($file->path);
-            if($exif !== false) {
-                $orientation = (!empty($exif['Orientation'])) ? (int)$exif['Orientation'] : 0;
+        if ($exif !== false) {
+            $orientation = (!empty($exif['Orientation'])) ? (int) $exif['Orientation'] : 0;
 
-                if ($orientation >= 2 && $orientation <= 8) {
+            if ($orientation >= 2 && $orientation <= 8) {
 
-                    // Gettimg memory size required to process the image
-                    $source_size = getimagesize($file->path);
+                // Gettimg memory size required to process the image
+                $source_size = getimagesize($file->path);
 
-                    $width = $source_size[0];
-                    $height = $source_size[1];
-                    $depth = ($source_size['bits'] > 8) ? ($source_size['bits'] / 8) : 1;
-                    $channels = $source_size['channels'] > 0 ? $source_size['channels'] : 4;
-                    // imagerotate потребляет много памяти. Попросим в 1.5 раза больше
-                    $needExtraMem = $width * $height * $depth * $channels / 1048576 * 1.5;
+                $width = $source_size[0];
+                $height = $source_size[1];
+                $depth = ($source_size['bits'] > 8) ? ($source_size['bits'] / 8) : 1;
+                $channels = $source_size['channels'] > 0 ? $source_size['channels'] : 4;
+                // imagerotate потребляет много памяти. Попросим в 1.5 раза больше
+                $needExtraMem = $width * $height * $depth * $channels / 1048576 * 1.5;
 
-                    $size_ok = cot_img_check_memory($file->path, (int)ceil($needExtraMem));
+                $size_ok = cot_img_check_memory($file->path, (int) ceil($needExtraMem));
 
-                    if ($size_ok) {
-                        $newImage = null;
-                        switch ($file->ext) {
-                            case 'gif':
-                                $sourceImage = imagecreatefromgif($file->path);
+                if ($size_ok) {
+                    $newImage = null;
+                    switch ($file->ext) {
+                        case 'gif':
+                            $sourceImage = imagecreatefromgif($file->path);
 
-                                // Get a transparent color
-                                $transparent_source_index = imagecolortransparent($sourceImage);
-                                if($transparent_source_index !== -1) {
-                                    $transparent_color = imagecolorsforindex($sourceImage, $transparent_source_index);
-                                }
+                            // Get a transparent color
+                            $transparent_source_index = imagecolortransparent($sourceImage);
+                            if ($transparent_source_index !== -1) {
+                                $transparent_color = imagecolorsforindex($sourceImage, $transparent_source_index);
+                            }
 
-                                break;
+                            break;
 
-                            case 'png':
-                                $sourceImage = imagecreatefrompng($file->path);
-                                imagecolortransparent($sourceImage, imagecolorallocatealpha($sourceImage, 0, 0, 0, 127));
-                                imagealphablending($sourceImage, false);
-                                imagesavealpha($sourceImage, true);
-                                break;
+                        case 'png':
+                            $sourceImage = imagecreatefrompng($file->path);
+                            imagecolortransparent($sourceImage, imagecolorallocatealpha($sourceImage, 0, 0, 0, 127));
+                            imagealphablending($sourceImage, false);
+                            imagesavealpha($sourceImage, true);
+                            break;
 
-                            default:
-                                $sourceImage = imagecreatefromjpeg($file->path);
-                                break;
-                        }
+                        default:
+                            $sourceImage = cot_files_imageCreate($file->path);
+                            break;
+                    }
 
-                        // NOTE: Values 2, 4, 5, 7 are uncommon since they represent "flipped" orientations.
-                        switch ($orientation) {
-                            case 2:
-                                $newImage = $this->gd_imageflip($sourceImage,
-                                    defined('IMG_FLIP_VERTICAL') ? IMG_FLIP_VERTICAL : 2
-                                );
-                                break;
+                    // NOTE: Values 2, 4, 5, 7 are uncommon since they represent "flipped" orientations.
+                    switch ($orientation) {
+                        case 2:
+                            $newImage = $this->gd_imageflip($sourceImage,
+                                defined('IMG_FLIP_VERTICAL') ? IMG_FLIP_VERTICAL : 2
+                            );
+                            break;
 
-                            case 3:
-                                // 180 rotate left
-                                $newImage = imagerotate($sourceImage, 180, 0);
-                                break;
+                        case 3:
+                            // 180 rotate left
+                            $newImage = imagerotate($sourceImage, 180, 0);
+                            break;
 
-                            case 4:
-                                $newImage = $this->gd_imageflip($sourceImage,
-                                    defined('IMG_FLIP_HORIZONTAL') ? IMG_FLIP_HORIZONTAL : 1
-                                );
-                                break;
+                        case 4:
+                            $newImage = $this->gd_imageflip($sourceImage,
+                                defined('IMG_FLIP_HORIZONTAL') ? IMG_FLIP_HORIZONTAL : 1
+                            );
+                            break;
 
-                            case 5:
-                                $tmp_img = $this->gd_imageflip($sourceImage,
-                                    defined('IMG_FLIP_HORIZONTAL') ? IMG_FLIP_HORIZONTAL : 1
-                                );
-                                $newImage = imagerotate($tmp_img, 270, 0);
-                                imagedestroy($tmp_img);
-                                break;
+                        case 5:
+                            $tmp_img = $this->gd_imageflip($sourceImage,
+                                defined('IMG_FLIP_HORIZONTAL') ? IMG_FLIP_HORIZONTAL : 1
+                            );
+                            $newImage = imagerotate($tmp_img, 270, 0);
+                            imagedestroy($tmp_img);
+                            break;
 
-                            case 6:
-                                // 90 rotate right
-                                $newImage = imagerotate($sourceImage, -90, 0);
-                                break;
+                        case 6:
+                            // 90 rotate right
+                            $newImage = imagerotate($sourceImage, -90, 0);
+                            break;
 
-                            case 7:
-                                $tmp_img = $this->gd_imageflip($sourceImage,
-                                    defined('IMG_FLIP_VERTICAL') ? IMG_FLIP_VERTICAL : 2
-                                );
-                                $newImage = imagerotate($tmp_img, 270, 0);
-                                imagedestroy($tmp_img);
-                                break;
+                        case 7:
+                            $tmp_img = $this->gd_imageflip($sourceImage,
+                                defined('IMG_FLIP_VERTICAL') ? IMG_FLIP_VERTICAL : 2
+                            );
+                            $newImage = imagerotate($tmp_img, 270, 0);
+                            imagedestroy($tmp_img);
+                            break;
 
-                            case 8:
-                                // 90 rotate left
-                                $newImage = imagerotate($sourceImage, 90, 0);
-                                break;
-                        }
+                        case 8:
+                            // 90 rotate left
+                            $newImage = imagerotate($sourceImage, 90, 0);
+                            break;
+                    }
 
-                        switch ($file->ext) {
-                            case 'gif':
-                                // Chek if we have a transparency
-                                if($transparent_source_index !== -1) {
-                                    // Add color to the palette of the new image, and set it as transparent
-                                    $transparent_destination_index = imagecolorallocatealpha($newImage,
-                                        $transparent_color['red'], $transparent_color['green'], $transparent_color['blue'],
-                                        $transparent_color['alpha']);
-                                    imagecolortransparent($newImage, $transparent_destination_index);
-                                }
-                                imagegif($newImage, $file->path);
-                                break;
+                    switch ($file->ext) {
+                        case 'gif':
+                            // Chek if we have a transparency
+                            if($transparent_source_index !== -1) {
+                                // Add color to the palette of the new image, and set it as transparent
+                                $transparent_destination_index = imagecolorallocatealpha($newImage,
+                                    $transparent_color['red'], $transparent_color['green'], $transparent_color['blue'],
+                                    $transparent_color['alpha']);
+                                imagecolortransparent($newImage, $transparent_destination_index);
+                            }
+                            imagegif($newImage, $file->path);
+                            break;
 
-                            case 'png':
-                                imagealphablending($newImage, false);
-                                imagesavealpha($newImage, true);
-                                imagepng($newImage, $file->path);
-                                break;
+                        case 'png':
+                            imagealphablending($newImage, false);
+                            imagesavealpha($newImage, true);
+                            imagepng($newImage, $file->path);
+                            break;
 
-                            default:
-                                imagejpeg($newImage, $file->path, 96);
-                                break;
-                        }
+                        default:
+                            $file->path = cot_files_imageSave($newImage, $file->path, 96);
+                            break;
+                    }
 
-                        imagedestroy($sourceImage);
-                        if(!empty($newImage)) imagedestroy($newImage);
+                    imagedestroy($sourceImage);
+                    if (!empty($newImage)) {
+                        imagedestroy($newImage);
                     }
                 }
             }
         }
 
         // Image resize
-        if(cot::$cfg['files']['image_resize']){
+        if (cot::$cfg['files']['image_resize']) {
             list($width_orig, $height_orig) = getimagesize($file->path);
-            if ($width_orig > cot::$cfg['files']['image_maxwidth'] || $height_orig > cot::$cfg['files']['image_maxheight']){
+            if ($width_orig > cot::$cfg['files']['image_maxwidth'] || $height_orig > cot::$cfg['files']['image_maxheight']) {
                 // Check the image size and try to calculate and allocate the required RAM amount
-                if(!cot_img_check_memory($file->path, (int)ceil(cot::$cfg['files']['image_maxwidth'] *
-                    cot::$cfg['files']['image_maxheight'] * 4 / 1048576))){
+                if (
+                    !cot_img_check_memory(
+                        $file->path,
+                        (int) ceil(cot::$cfg['files']['image_maxwidth'] * cot::$cfg['files']['image_maxheight'] * 4 / 1048576)
+                    )
+                ) {
                     @unlink($file->path);
                     $file->error = cot::$L['files_err_toobig'];
                     return $file;
@@ -836,7 +851,7 @@ class UploadController
                 $input_file = $file->path;
                 $tmp_file =  $file->path.'tmp.'.$file->ext;
                 cot_files_thumbnail($input_file, $tmp_file, cot::$cfg['files']['image_maxwidth'],
-                    cot::$cfg['files']['image_maxheight'], 'auto', (int)cot::$cfg['files']['quality']);
+                    cot::$cfg['files']['image_maxheight'], 'auto', (int) cot::$cfg['files']['quality']);
                 @unlink($input_file);
                 @rename($tmp_file, $input_file);
                 $file->size = $this->get_file_size($file->path);
@@ -851,15 +866,13 @@ class UploadController
      * @param resource  $image
      * @param int       $mode
      * @return bool|resource
-     *
-     * @todo get extra memory if needed
      */
     protected function gd_imageflip($image, $mode)
     {
         $new_width = $src_width = imagesx($image);
         $new_height = $src_height = imagesy($image);
 
-        if(!cot_files_memory_allocate($new_width * $new_height * 4 * 1.9)) {
+        if (!cot_memory_allocate($new_width * $new_height * 4 * 1.9)) {
             return false;
         }
 

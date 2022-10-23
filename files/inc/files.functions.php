@@ -14,7 +14,9 @@ require_once './datas/extensions.php';
 require_once cot_incfile('extrafields');
 require_once cot_incfile('forms');
 
-if(!function_exists('cot_user_data')) require_once cot_incfile('users', 'module');
+if (!function_exists('cot_user_data')) {
+    require_once cot_incfile('users', 'module');
+}
 
 // Self requirements
 require_once cot_langfile('files', 'module');
@@ -93,7 +95,8 @@ function cot_files_ajax_get_status($code)
 }
 
 /**
- * Посветка ошибочных элементов на форме
+ * Подсветка ошибочных элементов на форме
+ *
  * @param string $name имя элемента
  * @return string
  */
@@ -103,75 +106,6 @@ function cot_files_formGroupClass($name)
     if($error) return 'has-error has-feedback';
 
     return '';
-}
-
-/**
- * Allocate memory
- *
- * @param int $needMemory Memory to allocate in bytes
- * @return bool TRUE if enough memory is available, FALSE otherwise
- * @deprecated use cot_memory_allocate instead
- */
-function cot_files_memory_allocate($needMemory)
-{
-    if (function_exists('cot_memory_allocate')) return cot_memory_allocate($needMemory);
-
-    $needMemory = (int)$needMemory;
-    if (empty($needMemory)) return false;
-
-    // Getting memory occupied by the script (in bytes)
-    $usedMem = memory_get_usage(true);
-
-    $haveMem = ini_get('memory_limit');
-
-    // no limit set, so we try any way
-    if ($haveMem == '-1')  return true;
-
-    preg_match('/(\d+)(\w+)/', $haveMem, $mtch);
-
-    if (!empty($mtch[2])) {
-        $mtch[2] = mb_strtoupper($mtch[2]);
-        if ($mtch[2] == 'G') {
-            $haveMem =  $mtch[1] * 1073741824;
-
-        } elseif ($mtch[2] == 'M') {
-            $haveMem =  $mtch[1] * 1048576;
-
-        } elseif ($mtch[2] == 'K') {
-            $haveMem =  $mtch[1] * 1024;
-        }
-    }
-
-    $needMem = intval($needMemory + $usedMem);
-
-    if ($haveMem < $needMem) {
-        // Could not allocate memory
-        if (!ini_set('memory_limit', $needMem)) return false;
-
-    } else {
-        return true;
-    }
-
-    // Making sure we could allocate enough memory
-    $haveMem = ini_get('memory_limit');
-    preg_match('/(\d+)(\w+)/', $haveMem, $mtch);
-    if (!empty($mtch[2])) {
-        $mtch[2] = mb_strtoupper($mtch[2]);
-        if ($mtch[2] == 'G') {
-            $haveMem =  $mtch[1] * 1073741824;
-
-        } elseif ($mtch[2] == 'M') {
-            $haveMem =  $mtch[1] * 1048576;
-
-        } elseif ($mtch[2] == 'K') {
-            $haveMem =  $mtch[1] * 1024;
-        }
-    }
-
-    // No, we couldn't allocate enough memory
-    if ($haveMem < $needMem) return false;
-
-    return true;
 }
 
 /**
@@ -287,6 +221,7 @@ function cot_files_get($source, $item, $field = '', $column = '', $number = 'fir
 
 /**
  * Extracts filename extension with tar (.tar.gz, tar.bz2, etc.) support.
+ *
  * @param  string $filename File name
  * @return string|false    File extension or false on error
  */
@@ -531,19 +466,46 @@ function cot_files_getMime($path)
     }
 }
 
-function cot_files_isValidImageFile($file_path) {
-    $ext = cot_files_get_ext($file_path);
-    if(!in_array($ext, array('gif', 'jpg', 'jpeg', 'png'))) return false;
+/**
+ * @param string $fileName
+ * @return bool
+ */
+function cot_files_isValidImageFile($fileName)
+{
+    $ext = cot_files_get_ext($fileName);
+    if (!in_array(
+        $ext,
+        ['avif', 'bmp', 'gd2', 'gd', 'gif', 'jpg', 'jpeg', 'png', 'tga' ,'tpic', 'wbmp', 'webp', 'xbm'])
+    ) {
+        return false;
+    }
+
+    // AVIF support added in PHP 8.1
+    if ($ext == 'avif' && version_compare(PHP_VERSION, '8.1', '<')) {
+        return false;
+    }
+
+    // BMP support added in PHP 7.2
+    if ($ext == 'bmp' && version_compare(PHP_VERSION, '7.2', '<')) {
+        return false;
+    }
+
+    // TGA support added in PHP 7.4
+    if (in_array($ext, ['tga' ,'tpic']) && version_compare(PHP_VERSION, '7.4', '>=')) {
+        return false;
+    }
 
     if (function_exists('exif_imagetype')) {
-        return @exif_imagetype($file_path);
+        return (bool) @exif_imagetype($fileName);
     }
-    $image_info = getimagesize($file_path);
+
+    $image_info = getimagesize($fileName);
     return $image_info && $image_info[0] && $image_info[1];
 }
 
 /**
  * Привязка ранее загруженных файлов к только что созданному объекту
+ *
  * @param $source
  * @param $item
  */
@@ -690,9 +652,10 @@ function cot_files_tempDir($create = true)
  * @param  integer $height Thumbnail height in pixels
  * @param  string  $frame  Framing mode: 'width', 'height', 'auto', 'border_auto' or 'crop'
  * @param  bool    $watermark - set watermark if cot::$cfg['files']['thumb_watermark'] not empty?
- * @return string          Thumbnail path on success or false on error
+ * @return string|false    Thumbnail path on success or false on error
  */
-function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark = true){
+function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark = true)
+{
     // Support rows fetched by att_get()
 //    if (is_array($id)){
 //        $row = $id;
@@ -709,15 +672,20 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
         return '';
     }
 
-    if ($watermark === '0' || mb_strtolower($watermark) === 'false') $watermark = false;
+    if ($watermark === '0' || mb_strtolower($watermark) === 'false') {
+        $watermark = false;
+    }
 
-    if (empty($frame) || !in_array($frame, array('width', 'height', 'auto', 'crop', 'border_auto'))){
+    if (empty($frame) || !in_array($frame, array('width', 'height', 'auto', 'crop', 'border_auto'))) {
         $frame = cot::$cfg['files']['thumb_framing'];
     }
 
-    if ($width <= 0)  $width  = (int) cot::$cfg['files']['thumb_width'];
-    if ($height <= 0) $height = (int) cot::$cfg['files']['thumb_height'];
-
+    if ($width <= 0)  {
+        $width  = (int) cot::$cfg['files']['thumb_width'];
+    }
+    if ($height <= 0) {
+        $height = (int) cot::$cfg['files']['thumb_height'];
+    }
 
     // Attempt to load from cache
     $thumbs_folder = cot::$cfg['files']['folder'] . '/_thumbs';
@@ -732,20 +700,29 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
         if (!isset($row)){
             $row = files_model_File::getById($id);
         }
-        if (!$row || !$row->file_img) return false;
+        if (!$row || !$row->file_img) {
+            return false;
+        }
 
-        $orig_path = cot::$cfg['files']['folder'] .'/'. $row->file_path;
-        if (!file_exists($orig_path) || !is_readable($orig_path)) return false;
+        $orig_path = cot::$cfg['files']['folder'] . '/' . $row->file_path;
+        if (!file_exists($orig_path) || !is_readable($orig_path)) {
+            return false;
+        }
 
         $thumbs_folder = $thumbs_folder . '/' . $id;
         $thumb_path = $thumbs_folder . '/'
             . cot::$cfg['files']['prefix'] . $id . '-' . $width . 'x' . $height . '-' . $frame . '.' . $row->file_ext;
 
-        cot_files_thumbnail($orig_path, $thumb_path, $width, $height, $frame, (int) cot::$cfg['files']['quality'],
+        $thumb_path = cot_files_thumbnail($orig_path, $thumb_path, $width, $height, $frame, (int) cot::$cfg['files']['quality'],
             (int) cot::$cfg['files']['upscale']);
 
         // Watermark
-        if ($watermark && !empty(cot::$cfg['files']['thumb_watermark']) && file_exists(cot::$cfg['files']['thumb_watermark'])) {
+        if (
+            $thumb_path &&
+            $watermark &&
+            !empty(cot::$cfg['files']['thumb_watermark']) &&
+            file_exists(cot::$cfg['files']['thumb_watermark'])
+        ) {
             list($th_width, $th_height) = getimagesize($thumb_path);
 
             if ($th_width >= cot::$cfg['files']['thumb_wm_widht'] && $th_height >= cot::$cfg['files']['thumb_wm_height']) {
@@ -774,17 +751,20 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
  * @param string $resize Resize options: crop auto width height
  * @param int $quality JPEG quality in %
  * @param boolean $upscale Upscale images smaller than thumb size
- * @return bool
+ * @return string|false
  *
  * @todo 'border_auto' resize mode
- * @todo use imagik
  */
 function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop', $quality = 85, $upscale = false)
 {
-    $ext = cot_files_get_ext($source);
+    if (!file_exists($source) || !is_readable($source)) {
+        return false;
+    }
+    if (!cot_files_isValidImageFile($source)) {
+        return false;
+    }
 
-    if (!file_exists($source)) return false;
-    if (!cot_files_isValidImageFile($source)) return false;
+    $ext = cot_files_get_ext($source);
 
     /**
      * @var int $width_orig
@@ -795,17 +775,21 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
     if (!$upscale && $width_orig <= $width && $height_orig <= $height) {
         // Do not upscale smaller images, just copy them
         copy($source, $target);
-        return true;
+        return $target;
     }
 
     $x_pos = 0;
     $y_pos = 0;
 
-    $width = (mb_substr($width, -1, 1) == '%') ? (int) ($width_orig * (int) mb_substr($width, 0, -1) / 100) : (int) $width;
-    $height = (mb_substr($height, -1, 1) == '%') ? (int) ($height_orig * (int) mb_substr($height, 0, -1) / 100) : (int) $height;
+    $width = (mb_substr($width, -1, 1) == '%') ?
+        (int) ($width_orig * (int) mb_substr($width, 0, -1) / 100) : (int) $width;
+    $height = (mb_substr($height, -1, 1) == '%') ?
+        (int) ($height_orig * (int) mb_substr($height, 0, -1) / 100) : (int) $height;
 
     // Avoid loading images there's not enough memory for
-    if (!cot_img_check_memory($source, (int)ceil($width * $height * 4 / 1048576))) return false;
+    if (!cot_img_check_memory($source, (int) ceil($width * $height * 4 / 1048576))) {
+        return false;
+    }
 
     if ($resize == 'crop') {
         $newimage = imagecreatetruecolor($width, $height);
@@ -816,11 +800,13 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
             $width = intval($width_orig * $height / $height_orig);
             $x_pos = intval(-($width - $width_temp) / 2);
             $y_pos = 0;
+
         } else {
             $height = intval($height_orig * $width / $width_orig);
             $y_pos = intval(-($height - $height_temp) / 2);
             $x_pos = 0;
         }
+
     } else {
         if ($resize == 'width' || $height == 0) {
             if ($width_orig > $width) {
@@ -829,6 +815,7 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
                 $width = $width_orig;
                 $height = $height_orig;
             }
+
         } elseif ($resize == 'height' || $width == 0) {
             if ($height_orig > $height) {
                 $width = intval($width_orig * $height / $height_orig);
@@ -836,6 +823,7 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
                 $width = $width_orig;
                 $height = $height_orig;
             }
+
         } elseif ($resize == 'auto') {
             if ($width_orig < $width && $height_orig < $height) {
                 $width = $width_orig;
@@ -865,48 +853,21 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
             break;
     }
 
-//    if($ext == 'gif' || $ext == 'png') {
-//        imagealphablending($newimage, false);
-//        $color = imagecolortransparent($newimage, imagecolorallocatealpha($newimage, 0, 0, 0, 127));
-//        imagefill($newimage, 0, 0, $color);
-//        imagesavealpha($newimage, true);
-//    }
-
     // Avoid loading images there's not enough memory for
-    if (!cot_img_check_memory($source)) return false;
-
-    switch ($ext) {
-        case 'gif':
-            $oldimage = imagecreatefromgif($source);
-            break;
-
-        case 'png':
-            $oldimage = imagecreatefrompng($source);
-            break;
-
-        default:
-            $oldimage = imagecreatefromjpeg($source);
-            break;
+    if (!cot_img_check_memory($source)) {
+        return false;
     }
+
+    $oldimage = cot_files_imageCreate($source);
 
     imagecopyresampled($newimage, $oldimage, $x_pos, $y_pos, 0, 0, $width, $height, $width_orig, $height_orig);
 
-    switch ($ext) {
-        case 'gif':
-            imagegif($newimage, $target);
-            break;
-
-        case 'png':
-            imagepng($newimage, $target);
-            break;
-
-        default:
-            imagejpeg($newimage, $target, $quality);
-            break;
-    }
+    $result = cot_files_imageSave($newimage, $target, $quality);
 
     imagedestroy($newimage);
     imagedestroy($oldimage);
+
+    return $result;
 }
 
 
@@ -1053,11 +1014,15 @@ function mb_basename($filepath, $suffix = '')
 
 /**
  * Recursive remove directory
- * @param $dir
+ *
+ * @param string $dir
  * @return bool
  */
-function rrmdir($dir) {
-    if(empty($dir) && $dir != '0') return false;
+function rrmdir($dir)
+{
+    if (empty($dir) && $dir != '0') {
+        return false;
+    }
 
     if (is_dir($dir)) {
         $objects = scandir($dir);
@@ -1225,7 +1190,8 @@ function cot_files_buildPfs($uid, $formName, $inputName, $title, $parser = ''){
  * @param  string $order
  * @return string           Rendered output
  */
-function cot_files_display($source, $item, $field = '',  $tpl = 'files.display', $type = 'all', $limit = 0, $order = ''){
+function cot_files_display($source, $item, $field = '',  $tpl = 'files.display', $type = 'all', $limit = 0, $order = '')
+{
 
     $t = new XTemplate(cot_tplfile($tpl, 'module'));
 
@@ -1238,19 +1204,21 @@ function cot_files_display($source, $item, $field = '',  $tpl = 'files.display',
     $condition = array(array('file_source', $source));
     if ($type == 'files'){
         $condition[] = array('file_img', 0);
-    }elseif ($type == 'images'){
+    } elseif ($type == 'images') {
         $condition[] = array('file_img', 1);
     }
 
-    if($field != '_all_'){
+    if ($field != '_all_') {
         $condition[] = array('file_field', $field);
     }
 
-    if($order == '') $order = 'file_order ASC';
+    if ($order == '') {
+        $order = 'file_order ASC';
+    }
 
-    if(is_array($item)){
+    if (is_array($item)) {
         $item = array_map('intval', $item);
-    }else{
+    } else {
         $item = intval($item);
     }
     $condition[] = array('file_item', $item);
@@ -1258,7 +1226,7 @@ function cot_files_display($source, $item, $field = '',  $tpl = 'files.display',
     $files = files_model_File::findByCondition($condition, $limit, 0, $order);
 
     $num = 1;
-    if($files) {
+    if ($files) {
         $t->assign(array(
             'FILES_COUNT'  => count($files),
         ));
@@ -1267,10 +1235,10 @@ function cot_files_display($source, $item, $field = '',  $tpl = 'files.display',
         $extp = cot_getextplugins('files.display.loop');
         /* ===== */
 
-        foreach ($files as $row){
+        foreach ($files as $row) {
             $t->assign(files_model_File::generateTags($row, 'FILES_ROW_'));
             $t->assign(array(
-                'FILES_ROW_NUM'      => $num,
+                'FILES_ROW_NUM' => $num,
             ));
 
             /* === Hook - Part2 : Include === */
@@ -1534,7 +1502,8 @@ function cot_files_gallery($source, $item, $field = '', $tpl = 'files.gallery', 
  * @param string $frame
  * @return string
  */
-function cot_files_user_avatar($file_id = 0, $urr = 0, $width = 0, $height = 0, $frame = ''){
+function cot_files_user_avatar($file_id = 0, $urr = 0, $width = 0, $height = 0, $frame = '')
+{
 
     $avatar = cot_rc('files_user_default_avatar');
     if($file_id == 0 && is_array($urr) && isset($urr['user_avatar'])) $file_id = $urr['user_avatar'];
@@ -1557,26 +1526,33 @@ function cot_files_user_avatar($file_id = 0, $urr = 0, $width = 0, $height = 0, 
  * @param string $frame
  * @return string
  */
-function cot_files_user_avatar_url($file_id, $width = 0, $height = 0, $frame = ''){
-
+function cot_files_user_avatar_url($file_id, $width = 0, $height = 0, $frame = '')
+{
     $file = null;
-    if($file_id instanceof files_model_File){
+    if ($file_id instanceof files_model_File) {
         $file = $file_id;
         $file_id = $file->file_id;
-    }else{
+    } else {
         $file_id = (int)$file_id;
         if(!$file_id) return '';
         $file = files_model_File::getById($file_id);
     }
 
-    if(!$file) return '';
+    if (!$file) {
+        return '';
+    }
 
-    if (empty($frame) || !in_array($frame, array('width', 'height', 'auto', 'crop', 'border_auto'))){
+    if (empty($frame) || !in_array($frame, array('width', 'height', 'auto', 'crop', 'border_auto'))) {
         $frame = cot::$cfg['files']['avatar_framing'];
     }
 
-    if ($width <= 0)  $width  = (int)cot::$cfg['files']['avatar_width'];
-    if ($height <= 0) $height = (int)cot::$cfg['files']['avatar_height'];
+    if ($width <= 0)  {
+        $width  = (int) cot::$cfg['files']['avatar_width'];
+    }
+
+    if ($height <= 0) {
+        $height = (int) cot::$cfg['files']['avatar_height'];
+    }
 
     return cot_files_thumb($file, $width, $height, $frame);
 
@@ -1594,7 +1570,8 @@ function cot_files_user_avatar_url($file_id, $width = 0, $height = 0, $frame = '
  * @param string $height
  * @return string           Rendered widget
  */
-function cot_files_widget($source, $item, $field = '', $tpl = 'files.widget', $width = '100%', $height = '300'){
+function cot_files_widget($source, $item, $field = '', $tpl = 'files.widget', $width = '100%', $height = '300')
+{
     global $files_widget_present, $cot_modules;
 
     $t = new XTemplate(cot_tplfile($tpl, 'module'));
@@ -1622,6 +1599,172 @@ function cot_files_widget($source, $item, $field = '', $tpl = 'files.widget', $w
     $files_widget_present = true;
 
     return $t->text();
+}
+
+/**
+ * Utility function
+ * Create a new image from file or URL from any supported format
+ *
+ * @param string $inputFile
+ * @return GdImage|false
+ */
+function cot_files_imageCreate($fileName)
+{
+    if (!file_exists($fileName) || !is_readable($fileName)) {
+        return false;
+    }
+
+    list($width, $height, $type) = getimagesize($fileName);
+
+    if (empty($width) && empty($height) && empty($type)) {
+        return false;
+    }
+
+    $result = @imagecreatefromstring(file_get_contents($fileName));
+    if (!empty($result)) {
+        return $result;
+    }
+
+    // If imagecreatefromstring() failed to load image
+    $ext = cot_files_get_ext($fileName);
+
+    /** @var GdImage|false $result */
+    $result = false;
+    switch ($type) {
+        case IMAGETYPE_GIF:
+            $result = @imagecreatefromgif($fileName);
+            break;
+
+        case IMAGETYPE_JPEG:
+            $result = @imagecreatefromjpeg($fileName);
+            break;
+
+        case IMAGETYPE_PNG:
+            $result = @imagecreatefrompng($fileName);
+            break;
+
+        case IMAGETYPE_WBMP:
+            $result = @imagecreatefromwbmp($fileName);
+            break;
+
+        case IMAGETYPE_XBM:
+            $result = @imagecreatefromxbm($fileName);
+            break;
+
+        default:
+            // AVIF support added in PHP 8.1
+            if (version_compare(PHP_VERSION, '8.1', '>=') && $type == IMAGETYPE_AVIF) {
+                $result = @imagecreatefromavif($fileName);
+            }
+
+            // BMP support added in PHP 7.2
+            if (version_compare(PHP_VERSION, '7.2', '>=') && $type == IMAGETYPE_BMP) {
+                $result = @imagecreatefrombmp($fileName);
+            }
+
+            // constant IMAGETYPE_WEBP added in PHP 7.1
+            // But imagecreatefromwebp() added in PHP 5.4
+            if (
+                (version_compare(PHP_VERSION, '8.1', '>=') && $type == IMAGETYPE_WEBP) ||
+                $ext == 'webp'
+            ) {
+                $result = @imagecreatefromwebp($fileName);
+            }
+    }
+
+    if (empty($result)) {
+        switch ($ext) {
+            case 'gd2':
+                $result = @imagecreatefromgd2($fileName);
+                break;
+
+            case 'gd':
+                $result = @imagecreatefromgd($fileName);
+                break;
+
+            case 'tga':
+            case 'tpic':
+                // TGA support added in PHP 7.4
+                if (version_compare(PHP_VERSION, '7.4', '>=')) {
+                    $result = imagecreatefromtga($fileName);
+                }
+
+        }
+    }
+
+    return $result;
+}
+
+/**
+ * Utility function
+ * Create a new image from file or URL from any supported format
+ * If result format is not supported, JPG image will be created
+ *
+ * @param GdImage $image
+ * @param string $fileName
+ * @param int $quality JPEG quality in %
+ * @return string|false file name or false
+ */
+function cot_files_imageSave($image, $fileName, $quality = 85)
+{
+    if (empty($image) || empty($fileName)) {
+        return false;
+    }
+
+    $ext = cot_files_get_ext($fileName);
+    $result = false;
+    switch ($ext) {
+        case 'avif':
+            // Todo test $quality
+            if (version_compare(PHP_VERSION, '8.1', '>=')) {
+                $result = imageavif($image, $fileName, $quality);
+            }
+            break;
+
+        case 'bmp':
+            if (version_compare(PHP_VERSION, '7.2', '>=')) {
+                $result = imagebmp($image, $fileName);
+            }
+            break;
+
+        case 'gd2':
+            $result = imagegd2($image, $fileName);
+            break;
+
+        case 'gd':
+            $result = imagegd($image, $fileName);
+            break;
+
+        case 'gif':
+            $result = imagegif($image, $fileName);
+            break;
+
+        case 'png':
+            $result = imagepng($image, $fileName);
+            break;
+
+        case 'wbmp':
+            $result = imagewbmp($image, $fileName);
+            break;
+
+        case 'webp':
+            $result =  imagewebp($image, $fileName);
+            break;
+
+        case 'xbm':
+            $result = imagexbm($image, $fileName);
+            break;
+
+        default:
+            if (!in_array($ext, ['jpg', 'jpeg'])) {
+                $pathInfo = pathinfo($fileName);
+                $fileName = $pathInfo['dirname'] . DIRECTORY_SEPARATOR . $pathInfo['filename'] . '.jpg';
+            }
+            $result = imagejpeg($image, $fileName, $quality);
+            break;
+    }
+
+    return $result ? $fileName : false;
 }
 
 /**

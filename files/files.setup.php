@@ -5,8 +5,8 @@ Code=files
 Name=Files
 Description=Personal File Space and attach files to posts and pages
 Category=files-media
-Version=1.0.6
-Date=Jun 16, 2022
+Version=1.0.7
+Date=Oct 23, 2022
 Author=Cotonti Team, Kalnov Alexey    <kalnovalexey@yandex.ru>
 Copyright=(c) Cotonti Team, 2014-2022 Lily Software https://lily-software.com (ex. Portal30 Studio)
 Notes=DO NOT FORGET to create a writable folder for the files
@@ -19,7 +19,7 @@ Recommends_modules=page,users
 [BEGIN_COT_EXT_CONFIG]
 folder=01:string::datas/files:Directory for files
 prefix=02:string::file_:File prefix
-exts=03:text::gif,jpg,jpeg,png,zip,rar,7z,gz,bz2,pdf,djvu,mp3,ogg,wma,avi,divx,mpg,mpeg,swf,txt,doc,docx,xls,xlsx:Allowed extensions (comma separated, no dots and spaces)
+exts=03:text::avif,bmp,gd2,gd,gif,jpg,jpeg,png,tga,tpic,wbmp,webp,xbm,zip,rar,7z,gz,bz2,pdf,djvu,mp3,ogg,wma,avi,divx,mpg,mpeg,swf,txt,doc,docx,xls,xlsx:Allowed extensions (comma separated, no dots and spaces)
 filecheck=04:radio::1:
 nomimepass=05:radio::1:
 maxFoldersPerPage=07:string::15:
@@ -35,8 +35,8 @@ img_separator=20:separator:::
 
 image_convert=21:radio::0:Convert all images to JPG on upload
 image_resize=22:radio::0:auto:Resize uploaded images
-image_maxwidth=23:string::1920:Image max width for resize
-image_maxheight=24:string::1080:Image max height for resize
+image_maxwidth=23:string::3840:Image max width for resize
+image_maxheight=24:string::2160:Image max height for resize
 quality=25:string::85:JPEG quality in %
 
 th_separator=30:separator:::
