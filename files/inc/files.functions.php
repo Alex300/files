@@ -1028,12 +1028,182 @@ function rrmdir($dir)
         $objects = scandir($dir);
         foreach ($objects as $object) {
             if ($object != "." && $object != "..") {
-                if (filetype($dir."/".$object) == "dir") rrmdir($dir."/".$object); else unlink($dir."/".$object);
+                if (filetype($dir."/".$object) == "dir") {
+                    rrmdir($dir."/".$object);
+                } else {
+                    unlink($dir."/".$object);
+                }
             }
         }
         reset($objects);
         rmdir($dir);
     }
+}
+
+/**
+ * Utility function
+ * Create a new image from file or URL from any supported format
+ *
+ * @param string $fileName
+ * @return GdImage|false
+ */
+function cot_files_imageCreate($fileName)
+{
+    if (!file_exists($fileName) || !is_readable($fileName)) {
+        return false;
+    }
+
+    list($width, $height, $type) = getimagesize($fileName);
+
+    if (empty($width) && empty($height) && empty($type)) {
+        return false;
+    }
+
+    $result = @imagecreatefromstring(file_get_contents($fileName));
+    if (!empty($result)) {
+        return $result;
+    }
+
+    // If imagecreatefromstring() failed to load image
+    $ext = cot_files_get_ext($fileName);
+
+    /** @var GdImage|false $result */
+    $result = false;
+    switch ($type) {
+        case IMAGETYPE_GIF:
+            $result = @imagecreatefromgif($fileName);
+            break;
+
+        case IMAGETYPE_JPEG:
+            $result = @imagecreatefromjpeg($fileName);
+            break;
+
+        case IMAGETYPE_PNG:
+            $result = @imagecreatefrompng($fileName);
+            break;
+
+        case IMAGETYPE_WBMP:
+            $result = @imagecreatefromwbmp($fileName);
+            break;
+
+        case IMAGETYPE_XBM:
+            $result = @imagecreatefromxbm($fileName);
+            break;
+
+        default:
+            // AVIF support added in PHP 8.1
+            if (version_compare(PHP_VERSION, '8.1', '>=') && $type == IMAGETYPE_AVIF) {
+                $result = @imagecreatefromavif($fileName);
+            }
+
+            // BMP support added in PHP 7.2
+            if (version_compare(PHP_VERSION, '7.2', '>=') && $type == IMAGETYPE_BMP) {
+                $result = @imagecreatefrombmp($fileName);
+            }
+
+            // constant IMAGETYPE_WEBP added in PHP 7.1
+            // But imagecreatefromwebp() added in PHP 5.4
+            if (
+                (version_compare(PHP_VERSION, '8.1', '>=') && $type == IMAGETYPE_WEBP) ||
+                $ext == 'webp'
+            ) {
+                $result = @imagecreatefromwebp($fileName);
+            }
+    }
+
+    if (empty($result)) {
+        switch ($ext) {
+            case 'gd2':
+                $result = @imagecreatefromgd2($fileName);
+                break;
+
+            case 'gd':
+                $result = @imagecreatefromgd($fileName);
+                break;
+
+            case 'tga':
+            case 'tpic':
+                // TGA support added in PHP 7.4
+                if (version_compare(PHP_VERSION, '7.4', '>=')) {
+                    $result = imagecreatefromtga($fileName);
+                }
+
+        }
+    }
+
+    return $result;
+}
+
+/**
+ * Utility function
+ * Create a new image from file or URL from any supported format
+ * If result format is not supported, JPG image will be created
+ *
+ * @param GdImage $image
+ * @param string $fileName
+ * @param int $quality JPEG quality in %
+ * @return string|false file name or false
+ */
+function cot_files_imageSave($image, $fileName, $quality = 85)
+{
+    if (empty($image) || empty($fileName)) {
+        return false;
+    }
+
+    $ext = cot_files_get_ext($fileName);
+    $result = false;
+    switch ($ext) {
+        case 'avif':
+            // Todo test $quality
+            if (version_compare(PHP_VERSION, '8.1', '>=')) {
+                $result = imageavif($image, $fileName, $quality);
+            }
+            break;
+
+        case 'bmp':
+            if (version_compare(PHP_VERSION, '7.2', '>=')) {
+                $result = imagebmp($image, $fileName);
+            }
+            break;
+
+        case 'gd2':
+            $result = imagegd2($image, $fileName);
+            break;
+
+        case 'gd':
+            $result = imagegd($image, $fileName);
+            break;
+
+        case 'gif':
+            $result = imagegif($image, $fileName);
+            break;
+
+        case 'png':
+            $result = imagepng($image, $fileName);
+            break;
+
+        case 'wbmp':
+            $result = imagewbmp($image, $fileName);
+            break;
+
+        case 'webp':
+            $result =  imagewebp($image, $fileName);
+            break;
+
+        case 'xbm':
+            $result = imagexbm($image, $fileName);
+            break;
+
+        default:
+            if (!in_array($ext, ['jpg', 'jpeg'])) {
+                $pathInfo = pathinfo($fileName);
+                $fileName = $pathInfo['dirname'] . DIRECTORY_SEPARATOR . $pathInfo['filename'] . '.jpg';
+            }
+            $result = imagejpeg($image, $fileName, $quality);
+            break;
+    }
+
+    return $result ? $fileName : false;
 }
 
 // ===== outputs and widgets =====
@@ -1049,7 +1219,8 @@ function rrmdir($dir)
  * @todo no cache parameter for css
  * @todo generate formUnikey
  */
-function cot_files_avatarbox($userId = null, $tpl = 'files.avatarbox' ){
+function cot_files_avatarbox($userId = null, $tpl = 'files.avatarbox' )
+{
     global $R, $cot_modules, $usr;
 
     list($usr['auth_read'], $usr['auth_write'], $usr['isadmin']) = cot_auth('files', 'a');
@@ -1148,8 +1319,8 @@ function cot_files_avatarbox($userId = null, $tpl = 'files.avatarbox' ){
  * @param string $parser Custom parser (otional)
  * @return string
  */
-function cot_files_buildPfs($uid, $formName, $inputName, $title, $parser = ''){
-
+function cot_files_buildPfs($uid, $formName, $inputName, $title, $parser = '')
+{
     if ($uid == 0)
     {
         $res = "<a href=\"javascript:files_pfs('0','" . $formName . "','" . $inputName . "','" . $parser . "')\">" . $title . "</a>";
@@ -1279,7 +1450,8 @@ function cot_files_display($source, $item, $field = '',  $tpl = 'files.display',
  * @param  string $order
  * @return string           Rendered output
  */
-function cot_files_downloads($source, $item, $field = '', $tpl = 'files.downloads', $limit = 0, $order = ''){
+function cot_files_downloads($source, $item, $field = '', $tpl = 'files.downloads', $limit = 0, $order = '')
+{
     return cot_files_display($source, $item, $field, $tpl, 'files', $limit, $order);
 }
 
@@ -1489,7 +1661,8 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
  * @param  string $order
  * @return string           Rendered output
  */
-function cot_files_gallery($source, $item, $field = '', $tpl = 'files.gallery', $limit = 0, $order = ''){
+function cot_files_gallery($source, $item, $field = '', $tpl = 'files.gallery', $limit = 0, $order = '')
+{
     return cot_files_display($source, $item, $field, $tpl, 'images', $limit, $order);
 }
 
@@ -1599,172 +1772,6 @@ function cot_files_widget($source, $item, $field = '', $tpl = 'files.widget', $w
     $files_widget_present = true;
 
     return $t->text();
-}
-
-/**
- * Utility function
- * Create a new image from file or URL from any supported format
- *
- * @param string $inputFile
- * @return GdImage|false
- */
-function cot_files_imageCreate($fileName)
-{
-    if (!file_exists($fileName) || !is_readable($fileName)) {
-        return false;
-    }
-
-    list($width, $height, $type) = getimagesize($fileName);
-
-    if (empty($width) && empty($height) && empty($type)) {
-        return false;
-    }
-
-    $result = @imagecreatefromstring(file_get_contents($fileName));
-    if (!empty($result)) {
-        return $result;
-    }
-
-    // If imagecreatefromstring() failed to load image
-    $ext = cot_files_get_ext($fileName);
-
-    /** @var GdImage|false $result */
-    $result = false;
-    switch ($type) {
-        case IMAGETYPE_GIF:
-            $result = @imagecreatefromgif($fileName);
-            break;
-
-        case IMAGETYPE_JPEG:
-            $result = @imagecreatefromjpeg($fileName);
-            break;
-
-        case IMAGETYPE_PNG:
-            $result = @imagecreatefrompng($fileName);
-            break;
-
-        case IMAGETYPE_WBMP:
-            $result = @imagecreatefromwbmp($fileName);
-            break;
-
-        case IMAGETYPE_XBM:
-            $result = @imagecreatefromxbm($fileName);
-            break;
-
-        default:
-            // AVIF support added in PHP 8.1
-            if (version_compare(PHP_VERSION, '8.1', '>=') && $type == IMAGETYPE_AVIF) {
-                $result = @imagecreatefromavif($fileName);
-            }
-
-            // BMP support added in PHP 7.2
-            if (version_compare(PHP_VERSION, '7.2', '>=') && $type == IMAGETYPE_BMP) {
-                $result = @imagecreatefrombmp($fileName);
-            }
-
-            // constant IMAGETYPE_WEBP added in PHP 7.1
-            // But imagecreatefromwebp() added in PHP 5.4
-            if (
-                (version_compare(PHP_VERSION, '8.1', '>=') && $type == IMAGETYPE_WEBP) ||
-                $ext == 'webp'
-            ) {
-                $result = @imagecreatefromwebp($fileName);
-            }
-    }
-
-    if (empty($result)) {
-        switch ($ext) {
-            case 'gd2':
-                $result = @imagecreatefromgd2($fileName);
-                break;
-
-            case 'gd':
-                $result = @imagecreatefromgd($fileName);
-                break;
-
-            case 'tga':
-            case 'tpic':
-                // TGA support added in PHP 7.4
-                if (version_compare(PHP_VERSION, '7.4', '>=')) {
-                    $result = imagecreatefromtga($fileName);
-                }
-
-        }
-    }
-
-    return $result;
-}
-
-/**
- * Utility function
- * Create a new image from file or URL from any supported format
- * If result format is not supported, JPG image will be created
- *
- * @param GdImage $image
- * @param string $fileName
- * @param int $quality JPEG quality in %
- * @return string|false file name or false
- */
-function cot_files_imageSave($image, $fileName, $quality = 85)
-{
-    if (empty($image) || empty($fileName)) {
-        return false;
-    }
-
-    $ext = cot_files_get_ext($fileName);
-    $result = false;
-    switch ($ext) {
-        case 'avif':
-            // Todo test $quality
-            if (version_compare(PHP_VERSION, '8.1', '>=')) {
-                $result = imageavif($image, $fileName, $quality);
-            }
-            break;
-
-        case 'bmp':
-            if (version_compare(PHP_VERSION, '7.2', '>=')) {
-                $result = imagebmp($image, $fileName);
-            }
-            break;
-
-        case 'gd2':
-            $result = imagegd2($image, $fileName);
-            break;
-
-        case 'gd':
-            $result = imagegd($image, $fileName);
-            break;
-
-        case 'gif':
-            $result = imagegif($image, $fileName);
-            break;
-
-        case 'png':
-            $result = imagepng($image, $fileName);
-            break;
-
-        case 'wbmp':
-            $result = imagewbmp($image, $fileName);
-            break;
-
-        case 'webp':
-            $result =  imagewebp($image, $fileName);
-            break;
-
-        case 'xbm':
-            $result = imagexbm($image, $fileName);
-            break;
-
-        default:
-            if (!in_array($ext, ['jpg', 'jpeg'])) {
-                $pathInfo = pathinfo($fileName);
-                $fileName = $pathInfo['dirname'] . DIRECTORY_SEPARATOR . $pathInfo['filename'] . '.jpg';
-            }
-            $result = imagejpeg($image, $fileName, $quality);
-            break;
-    }
-
-    return $result ? $fileName : false;
 }
 
 /**
