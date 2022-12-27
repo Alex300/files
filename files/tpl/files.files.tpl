@@ -70,8 +70,10 @@
 </div>
 
 <script src="js/jquery.min.js"></script>
-<!-- Bootstrap JS is not required, but included for the responsive demo navigation -->
-<script src="{PHP.cfg.modules_dir}/files/lib/bootstrap/js/bootstrap.min.js?{PHP.cot_modules.files.version}"></script>
+<!-- IF 0=1 -->
+<!-- Bootstrap JS is not required, but included for the responsive navigation -->
+<script src="lib/bootstrap/js/bootstrap.min.js?{PHP.cot_modules.files.version}"></script>
+<!-- ENDIF -->
 {PHP.out.footer_rc}
 <!-- Cotonti config -->
 <script type="text/javascript">

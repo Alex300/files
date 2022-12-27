@@ -6,6 +6,12 @@ Hooks=global
 ==================== */
 defined('COT_CODE') or die('Wrong URL.');
 
-// Files API is available everywhere
+/**
+ * Files API is available everywhere
+ *
+ * @package Files
+ * @author Cotonti Team
+ * @author Kalnov Alexey <kalnovalexey@yandex.ru>
+ */
 
 require_once cot_incfile('files', 'module');

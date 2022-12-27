@@ -10,9 +10,9 @@ Tags=header.tpl:{HEADER_USER_PFS},{HEADER_USER_PFS_URL}
  * PFS header link
  *
  * @package Files
+ *
  * @author Cotonti Team
- * @copyright Copyright (c) Cotonti Team 2014
- * @license BSD
+ * @author Kalnov Alexey <kalnovalexey@yandex.ru>
  */
 defined('COT_CODE') or die('Wrong URL.');
 

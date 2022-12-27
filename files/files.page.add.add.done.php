@@ -13,7 +13,8 @@ Hooks=page.add.add.done
  */
 defined('COT_CODE') or die('Wrong URL');
 
-if (cot_auth('files', 'a', 'W')){
-
-    if($id) cot_files_linkFiles('page', $id);
+if (cot_auth('files', 'a', 'W')) {
+    if ($id) {
+        cot_files_linkFiles('page', $id);
+    }
 }

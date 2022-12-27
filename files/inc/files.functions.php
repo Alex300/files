@@ -1206,6 +1206,69 @@ function cot_files_imageSave($image, $fileName, $quality = 85)
     return $result ? $fileName : false;
 }
 
+/**
+ * Delete user files.
+ * Used when deleting a user
+ *
+ * @param int $userId Used ID
+ * @return int Count of deleted files
+ */
+function cot_delete_user_files($userId)
+{
+    $userId = (int) $userId;
+    $i = 0;
+    if ($userId < 1) {
+        return $i;
+    }
+
+    // Delete all user's PFS files
+    $items = files_model_File::findByCondition([
+        ['file_source', 'pfs',],
+        ['user_id', $userId,],
+    ]);
+    if (!empty($items)) {
+        foreach ($items as $itemRow) {
+            $i++;
+            $itemRow->delete();
+            unset($itemRow);
+        }
+        unset($items);
+    }
+
+    // Delete all user's PFS folders
+    $items = files_model_Folder::findByCondition([['user_id', $userId,],]);
+    if (!empty($items)) {
+        foreach ($items as $itemRow) {
+            // Folder is not a file, so we don't need to count them
+            $itemRow->delete();
+            unset($itemRow);
+        }
+        unset($items);
+    }
+
+    // Delete all user's files
+    $items = files_model_File::findByCondition([
+        ['file_source', 'user',],
+        ['file_item', $userId,],
+    ]);
+    if (!empty($items)) {
+        foreach ($items as $itemRow) {
+            $i++;
+            $itemRow->delete();
+            unset($itemRow);
+        }
+        unset($items);
+    }
+
+    /* === Hook === */
+    foreach (cot_getextplugins('files.delete_user_files.done') as $pl) {
+        include $pl;
+    }
+    /* ===== */
+
+    return $i;
+}
+
 // ===== outputs and widgets =====
 
 /**
@@ -1643,12 +1706,15 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
 
     if ($standalone == 2) {
         $html = Resources::render();
-        if ($html) cot::$out['head_head'] = $html.cot::$out['head_head'];
+        if ($html) {
+            cot::$out['head_head'] = (!empty(cot::$out['head_head'])) ? $html . cot::$out['head_head'] : $html;
+        }
+        cot::$out['footer_rc'] = !empty(cot::$out['footer_rc']) ? cot::$out['footer_rc'] : '';
         cot::$out['footer_rc'] .= Resources::renderFooter();
     }
 
     $t->parse();
-    return $formUnikey.$t->text().$jQtemplates;
+    return $formUnikey . $t->text() . $jQtemplates;
 }
 
 /**

@@ -6,25 +6,23 @@ Hooks=page.edit.delete.done
 ==================== */
 
 /**
- * Delete attached files on forum post deletes
+ * Delete attached files on page deletes
  *
  * @package Files
- * @author Cotonti Team
- * @copyright Copyright (c) Cotonti Team 2014
- * @license BSD
+ * @author Kalnov Alexey <kalnovalexey@yandex.ru>
+ *
+ * @var int $id Page id for delete
  */
 defined('COT_CODE') or die('Wrong URL');
 
-if (cot_auth('files', 'a', 'W')){
-
+// If the page is deleted to the trash, we do not delete files
+if (!cot_plugin_active('trashcan') || !cot::$cfg['plugin']['trashcan']['trash_page']) {
     require_once cot_incfile('files', 'module');
 
-    $filesCond = array(
-        array('file_source', 'page'),
-        array('file_item', $id),
-    );
-    $files = files_model_File::findByCondition($filesCond);
-    if($files){
-        foreach($files as $fileRow) $fileRow->delete();
+    $files = files_model_File::findByCondition([['file_source', 'page'], ['file_item', $id],]);
+    if ($files) {
+        foreach ($files as $fileRow) {
+            $fileRow->delete();
+        }
     }
 }

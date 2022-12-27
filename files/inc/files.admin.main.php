@@ -4,14 +4,14 @@
 /**
  * Files main Admin Controller class
  * 
- * @package shop
+ * @package Files
  * @subpackage admin
- * @copyright http://portal30.ru
  *
+ * @author Cotonti Team
+ * @author Kalnov Alexey <kalnovalexey@yandex.ru>
  */
 class MainController
 {
-
     /**
      * Main (index) Action.
      */
@@ -184,61 +184,92 @@ class MainController
     /**
      * @todo все пользователям, у которых user_avatar > 0 а файла с таким id нет, установить user_avatar = 0
      */
-    public function cleanupAction(){
-        global $db_forum_posts, $db_files, $db_pages;
+    public function cleanupAction()
+    {
+        // For include files
+        global $cfg, $L, $R;
+
+        $filesTable = files_model_File::tableName();
+        $trashTable = '';
+        if (cot_plugin_active('trashcan')) {
+            require_once cot_incfile('trashcan', 'plug');
+            $trashTable = cot::$db->trash;
+        }
 
         $count = 0;
 
-        if (cot_module_active('forums')){
+        if (cot_module_active('forums')) {
             // Remove unused forum attachments
             require_once cot_incfile('forums', 'module');
 
-            $condition = "LEFT JOIN $db_forum_posts ON $db_files.file_item = $db_forum_posts.fp_id
-		                  WHERE $db_files.file_source = 'forums' AND $db_forum_posts.fp_id IS NULL";
+            $postsTable = cot::$db->forum_posts;
 
-            $res = cot::$db->query("SELECT file_id FROM $db_files $condition")->fetchAll(PDO::FETCH_COLUMN);
-            if($res){
-                $files = files_model_File::findByCondition(array(array('file_id', $res)));
-                if($files){
-                    foreach($files as $fileRow){
-                        $count++;
-                        $fileRow->delete();
-                    }
+            $join = '';
+            $where = '';
+            if (cot_plugin_active('trashcan')) {
+                // If the post is deleted to the trash, we do not delete its files
+                $join = "LEFT JOIN $trashTable ON {$trashTable}.tr_itemid = {$filesTable}.file_item AND " .
+                    "{$trashTable}.tr_type = 'forumpost'";
+
+                $where = " AND {$trashTable}.tr_id IS NULL";
+            }
+
+            $query = "SELECT file_id FROM $filesTable " .
+                "LEFT JOIN $postsTable ON {$filesTable}.file_item = {$postsTable}.fp_id $join " .
+                "WHERE {$filesTable}.file_source = 'forums' AND {$postsTable}.fp_id IS NULL $where";
+
+            $files = files_model_File::findByCondition("{$filesTable}.file_id IN ({$query})");
+
+            if ($files) {
+                foreach($files as $fileRow) {
+                    $count++;
+                    $fileRow->delete();
                 }
             }
         }
 
-        if (cot_module_active('page')){
+        if (cot_module_active('page')) {
             // Remove unused page attachments
             require_once cot_incfile('page', 'module');
 
-            $condition = "LEFT JOIN $db_pages ON $db_files.file_item = $db_pages.page_id
-		                  WHERE $db_files.file_source = 'page' AND $db_pages.page_id IS NULL";
+            $pageTable = cot::$db->pages;
 
-            $res = cot::$db->query("SELECT file_id FROM $db_files $condition")->fetchAll(PDO::FETCH_COLUMN);
-            if($res){
-                $files = files_model_File::findByCondition(array(array('file_id', $res)));
-                if($files){
-                    foreach($files as $fileRow){
-                        $count++;
-                        $fileRow->delete();
-                    }
+            $join = '';
+            $where = '';
+            if (cot_plugin_active('trashcan')) {
+                // If the page is deleted to the trash, we do not delete its files
+                $join = "LEFT JOIN $trashTable ON {$trashTable}.tr_itemid = {$filesTable}.file_item AND " .
+                    "{$trashTable}.tr_type = 'page'";
+
+                $where = " AND {$trashTable}.tr_id IS NULL";
+            }
+
+            $query = "SELECT file_id FROM $filesTable " .
+                "LEFT JOIN $pageTable ON {$filesTable}.file_item = {$pageTable}.page_id $join " .
+		        "WHERE {$filesTable}.file_source = 'page' AND {$pageTable}.page_id IS NULL $where";
+
+            $files = files_model_File::findByCondition("{$filesTable}.file_id IN ({$query})");
+
+            if ($files) {
+                foreach($files as $fileRow) {
+                    $count++;
+                    $fileRow->delete();
                 }
             }
         }
 
         $count += cot_files_formGarbageCollect();
 
-        cot_message($count . ' ' . cot::$L['files_items_removed']);
+        cot_message(cot::$L['files_items_removed'].': ' . $count);
 
         // Return to the main page and show messages
         cot_redirect(cot_url('admin', 'm=files', '', true));
     }
 
 
-    public function delAllThumbsAction(){
-
-        if(empty(cot::$cfg['files']['folder']) || !file_exists(cot::$cfg['files']['folder'].'/_thumbs')){
+    public function delAllThumbsAction()
+    {
+        if (empty(cot::$cfg['files']['folder']) || !file_exists(cot::$cfg['files']['folder'].'/_thumbs')) {
             cot_redirect(cot_url('admin', 'm=files', '', true));
         }
 

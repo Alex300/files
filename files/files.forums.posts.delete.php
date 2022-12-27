@@ -9,22 +9,18 @@ Hooks=forums.posts.delete.first
  * Delete attached files on forum post deletes
  *
  * @package Files
- * @author Cotonti Team
- * @copyright Copyright (c) Cotonti Team 2014
- * @license BSD
+ * @author Kalnov Alexey <kalnovalexey@yandex.ru>
  */
 defined('COT_CODE') or die('Wrong URL');
 
-if (cot_auth('files', 'a', 'W')){
-
+// If the post is deleted to the trash, we do not delete files
+if (!cot_plugin_active('trashcan') || !cot::$cfg['plugin']['trashcan']['trash_forum']) {
 	require_once cot_incfile('files', 'module');
 
-    $filesCond = array(
-        array('file_source', 'forums'),
-        array('file_item', $p),
-    );
-    $files = files_model_File::findByCondition($filesCond);
-    if($files){
-        foreach($files as $fileRow) $fileRow->delete();
+    $files = files_model_File::findByCondition([['file_source', 'forums'], ['file_item', $p],]);
+    if ($files) {
+        foreach ($files as $fileRow) {
+            $fileRow->delete();
+        }
     }
 }

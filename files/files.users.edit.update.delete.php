@@ -5,53 +5,19 @@ Hooks=users.edit.update.delete
 [END_COT_EXT]
 ==================== */
 /**
- * module Files for Cotonti Siena
+ * Delete user's files on user delete
  *
  * @package Files
- * @author Cotonti Team
- * @copyright (c) Cotonti Team
+ * @author Kalnov Alexey <kalnovalexey@yandex.ru>
+ *
+ * @var int $id User id for delete
  */
 defined('COT_CODE') or die('Wrong URL');
 
-require_once cot_incfile('files', 'module');
+// If the user is deleted to the trash, we do not delete his files
+if (!cot_plugin_active('trashcan') || !cot::$cfg['plugin']['trashcan']['trash_user']) {
 
-// Удалить все файлы PFS пользователя
-$condition = array(
-    array('file_source', 'pfs'),
-    array('user_id', $id)
-);
-$items = files_model_File::findByCondition($condition);
-if(!empty($items)) {
-    foreach($items as $itemRow) {
-        $itemRow->delete();
-        unset($itemRow);
-    }
-    unset($items);
-}
+    require_once cot_incfile('files', 'module');
 
-// Удалить все папки PFS пользователя
-$condition = array(
-    array('user_id', $id)
-);
-$items = files_model_Folder::findByCondition($condition);
-if(!empty($items)) {
-    foreach($items as $itemRow) {
-        $itemRow->delete();
-        unset($itemRow);
-    }
-    unset($items);
-}
-
-// Удалить все файлы связанные с пользователем
-$condition = array(
-    array('file_source', 'user'),
-    array('file_item', $id)
-);
-$items = files_model_File::findByCondition($condition);
-if(!empty($items)) {
-    foreach($items as $itemRow) {
-        $itemRow->delete();
-        unset($itemRow);
-    }
-    unset($items);
+    cot_delete_user_files($id);
 }
