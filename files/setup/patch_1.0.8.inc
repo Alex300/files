@@ -7,23 +7,23 @@ global $db_files, $db_files_folders;
 
 if (empty($db_files)) {
     // Registering tables
-    cot::$db->registerTable('files');
-    cot::$db->registerTable('files_folders');
+    Cot::$db->registerTable('files');
+    Cot::$db->registerTable('files_folders');
 }
 
 $changeCollation = false;
 if (
-    cot::$cfg['mysqlcharset'] == 'utf8mb4' &&
-    (empty(cot::$cfg['mysqlcollate']) || cot::$cfg['mysqlcollate'] == 'utf8mb4_unicode_ci')
+    Cot::$cfg['mysqlcharset'] == 'utf8mb4' &&
+    (empty(Cot::$cfg['mysqlcollate']) || Cot::$cfg['mysqlcollate'] == 'utf8mb4_unicode_ci')
 ) {
     $changeCollation = true;
 }
 if ($changeCollation) {
-    cot::$db->query('ALTER TABLE ' . cot::$db->quoteTableName(cot::$db->files) . "
-    CONVERT TO CHARACTER SET '" . cot::$cfg['mysqlcharset'] . "' COLLATE '" . cot::$cfg['mysqlcollate'] . "', 
-    DEFAULT CHARACTER SET='" . cot::$cfg['mysqlcharset'] . "' COLLATE='" . cot::$cfg['mysqlcollate'] . "'");
+    Cot::$db->query('ALTER TABLE ' . Cot::$db->quoteTableName(Cot::$db->files) . "
+    CONVERT TO CHARACTER SET '" . Cot::$cfg['mysqlcharset'] . "' COLLATE '" . Cot::$cfg['mysqlcollate'] . "', 
+    DEFAULT CHARACTER SET='" . Cot::$cfg['mysqlcharset'] . "' COLLATE='" . Cot::$cfg['mysqlcollate'] . "'");
 
-    cot::$db->query('ALTER TABLE ' . cot::$db->quoteTableName(cot::$db->files_folders) . "
-    CONVERT TO CHARACTER SET '" . cot::$cfg['mysqlcharset'] . "' COLLATE '" . cot::$cfg['mysqlcollate'] . "', 
-    DEFAULT CHARACTER SET='" . cot::$cfg['mysqlcharset'] . "' COLLATE='" . cot::$cfg['mysqlcollate'] . "'");
+    Cot::$db->query('ALTER TABLE ' . Cot::$db->quoteTableName(Cot::$db->files_folders) . "
+    CONVERT TO CHARACTER SET '" . Cot::$cfg['mysqlcharset'] . "' COLLATE '" . Cot::$cfg['mysqlcollate'] . "', 
+    DEFAULT CHARACTER SET='" . Cot::$cfg['mysqlcharset'] . "' COLLATE='" . Cot::$cfg['mysqlcollate'] . "'");
 }

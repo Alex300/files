@@ -15,7 +15,7 @@ Hooks=users.edit.update.delete
 defined('COT_CODE') or die('Wrong URL');
 
 // If the user is deleted to the trash, we do not delete his files
-if (!cot_plugin_active('trashcan') || !cot::$cfg['plugin']['trashcan']['trash_user']) {
+if (!cot_plugin_active('trashcan') || !Cot::$cfg['plugin']['trashcan']['trash_user']) {
 
     require_once cot_incfile('files', 'module');
 

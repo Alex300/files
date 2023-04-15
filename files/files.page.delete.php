@@ -16,7 +16,7 @@ Hooks=page.edit.delete.done
 defined('COT_CODE') or die('Wrong URL');
 
 // If the page is deleted to the trash, we do not delete files
-if (!cot_plugin_active('trashcan') || !cot::$cfg['plugin']['trashcan']['trash_page']) {
+if (!cot_plugin_active('trashcan') || !Cot::$cfg['plugin']['trashcan']['trash_page']) {
     require_once cot_incfile('files', 'module');
 
     $files = files_model_File::findByCondition([['file_source', 'page'], ['file_item', $id],]);

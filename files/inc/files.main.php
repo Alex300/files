@@ -23,7 +23,7 @@ class MainController
     public function indexAction($type = 'all'){
         global $usr, $Ls, $db_files, $db_files_folders, $cot_modules;
 
-        $perPage = cot::$cfg['files']['maxFoldersPerPage'];
+        $perPage = Cot::$cfg['files']['maxFoldersPerPage'];
 
         list($pgf, $df) = cot_import_pagenav('df', $perPage);   // page number folders
 
@@ -89,10 +89,10 @@ class MainController
             $tmp = $urlParams;
             if($uid != $usr['id']) $tmp['uid'] = $uid;
             if($folder){
-                $crumbs[] = array(cot_url('files', $tmp), cot::$L['SFS']);
+                $crumbs[] = array(cot_url('files', $tmp), Cot::$L['SFS']);
                 $crumbs[] = $title = $folder->ff_title;
             }else{
-                $crumbs[] = $title = cot::$L['SFS'];
+                $crumbs[] = $title = Cot::$L['SFS'];
             }
 
         }else{
@@ -101,40 +101,40 @@ class MainController
             if(empty($urr) && !$usr['isadmin']) cot_die_message(404);   // Вдруг пользователь удален, а файлы остались?
 
             if($uid == $usr['id']){
-                $crumbs[] = array(cot_url('users', array('m' => 'details')), cot::$L['files_mypage']);
+                $crumbs[] = array(cot_url('users', array('m' => 'details')), Cot::$L['files_mypage']);
                 if($folder){
                     if($type == 'image'){
-                        $crumbs[] = array(cot_url('files', array_merge($urlParams, array('a' => 'album'))), cot::$L['files_albums']);
+                        $crumbs[] = array(cot_url('files', array_merge($urlParams, array('a' => 'album'))), Cot::$L['files_albums']);
                     }else{
-                        $crumbs[] = array(cot_url('files', $urlParams), cot::$L['Mypfs']);
+                        $crumbs[] = array(cot_url('files', $urlParams), Cot::$L['Mypfs']);
                     }
                     $crumbs[] = $title = $folder->ff_title;
                 }else{
                     if($type == 'image'){
-                        $crumbs[] = $title = cot::$L['files_albums'];
+                        $crumbs[] = $title = Cot::$L['files_albums'];
                     }else{
-                        $crumbs[] = $title = cot::$L['Mypfs'];
+                        $crumbs[] = $title = Cot::$L['Mypfs'];
                     }
                 }
 
             }else{
-                $crumbs[] = array(cot_url('users'), cot::$L['Users']);
+                $crumbs[] = array(cot_url('users'), Cot::$L['Users']);
                 $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
                     cot_user_full_name($urr));
                 if($folder){
                     $tmp = $urlParams;
                     if($uid != $usr['id']) $tmp['uid'] = $uid;
                     if($type == 'image'){
-                        $crumbs[] = array(cot_url('files', array_merge($tmp, array('a' => 'album'))), cot::$L['files_albums']);
+                        $crumbs[] = array(cot_url('files', array_merge($tmp, array('a' => 'album'))), Cot::$L['files_albums']);
                     }else{
-                        $crumbs[] = array(cot_url('files', $tmp), cot::$L['Files']);
+                        $crumbs[] = array(cot_url('files', $tmp), Cot::$L['Files']);
                     }
                     $crumbs[] = $title = $folder->ff_title;
                 }else{
                     if($type == 'image'){
-                        $crumbs[] = $title = cot::$L['files_albums'];
+                        $crumbs[] = $title = Cot::$L['files_albums'];
                     }else{
-                        $crumbs[] = $title = cot::$L['Files'];
+                        $crumbs[] = $title = Cot::$L['Files'];
                     }
                 }
             }
@@ -180,12 +180,12 @@ class MainController
             'FILES_COUNT' => cot_declension($files_count, $Ls['Files']),
             'FILES_COUNT_RAW' => $files_count,
             'FILES_IS_ROOT' => ($f == 0) ? 1 : 0,
-            'PAGE_TITLE' => cot::$out['subtitle'] =  $title,
+            'PAGE_TITLE' => Cot::$out['subtitle'] =  $title,
             'FILES_CAN_EDIT' => $canEdit,
             'FILES_SOURCE' => $source,
             'FILES_TYPE' => $type,
             'FILES_UPLOADURL'     => cot_url('files', $uploadUrlParams, '', true),
-            'BREADCRUMBS' => cot_breadcrumbs($crumbs, cot::$cfg['homebreadcrumb']),
+            'BREADCRUMBS' => cot_breadcrumbs($crumbs, Cot::$cfg['homebreadcrumb']),
         ));
 
         if(!$isSFS){
@@ -209,7 +209,7 @@ class MainController
                     $folderIds[] = $folderRow->ff_id;
                 }
 
-                $sql = cot::$db->query("SELECT file_item as ff_id, COUNT(*) as items_count, SUM(file_size) as size
+                $sql = Cot::$db->query("SELECT file_item as ff_id, COUNT(*) as items_count, SUM(file_size) as size
                     FROM $db_files WHERE file_source='{$source}' AND file_item IN (".implode(',', $folderIds).")
                     GROUP BY file_item");
                 while ($pfs_filesinfo = $sql->fetch()){
@@ -217,7 +217,7 @@ class MainController
                     $onPageFoldersFilesCount += $pfs_filesinfo['items_count'];
                 }
 
-                $sql = cot::$db->query("SELECT SUM(ff_count) as files_count FROM $db_files_folders WHERE user_id=?", $uid);
+                $sql = Cot::$db->query("SELECT SUM(ff_count) as files_count FROM $db_files_folders WHERE user_id=?", $uid);
                 $foldersFilesCount = $sql->fetchColumn();
 
                 $fLimit = 3;
@@ -258,7 +258,7 @@ class MainController
             if($usr['auth_write']){
                 if(($isSFS && $usr['isadmin']) || ($uid == $usr['id'])){
                     $formHidden = cot_inputbox('hidden', 'uid', $uid).cot_inputbox('hidden', 'act', 'save');
-                    $formAlbum = cot_checkbox(true, 'ff_album',  cot::$L['files_isgallery']);
+                    $formAlbum = cot_checkbox(true, 'ff_album',  Cot::$L['files_isgallery']);
                     if($type == 'image'){
                         $formHidden .= cot_inputbox('hidden', 'ff_album', 1);
                         $formAlbum = '';
@@ -270,7 +270,7 @@ class MainController
                         'FOLDER_ADDFORM_URL'    => cot_url('files', array('m' => 'pfs', 'a' => 'editFolder')),
                         'FOLDER_ADDFORM_TITLE'  => cot_inputbox('text', 'ff_title'),
                         'FOLDER_ADDFORM_DESC'   => cot_textarea('ff_desc', '', '', ''),
-                        'FOLDER_ADDFORM_PUBLIC' => cot_checkbox(true, 'ff_public', cot::$L['files_ispublic']),
+                        'FOLDER_ADDFORM_PUBLIC' => cot_checkbox(true, 'ff_public', Cot::$L['files_ispublic']),
                         'FOLDER_ADDFORM_ALBUM'  => $formAlbum,
                         'FOLDER_ADDFORM_HIDDEN' => $formHidden,
                     ));
@@ -299,7 +299,7 @@ class MainController
 
             $t->parse('MAIN.FOLDERS');
 
-            if($pgf > 1) cot::$out['subtitle'] .= " (".cot::$L['Page']." {$pgf})";
+            if($pgf > 1) Cot::$out['subtitle'] .= " (".Cot::$L['Page']." {$pgf})";
 
         }
 

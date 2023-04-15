@@ -34,17 +34,20 @@ class FilesController
     public function downloadAction()
     {
         $id = cot_import('id', 'G', 'INT');
-
-        if (!$id) cot_die_message(404);
+        if (!$id) {
+            cot_die_message(404);
+        }
 
         $file = files_model_File::getById($id);
-        if (!$file) cot_die_message(404);
+        if (!$file) {
+            cot_die_message(404);
+        }
 
         // Increase downloads counter
         $file->file_count += 1;
         $file->save();
 
-        $filePath = cot::$cfg['files']['folder'] . ' / ' . $file->file_path;
+        $filePath = Cot::$cfg['files']['folder'] . '/' . $file->file_path;
 
         // Detect MIME type if possible
         $contenttype = cot_files_getMime($filePath);
@@ -207,8 +210,8 @@ class FilesController
         }
 
 
-        if (!cot_auth('files', 'a', 'A') && $file->user_id != cot::$usr['id']){
-            $response['error'] = cot::$L['files_err_perms'];
+        if (!cot_auth('files', 'a', 'A') && $file->user_id != Cot::$usr['id']){
+            $response['error'] = Cot::$L['files_err_perms'];
             echo json_encode($response);
             exit;
         }
@@ -238,17 +241,17 @@ class FilesController
 
         // Check permission
         if (!cot_auth('files', 'a', 'A') &&
-            cot::$db->query("SELECT COUNT(*) FROM $db_files WHERE file_source = ? AND file_item = ? AND user_id = ?",
-                array($source, $item, cot::$usr['id']))->fetchColumn() == 0)
+            Cot::$db->query("SELECT COUNT(*) FROM $db_files WHERE file_source = ? AND file_item = ? AND user_id = ?",
+                array($source, $item, Cot::$usr['id']))->fetchColumn() == 0)
         {
-            $response['error'] = cot::$L['files_err_perms'];
+            $response['error'] = Cot::$L['files_err_perms'];
             echo json_encode($response);
             exit;
         }
 
         $orders = cot_import('orders', 'P', 'ARR');
         foreach ($orders as $order => $id){
-            cot::$db->update($db_files, array('file_order' => $order),
+            Cot::$db->update($db_files, array('file_order' => $order),
                 "file_id = ? AND file_source = ? AND file_item = ? AND file_field = ? AND file_order != ?",
                 array((int)$id, $source, $item, $field, $order));
         }
@@ -281,15 +284,15 @@ class FilesController
         $file->file_name = $this->getFilename('file');
         $file->file_ext = cot_files_get_ext($file->file_name);
 
-        $limits = cot_files_getLimits(cot::$usr['id'], $file->file_source, $file->file_item);
+        $limits = cot_files_getLimits(Cot::$usr['id'], $file->file_source, $file->file_item);
         $upload = $this->getUploadedFile('file', $limits);
 
         cot_sendheaders('application/json', cot_files_ajax_get_status(200));
 
         //if (cot_files_checkFile($file->file_ext) && !cot_error_found()){
         if (cot_files_isExtensionAllowed($file->file_ext) && !cot_error_found()){
-            if (!cot_auth('files', 'a', 'A') && $file->user_id != cot::$usr['id']){
-                $response['error'] = cot::$L['files_err_perms'];
+            if (!cot_auth('files', 'a', 'A') && $file->user_id != Cot::$usr['id']){
+                $response['error'] = Cot::$L['files_err_perms'];
                 echo json_encode($response);
                 exit;
             }
@@ -297,14 +300,14 @@ class FilesController
             if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $uploaded_file = $_FILES['file']['tmp_name'];
                 if ($uploaded_file && is_uploaded_file($uploaded_file)) {
-                    $valid_exts = explode(',', cot::$cfg['files']['exts']);
+                    $valid_exts = explode(',', Cot::$cfg['files']['exts']);
                     $valid_exts = array_map('trim', $valid_exts);
 
                     $handle = fopen($uploaded_file, "rb");
                     $tmp = fread ($handle , 10);
                     fclose($handle);
                     if (!in_array('php', $valid_exts) && (mb_stripos(trim($tmp), '<?php') === 0))  {
-                        $response['error'] = cot::$L['files_err_type'];
+                        $response['error'] = Cot::$L['files_err_type'];
                         echo json_encode($response);
                         exit;
                     }
@@ -312,18 +315,18 @@ class FilesController
                 }
             }
 
-            $path = cot::$cfg['files']['folder'] .'/'. $file->file_path;
+            $path = Cot::$cfg['files']['folder'] .'/'. $file->file_path;
             $file->remove_thumbs();
             if (file_exists($path)) {
                 if (!@unlink($path)) {
-                    $response['error'] = cot::$L['files_err_replace'];
+                    $response['error'] = Cot::$L['files_err_replace'];
                     echo json_encode($response);
                     exit;
                 }
             }
 
             $file->file_path = cot_files_path($file->file_source, $file->file_item, $file->file_id, $file->file_ext, $file->user_id);
-            $filePath = cot::$cfg['files']['folder'] .'/'. $file->file_path;
+            $filePath = Cot::$cfg['files']['folder'] .'/'. $file->file_path;
 
             if ($this->saveUploadedFile($upload, $filePath)) {
                 $file->file_size = filesize($filePath);
@@ -332,13 +335,13 @@ class FilesController
                 if ($file->file_img) {
                     // @todo все отправить в handle_image_file()
                     // Image resize
-                    if (cot::$cfg['files']['image_resize']) {
+                    if (Cot::$cfg['files']['image_resize']) {
                         list($width_orig, $height_orig) = getimagesize($filePath);
-                        if ($width_orig > cot::$cfg['files']['image_maxwidth'] || $height_orig > cot::$cfg['files']['image_maxheight']) {
+                        if ($width_orig > Cot::$cfg['files']['image_maxwidth'] || $height_orig > Cot::$cfg['files']['image_maxheight']) {
                             $input_file = $filePath;
                             $tmp_file   = $filePath.'tmp.'.$file->file_ext;
-                            cot_files_thumbnail($input_file, $tmp_file, cot::$cfg['files']['image_maxwidth'],
-                                cot::$cfg['files']['image_maxheight'], 'auto', (int) cot::$cfg['files']['quality']);
+                            cot_files_thumbnail($input_file, $tmp_file, Cot::$cfg['files']['image_maxwidth'],
+                                Cot::$cfg['files']['image_maxheight'], 'auto', (int) Cot::$cfg['files']['quality']);
                             @unlink($input_file);
                             @rename($tmp_file, $input_file);
                             $file->file_size = filesize($filePath);
@@ -349,7 +352,7 @@ class FilesController
                 $file->save();
 
             } else {
-                $response['error'] = cot::$L['files_err_move'];
+                $response['error'] = Cot::$L['files_err_move'];
                 echo json_encode($response);
                 exit;
             }
@@ -357,11 +360,11 @@ class FilesController
             $messages = cot_get_messages();
             $errors = array();
             foreach ($messages as $msg) {
-                $errors[] = isset(cot::$L[$msg['text']]) ? cot::$L[$msg['text']] : $msg['text'];
+                $errors[] = isset(Cot::$L[$msg['text']]) ? Cot::$L[$msg['text']] : $msg['text'];
             }
             cot_clear_messages();
 
-            if (empty($errors)) $errors[] = cot::$L['error'];
+            if (empty($errors)) $errors[] = Cot::$L['error'];
             $response['error'] = implode(',', $errors);
         }
 
@@ -414,14 +417,14 @@ class FilesController
         if ($_SERVER['REQUEST_METHOD'] == 'POST'){
             if ($_FILES[$input]['size'] > 0 && is_uploaded_file($_FILES[$input]['tmp_name'])){
                 if ($_FILES[$input]['size'] > $limits['size_maxfile']){
-                    cot_error(cot::$L['files_err_toobig']);
+                    cot_error(Cot::$L['files_err_toobig']);
                 }
                 if ($_FILES[$input]['size'] > $limits['size_left']){
-                    cot_error(cot::$L['files_err_nospace']);
+                    cot_error(Cot::$L['files_err_nospace']);
                 }
 
             }else{
-                cot_error(cot::$L['files_err_upload']);
+                cot_error(Cot::$L['files_err_upload']);
             }
             return $input;
 
@@ -436,15 +439,15 @@ class FilesController
             fclose($input);
 
             if (!$size){
-                cot_error(cot::$L['files_err_upload']);
+                cot_error(Cot::$L['files_err_upload']);
 
             } else {
                 if ($size > $limits['size_maxfile']){
-                    cot_error(cot::$L['files_err_toobig']);
+                    cot_error(Cot::$L['files_err_toobig']);
                 }
 
                 if ($size > $limits['size_left']){
-                    cot_error(cot::$L['files_err_nospace']);
+                    cot_error(Cot::$L['files_err_nospace']);
                 }
             }
             return $temp;

@@ -2,7 +2,7 @@
 defined('COT_CODE') or die('Wrong URL.');
 
 if(empty($GLOBALS['db_files_folders'])) {
-    cot::$db->registerTable('files_folders');
+    Cot::$db->registerTable('files_folders');
     cot_extrafields_register_table('files_folders');
 }
 
@@ -37,18 +37,18 @@ class files_model_Folder extends Som_Model_ActiveRecord
      */
     public static function __init($db = 'db')
     {
-        static::$_tbname = cot::$db->files_folders;
+        static::$_tbname = Cot::$db->files_folders;
         parent::__init($db);
     }
 
     protected function beforeInsert()
     {
         if(empty($this->_data['ff_created'])){
-            $this->_data['ff_created'] = date('Y-m-d H:i:s', cot::$sys['now']);
+            $this->_data['ff_created'] = date('Y-m-d H:i:s', Cot::$sys['now']);
         }
 
         if(empty($this->_data['ff_updated'])){
-            $this->_data['ff_updated'] = date('Y-m-d H:i:s', cot::$sys['now']);
+            $this->_data['ff_updated'] = date('Y-m-d H:i:s', Cot::$sys['now']);
         }
 
         return parent::beforeInsert();
@@ -56,7 +56,7 @@ class files_model_Folder extends Som_Model_ActiveRecord
 
     protected function beforeUpdate()
     {
-        $this->_data['ff_updated'] = date('Y-m-d H:i:s', cot::$sys['now']);
+        $this->_data['ff_updated'] = date('Y-m-d H:i:s', Cot::$sys['now']);
 
         // Update files count in this folder
         if(!array_key_exists('ff_count', $this->_oldData)) {
@@ -204,7 +204,7 @@ class files_model_Folder extends Som_Model_ActiveRecord
 
         if(empty($urlParams)) $urlParams = array('m' => 'pfs');
 
-        list(cot::$usr['auth_read'], cot::$usr['auth_write'], cot::$usr['isadmin']) = cot_auth('files', 'a');
+        list(Cot::$usr['auth_read'], Cot::$usr['auth_write'], Cot::$usr['isadmin']) = cot_auth('files', 'a');
 
         if (($item instanceof files_model_Folder) && isset($cacheArr[$item->ff_id]) && is_array($cacheArr[$item->ff_id])) {
             $temp_array = $cacheArr[$item->ff_id];
@@ -243,8 +243,8 @@ class files_model_Folder extends Som_Model_ActiveRecord
                     'TITLE' => htmlspecialchars($item->ff_title),
                     'DESC'  => htmlspecialchars($item->ff_desc),
                     'ITEMS_COUNT' => $item->ff_count,
-                    'PUBLIC' => (bool)$item->ff_public ? cot::$L['Yes'] : cot::$L['No'],
-                    'ALBUM'  => (bool)$item->ff_album  ? cot::$L['Yes'] : cot::$L['No'],
+                    'PUBLIC' => (bool)$item->ff_public ? Cot::$L['Yes'] : Cot::$L['No'],
+                    'ALBUM'  => (bool)$item->ff_album  ? Cot::$L['Yes'] : Cot::$L['No'],
                     'ISPUBLIC' => $item->ff_public,
                     'ISALBUM' => $item->ff_album,
                     'CREATE_DATE' => cot_date($date_format, strtotime($item->ff_created)),
@@ -253,7 +253,7 @@ class files_model_Folder extends Som_Model_ActiveRecord
                     'UPDATED' => $item->ff_updated,
                     'CREATED_RAW' => strtotime($item->ff_created),
                     'UPDATED_RAW' => strtotime($item->ff_updated),
-                    'ICON' => $item->ff_album ? cot::$R['files_icon_gallery'] : cot::$R['files_icon_folder'],
+                    'ICON' => $item->ff_album ? Cot::$R['files_icon_gallery'] : Cot::$R['files_icon_folder'],
                 );
 
                 /* === Hook === */

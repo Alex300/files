@@ -14,7 +14,7 @@ Hooks=forums.posts.delete.first
 defined('COT_CODE') or die('Wrong URL');
 
 // If the post is deleted to the trash, we do not delete files
-if (!cot_plugin_active('trashcan') || !cot::$cfg['plugin']['trashcan']['trash_forum']) {
+if (!cot_plugin_active('trashcan') || !Cot::$cfg['plugin']['trashcan']['trash_forum']) {
 	require_once cot_incfile('files', 'module');
 
     $files = files_model_File::findByCondition([['file_source', 'forums'], ['file_item', $p],]);

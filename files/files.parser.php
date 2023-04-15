@@ -90,8 +90,8 @@ if (!function_exists('files_thumb_bbcode')) {
 
 		$img = files_thumb_bbcode($m);
 
-        $path = cot::$cfg['files']['folder']. '/' . $row->file_path;
-        $url  = cot::$cfg['mainurl'].'/'.$path;
+        $path = Cot::$cfg['files']['folder']. '/' . $row->file_path;
+        $url  = Cot::$cfg['mainurl'].'/'.$path;
 
 		$html = '<a href="'.$url.'" title="' . htmlspecialchars($row->file_title) . '" rel="att_image_preview">' .
             $img . '</a>';

@@ -2,7 +2,7 @@
 defined('COT_CODE') or die('Wrong URL.');
 
 if(empty($GLOBALS['db_files'])) {
-    cot::$db->registerTable('files');
+    Cot::$db->registerTable('files');
     cot_extrafields_register_table('files');
 }
 
@@ -46,7 +46,7 @@ class files_model_File extends Som_Model_ActiveRecord
      */
     public static function __init($db = 'db')
     {
-        static::$_tbname = cot::$db->files;
+        static::$_tbname = Cot::$db->files;
         parent::__init($db);
     }
 
@@ -64,30 +64,30 @@ class files_model_File extends Som_Model_ActiveRecord
     public static function typeIcon($ext, $size = 48)
     {
         $iconUrl = '';
-        if (isset(cot::$R["files_icon_type_{$size}_{$ext}"])){
-            $iconUrl = cot::$R["files_icon_type_{$size}_{$ext}"];
+        if (isset(Cot::$R["files_icon_type_{$size}_{$ext}"])){
+            $iconUrl = Cot::$R["files_icon_type_{$size}_{$ext}"];
             
-        } elseif(isset(cot::$R["files_icon_type_48_{$ext}"])){
-            $iconUrl = cot::$R["files_icon_type_48_{$ext}"];
+        } elseif(isset(Cot::$R["files_icon_type_48_{$ext}"])){
+            $iconUrl = Cot::$R["files_icon_type_48_{$ext}"];
         }
 
         if (!empty($iconUrl)) {
             return $iconUrl;
         }
 
-        if (!file_exists(cot::$cfg['modules_dir'] . "/files/img/types/$size")){
+        if (!file_exists(Cot::$cfg['modules_dir'] . "/files/img/types/$size")){
             $size = 48;
         }
 
-        if (file_exists(cot::$cfg['modules_dir'] . "/files/img/types/$size/{$ext}.png")) {
-            return cot::$cfg['modules_dir'] . "/files/img/types/$size/{$ext}.png";
+        if (file_exists(Cot::$cfg['modules_dir'] . "/files/img/types/$size/{$ext}.png")) {
+            return Cot::$cfg['modules_dir'] . "/files/img/types/$size/{$ext}.png";
         }
 
         if (in_array($ext, ['avif','bmp','gd2','gd','gif','jpg','jpeg','png','tga','tpic','wbmp','webp','xbm'])) {
-            return cot::$cfg['modules_dir'] . "/files/img/types/$size/image.png";
+            return Cot::$cfg['modules_dir'] . "/files/img/types/$size/image.png";
         }
 
-        return cot::$cfg['modules_dir'] . "/files/img/types/$size/archive.png";
+        return Cot::$cfg['modules_dir'] . "/files/img/types/$size/archive.png";
     }
 
     public function makeAvatar()
@@ -108,7 +108,7 @@ class files_model_File extends Som_Model_ActiveRecord
     protected function beforeInsert()
     {
         if(empty($this->_data['file_updated'])){
-            $this->_data['file_updated'] = date('Y-m-d H:i:s', cot::$sys['now']);
+            $this->_data['file_updated'] = date('Y-m-d H:i:s', Cot::$sys['now']);
         }
 
         if(empty($this->_data['file_order'])){
@@ -140,7 +140,7 @@ class files_model_File extends Som_Model_ActiveRecord
 
     protected function beforeUpdate()
     {
-        $this->_data['file_updated'] = date('Y-m-d H:i:s', cot::$sys['now']);
+        $this->_data['file_updated'] = date('Y-m-d H:i:s', Cot::$sys['now']);
 
         return parent::beforeUpdate();
     }
@@ -149,7 +149,7 @@ class files_model_File extends Som_Model_ActiveRecord
     {
         $res = true;
 
-        $filePath = cot::$cfg['files']['folder']. '/' . $this->_data['file_path'];
+        $filePath = Cot::$cfg['files']['folder']. '/' . $this->_data['file_path'];
 
         $path_parts = pathinfo($filePath);
         $res &= @unlink($filePath);
@@ -159,14 +159,14 @@ class files_model_File extends Som_Model_ActiveRecord
 
         // Delete user's folder in pfs if it is empty
         if ($this->_data['file_source'] == 'pfs') {
-            $path = cot::$cfg['files']['folder'] . '/pfs/' . $this->_data['user_id'];
+            $path = Cot::$cfg['files']['folder'] . '/pfs/' . $this->_data['user_id'];
             $fCnt = array_sum(array_map('is_file', glob($path.'/*')));
 
             if ($fCnt === 0)  @rmdir($path);
         }
 
         $res &= $this->remove_thumbs();
-        @rmdir(cot::$cfg['files']['folder'] . '/_thumbs/' . $this->_data['file_id']);
+        @rmdir(Cot::$cfg['files']['folder'] . '/_thumbs/' . $this->_data['file_id']);
 
         return parent::beforeDelete();
     }
@@ -197,8 +197,8 @@ class files_model_File extends Som_Model_ActiveRecord
     {
         $res = true;
 
-        $thumbs_folder = cot::$cfg['files']['folder'] . '/_thumbs/' . $this->_data['file_id'];
-        $path = $thumbs_folder . '/' . cot::$cfg['files']['prefix'] . $this->_data['file_id'];
+        $thumbs_folder = Cot::$cfg['files']['folder'] . '/_thumbs/' . $this->_data['file_id'];
+        $path = $thumbs_folder . '/' . Cot::$cfg['files']['prefix'] . $this->_data['file_id'];
         $thumbPaths =  glob($path . '-*', GLOB_NOSORT);
 
         if (!empty($thumbPaths) && is_array($thumbPaths)) {
@@ -354,7 +354,7 @@ class files_model_File extends Som_Model_ActiveRecord
         }
         /* ===== */
 
-        list(cot::$usr['auth_read'], cot::$usr['auth_write'], cot::$usr['isadmin']) = cot_auth('files', 'a');
+        list(Cot::$usr['auth_read'], Cot::$usr['auth_write'], Cot::$usr['isadmin']) = cot_auth('files', 'a');
 
         if (
             ($item instanceof files_model_File) &&
@@ -372,7 +372,7 @@ class files_model_File extends Som_Model_ActiveRecord
             }
             /** @var files_model_File $item  */
             if ($item && $item->file_id > 0){
-                $itemUrl = $item->file_img ? cot::$cfg['files']['folder'] . '/' . $item->file_path : cot_url('files',
+                $itemUrl = $item->file_img ? Cot::$cfg['files']['folder'] . '/' . $item->file_path : cot_url('files',
                     array('m' => 'files', 'a'=>'download', 'id' => $item->file_id));
 
                 $date_format = 'datetime_medium';
@@ -403,8 +403,8 @@ class files_model_File extends Som_Model_ActiveRecord
                     foreach ($cot_extrafields[static::$_tbname] as $exfld) {
                         $tag = mb_strtoupper($exfld['field_name']);
                         $field = 'file_'.$exfld['field_name'];
-                        $temp_array[$tag.'_TITLE'] = isset(cot::$L['files_'.$exfld['field_name'].'_title']) ?
-                            cot::$L['files_'.$exfld['field_name'].'_title'] : $exfld['field_description'];
+                        $temp_array[$tag.'_TITLE'] = isset(Cot::$L['files_'.$exfld['field_name'].'_title']) ?
+                            Cot::$L['files_'.$exfld['field_name'].'_title'] : $exfld['field_description'];
                         $temp_array[$tag] = cot_build_extrafields_data('files', $exfld, $item->{$field});
                         $temp_array[$tag.'_VALUE'] = $item->{$field};
                     }

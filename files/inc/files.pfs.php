@@ -21,7 +21,7 @@ class PfsController
     {
         global $usr, $Ls, $db_files, $db_files_folders, $outHeaderFooter, $cot_extensions;
 
-        $perPage = cot::$cfg['files']['maxFoldersPerPage'];
+        $perPage = Cot::$cfg['files']['maxFoldersPerPage'];
 
         list($pgf, $df) = cot_import_pagenav('df', $perPage);   // page number folders
 
@@ -40,7 +40,7 @@ class PfsController
         $standalone = 0;
 
         $urlParams = array('m' => 'pfs');
-        if(!$f && $uid != cot::$usr['id']) $urlParams['uid'] = $uid;
+        if(!$f && $uid != Cot::$usr['id']) $urlParams['uid'] = $uid;
 
         if (!empty($c1) || !empty($c2)) {
             $standalone = 1;
@@ -74,15 +74,15 @@ class PfsController
 
         if ($uid === 0) {
             $isSFS = true;
-            cot_block(cot::$usr['isadmin']);
+            cot_block(Cot::$usr['isadmin']);
 
-        } elseif($uid != cot::$usr['id']) {
-            cot_block(cot::$usr['isadmin']);
+        } elseif($uid != Cot::$usr['id']) {
+            cot_block(Cot::$usr['isadmin']);
         }
 
         $limits = cot_files_getLimits($uid);
         // Ограничения на загрузку файлов через POST
-        if (cot::$cfg['files']['chunkSize'] == 0){
+        if (Cot::$cfg['files']['chunkSize'] == 0){
             $limits['size_maxfile']  = min((int)$limits['size_maxfile'], cot_get_uploadmax() * 1024);
         }
 
@@ -90,13 +90,13 @@ class PfsController
         $title = '';
         if ($isSFS) {
             $tmp = $urlParams;
-            if($uid != cot::$usr['id']) $tmp['uid'] = $uid;
+            if($uid != Cot::$usr['id']) $tmp['uid'] = $uid;
             if($folder) {
-                $crumbs[] = array(cot_url('files', $tmp), cot::$L['SFS']);
+                $crumbs[] = array(cot_url('files', $tmp), Cot::$L['SFS']);
                 $crumbs[] = $title = $folder->ff_title;
 
             } else {
-                $crumbs[] = $title = cot::$L['SFS'];
+                $crumbs[] = $title = Cot::$L['SFS'];
             }
 
         } else {
@@ -105,29 +105,29 @@ class PfsController
             $urr = cot_user_data($uid);
             if(empty($urr) && !$usr['isadmin']) cot_die_message(404);   // Вдруг пользователь удален, а вайлы остались?
 
-            if($uid == cot::$usr['id']){
-                if($standalone == 0) $crumbs[] = array(cot_url('users', 'm=details'), cot::$L['files_mypage']);
+            if($uid == Cot::$usr['id']){
+                if($standalone == 0) $crumbs[] = array(cot_url('users', 'm=details'), Cot::$L['files_mypage']);
                 if($folder){
-                    $crumbs[] = array(cot_url('files', $urlParams), cot::$L['Mypfs']);
+                    $crumbs[] = array(cot_url('files', $urlParams), Cot::$L['Mypfs']);
                     $crumbs[] = $title = $folder->ff_title;
 
                 } else {
-                    $crumbs[] = $title = cot::$L['Mypfs'];
+                    $crumbs[] = $title = Cot::$L['Mypfs'];
                 }
 
             } else {
-                $crumbs[] = array(cot_url('users'), cot::$L['Users']);
+                $crumbs[] = array(cot_url('users'), Cot::$L['Users']);
                 $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
                     cot_user_full_name($urr));
 
                 if($folder) {
                     $tmp = $urlParams;
                     if($uid != $usr['id']) $tmp['uid'] = $uid;
-                    $crumbs[] = array(cot_url('files', $tmp), cot::$L['Files']);
+                    $crumbs[] = array(cot_url('files', $tmp), Cot::$L['Files']);
                     $crumbs[] = $title = $folder->ff_title;
 
                 } else {
-                    $crumbs[] = $title = cot::$L['Files'];
+                    $crumbs[] = $title = Cot::$L['Files'];
                 }
             }
         }
@@ -152,7 +152,7 @@ class PfsController
         ));
         // ========== /Statistics =========
 
-        $allowedExts = explode(',', str_replace(' ', '', cot::$cfg['files']['exts']));
+        $allowedExts = explode(',', str_replace(' ', '', Cot::$cfg['files']['exts']));
         $descriptions = array();
         foreach($cot_extensions as $row) {
             $descriptions[$row[0]]  = $row[1];
@@ -191,8 +191,8 @@ class PfsController
             'PFS_FILES_COUNT_RAW' => $files_count,
             'PFS_IS_STANDALONE' => ($standalone) ? 1 : 0,
             'PFS_IS_ROOT' => ($f == 0) ? 1 : 0,
-            'PAGE_TITLE' => cot::$out['subtitle'] =  $title,
-            'BREADCRUMBS' => cot_breadcrumbs($crumbs, !$standalone && cot::$cfg['homebreadcrumb']),
+            'PAGE_TITLE' => Cot::$out['subtitle'] =  $title,
+            'BREADCRUMBS' => cot_breadcrumbs($crumbs, !$standalone && Cot::$cfg['homebreadcrumb']),
         ));
 
         // Если мы находимся в корне, то можем работать с папками
@@ -206,7 +206,7 @@ class PfsController
                     $folderIds[] = $folderRow->ff_id;
                 }
 
-                $sql = cot::$db->query("SELECT file_item as ff_id, COUNT(*) as items_count, SUM(file_size) as size
+                $sql = Cot::$db->query("SELECT file_item as ff_id, COUNT(*) as items_count, SUM(file_size) as size
                     FROM $db_files WHERE file_source='{$source}' AND file_item IN (".implode(',', $folderIds).")
                     GROUP BY file_item");
                 while ($pfs_filesinfo = $sql->fetch()){
@@ -214,7 +214,7 @@ class PfsController
                     $onPageFoldersFilesCount += $pfs_filesinfo['items_count'];
                 }
 
-                $sql = cot::$db->query("SELECT SUM(ff_count) as files_count FROM $db_files_folders WHERE user_id=?", $uid);
+                $sql = Cot::$db->query("SELECT SUM(ff_count) as files_count FROM $db_files_folders WHERE user_id=?", $uid);
                 $foldersFilesCount = $sql->fetchColumn();
 
                 foreach($folders as $folderRow) {
@@ -258,13 +258,13 @@ class PfsController
                 'FOLDER_ADDFORM_URL'    => cot_url('files', array('m' => 'pfs', 'a' => 'editFolder')),
                 'FOLDER_ADDFORM_TITLE'  => cot_inputbox('text', 'ff_title'),
                 'FOLDER_ADDFORM_DESC'   => cot_textarea('ff_desc', '', '', ''),
-                'FOLDER_ADDFORM_PUBLIC' => cot_checkbox(true, 'ff_public', cot::$L['files_ispublic']),
-                'FOLDER_ADDFORM_ALBUM'  => cot_checkbox(true, 'ff_album',  cot::$L['files_isgallery']),
+                'FOLDER_ADDFORM_PUBLIC' => cot_checkbox(true, 'ff_public', Cot::$L['files_ispublic']),
+                'FOLDER_ADDFORM_ALBUM'  => cot_checkbox(true, 'ff_album',  Cot::$L['files_isgallery']),
                 'FOLDER_ADDFORM_HIDDEN' => $hidden,
             ));
             $t->parse('MAIN.FOLDER_NEWFORM');
 
-            if($pgf > 1) cot::$out['subtitle'] .= " (".cot::$L['Page']." {$pgf})";
+            if($pgf > 1) Cot::$out['subtitle'] .= " (".Cot::$L['Page']." {$pgf})";
 
         } else {
             if ($folder) $t->assign(files_model_Folder::generateTags($folder, 'FOLDER_', $urlParams));
@@ -282,20 +282,20 @@ class PfsController
                 $pfs_code_addthumb = cot_rc('files_pfs_code_addthumb');
                 $pfs_code_addpix = cot_rc('files_pfs_code_addpix');
             }
-            $winclose = cot::$cfg['files']['pfs_winclose'] ? "\nwindow.close();" : '';
+            $winclose = Cot::$cfg['files']['pfs_winclose'] ? "\nwindow.close();" : '';
 
             cot_sendheaders();
 
             $html = Resources::render();
-            if (!isset(cot::$out['head_head'])) cot::$out['head_head'] = '';
-            if (!empty($html)) cot::$out['head_head'] = $html.cot::$out['head_head'];
+            if (!isset(Cot::$out['head_head'])) Cot::$out['head_head'] = '';
+            if (!empty($html)) Cot::$out['head_head'] = $html.Cot::$out['head_head'];
 
             $html = Resources::renderFooter();
-            if (!isset(cot::$out['footer_rc'])) cot::$out['footer_rc'] = '';
-            if (!empty($html)) cot::$out['footer_rc'] = $html . cot::$out['footer_rc'];
+            if (!isset(Cot::$out['footer_rc'])) Cot::$out['footer_rc'] = '';
+            if (!empty($html)) Cot::$out['footer_rc'] = $html . Cot::$out['footer_rc'];
 
             $t->assign(array(
-                'PFS_HEAD' => cot::$out['head_head'],
+                'PFS_HEAD' => Cot::$out['head_head'],
                 'PFS_HEADER_JAVASCRIPT' => cot_rc('files_pfs_code_header_javascript',
                         array('c2'=>$c2,
                             'pfs_code_addthumb' => $pfs_code_addthumb,
@@ -305,7 +305,7 @@ class PfsController
                         )),
                 'PFS_C1' => $c1,
                 'PFS_C2' => $c2,
-                'FOOTER_RC' => cot::$out['footer_rc']
+                'FOOTER_RC' => Cot::$out['footer_rc']
             ));
 
             $t->parse('MAIN.STANDALONE_HEADER');
@@ -341,8 +341,8 @@ class PfsController
     {
         global $usr, $Ls, $cot_extensions, $outHeaderFooter;
 
-        list(cot::$usr['auth_read'], cot::$usr['auth_write'], cot::$usr['isadmin']) = cot_auth('files', 'a');
-        cot_block(cot::$usr['auth_write']);
+        list(Cot::$usr['auth_read'], Cot::$usr['auth_write'], Cot::$usr['isadmin']) = cot_auth('files', 'a');
+        cot_block(Cot::$usr['auth_write']);
 
         $f = cot_import('f', 'G', 'INT');           // folder id
         if(!$f) $f = cot_import('f', 'P', 'INT');
@@ -362,7 +362,7 @@ class PfsController
         if (!$f) {
             $f = 0;
             $folder = new files_model_Folder();
-            if($uid === null) $uid = cot::$usr['id'];
+            if($uid === null) $uid = Cot::$usr['id'];
             if($uid === 0) {
                 $isSFS = true;
 
@@ -378,7 +378,7 @@ class PfsController
             if($uid == 0) $isSFS = true;
         }
 
-        if( ($isSFS || $folder->user_id != cot::$usr['id']) && !$usr['isadmin']) cot_die_message(404, TRUE);
+        if( ($isSFS || $folder->user_id != Cot::$usr['id']) && !$usr['isadmin']) cot_die_message(404, TRUE);
 
         $urlParams = array('m' => 'pfs');
         if(!$f && $uid != $usr['id']) $urlParams['uid'] = $uid;
@@ -393,7 +393,7 @@ class PfsController
         if ($act == 'save') {
             $item = array();
             $item['ff_title'] = cot_import('ff_title', 'P', 'TXT');
-            cot_check(empty($item['ff_title']), cot::$L['files_foldertitlemissing'], 'ff_title');
+            cot_check(empty($item['ff_title']), Cot::$L['files_foldertitlemissing'], 'ff_title');
 
             $item['ff_desc']   = cot_import('ff_desc', 'P', 'TXT');
             $item['ff_album']  = cot_import('ff_album', 'P', 'BOL');
@@ -407,7 +407,7 @@ class PfsController
                 $redirUrl['a'] = 'editFolder';
                 if ($f) $redirUrl['f'] = $f;
                 if ($f = $folder->save()) {
-                    cot_message(cot::$L['files_saved']);
+                    cot_message(Cot::$L['files_saved']);
                     $redirUrl['f'] = $f;
                 }
                 cot_redirect(cot_url('files', $redirUrl, '', true));
@@ -418,15 +418,15 @@ class PfsController
 
         if ($isSFS){
             $tmp = $urlParams;
-            if($uid != cot::$usr['id']) $tmp['uid'] = $uid;
+            if($uid != Cot::$usr['id']) $tmp['uid'] = $uid;
             if($f) {
-                $crumbs[] = array(cot_url('files', $tmp), cot::$L['SFS']);
+                $crumbs[] = array(cot_url('files', $tmp), Cot::$L['SFS']);
                 $tmp['f'] = $folder->ff_id;
                 unset($tmp['uid']);
                 $crumbs[] = array(cot_url('files', $tmp), $folderData['ff_title']);
 
             } else {
-                $crumbs[] = array(cot_url('files', $urlParams), cot::$L['SFS']);
+                $crumbs[] = array(cot_url('files', $urlParams), Cot::$L['SFS']);
             }
 
         } else {
@@ -435,38 +435,38 @@ class PfsController
             $urr = cot_user_data($uid);
 
             $tmp = $urlParams;
-            if($uid != cot::$usr['id']) $tmp['uid'] = $uid;
-            if($uid == cot::$usr['id']) {
-                if($standalone == 0) $crumbs[] = array(cot_url('users', 'm=details'), cot::$L['files_mypage']);
-                $crumbs[] = array(cot_url('files', $tmp), cot::$L['Mypfs']);
+            if($uid != Cot::$usr['id']) $tmp['uid'] = $uid;
+            if($uid == Cot::$usr['id']) {
+                if($standalone == 0) $crumbs[] = array(cot_url('users', 'm=details'), Cot::$L['files_mypage']);
+                $crumbs[] = array(cot_url('files', $tmp), Cot::$L['Mypfs']);
                 if($f){
                     $tmp['f'] = $folder->ff_id;
                     $crumbs[] = array(cot_url('files', $tmp), $folderData['ff_title']);
                 }
-                cot::$out['subtitle'] = cot::$L['Mypfs'];
+                Cot::$out['subtitle'] = Cot::$L['Mypfs'];
 
             } else {
-                $crumbs[] = array(cot_url('users'), cot::$L['Users']);
+                $crumbs[] = array(cot_url('users'), Cot::$L['Users']);
                 $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
                     cot_user_full_name($urr));
-                $crumbs[] = array(cot_url('files', $tmp), cot::$L['Files']);
+                $crumbs[] = array(cot_url('files', $tmp), Cot::$L['Files']);
                 if($f) {
                     $crumbs[] = array(cot_url('files', array('m'=>'pfs', 'f' => $folder->ff_id)), $folderData['ff_title']);
                 }
-                cot::$out['subtitle'] = cot::$L['Files'].' - '.$urr['user_name'];
+                Cot::$out['subtitle'] = Cot::$L['Files'].' - '.$urr['user_name'];
             }
         }
 
         if (!$f) {
             $isAlbum = cot_import('ff_album', 'P', 'BOL');
-            $crumbs[] = $title = ($isAlbum) ? cot::$L['files_newalbum'] : cot::$L['files_newfolder'];
-            cot::$out['subtitle'] = $title.' - '.cot::$out['subtitle'];
+            $crumbs[] = $title = ($isAlbum) ? Cot::$L['files_newalbum'] : Cot::$L['files_newfolder'];
+            Cot::$out['subtitle'] = $title.' - '.Cot::$out['subtitle'];
 
         } else {
             $isAlbum = cot_import('ff_album', 'P', 'BOL');
-            $crumbs[] = cot::$L['Edit'];
-            $title = $folderData['ff_title'].': '.cot::$L['Edit'];
-            cot::$out['subtitle'] = $title.' - '.cot::$out['subtitle'];
+            $crumbs[] = Cot::$L['Edit'];
+            $title = $folderData['ff_title'].': '.Cot::$L['Edit'];
+            Cot::$out['subtitle'] = $title.' - '.Cot::$out['subtitle'];
         }
 
         $source = $isSFS ? 'sfs' : 'pfs';
@@ -485,7 +485,7 @@ class PfsController
             $folder->ff_album = 1;
         }
 
-        $folderFormAlbum = cot_checkbox($folder->ff_album, 'ff_album',  cot::$L['files_isgallery']);
+        $folderFormAlbum = cot_checkbox($folder->ff_album, 'ff_album',  Cot::$L['files_isgallery']);
 
         // Если в папке есть файлы не изображения, то это не альбом
         if($f > 0 && files_model_File::count(array(
@@ -503,7 +503,7 @@ class PfsController
             'FOLDER_FORM_URL'    => cot_url('files', array('m' => 'pfs', 'a' => 'editFolder')),
             'FOLDER_FORM_TITLE'  => cot_inputbox('text', 'ff_title', $folder->ff_title),
             'FOLDER_FORM_DESC'   => cot_textarea('ff_desc', $folder->ff_desc, '', ''),
-            'FOLDER_FORM_PUBLIC' => cot_checkbox($folder->ff_public, 'ff_public', cot::$L['files_ispublic']),
+            'FOLDER_FORM_PUBLIC' => cot_checkbox($folder->ff_public, 'ff_public', Cot::$L['files_ispublic']),
             'FOLDER_FORM_ALBUM'  => $folderFormAlbum,
             'FOLDER_FORM_HIDDEN' => $folderFormHidden,
         ));
@@ -526,7 +526,7 @@ class PfsController
         ));
         // ========== /Statistics =========
 
-        $allowedExts = explode(',', str_replace(' ', '', cot::$cfg['files']['exts']));
+        $allowedExts = explode(',', str_replace(' ', '', Cot::$cfg['files']['exts']));
         $descriptions = array();
         foreach($cot_extensions as $row){
             $descriptions[$row[0]]  = $row[1];
@@ -547,8 +547,8 @@ class PfsController
             'FILES_WIDGET' => ($folder->ff_id > 0 ) ?
                     cot_files_filebox($source, $f, '', 'all', -1, 'files.filebox', $standalone) : '',
             'IS_SITE_FILE_SPACE' => $isSFS,
-            'PAGE_TITLE' => cot::$out['subtitle'] =  $title,
-            'BREADCRUMBS' => cot_breadcrumbs($crumbs, !$standalone && cot::$cfg['homebreadcrumb']),
+            'PAGE_TITLE' => Cot::$out['subtitle'] =  $title,
+            'BREADCRUMBS' => cot_breadcrumbs($crumbs, !$standalone && Cot::$cfg['homebreadcrumb']),
         ));
 
         if ($standalone == 1){
@@ -565,20 +565,20 @@ class PfsController
                 $pfs_code_addthumb = cot_rc('files_pfs_code_addthumb');
                 $pfs_code_addpix = cot_rc('files_pfs_code_addpix');
             }
-            $winclose = cot::$cfg['files']['pfs_winclose'] ? "\nwindow.close();" : '';
+            $winclose = Cot::$cfg['files']['pfs_winclose'] ? "\nwindow.close();" : '';
 
             cot_sendheaders();
 
             $html = Resources::render();
-            if (!isset(cot::$out['head_head'])) cot::$out['head_head'] = '';
-            if (!empty($html)) cot::$out['head_head'] = $html . cot::$out['head_head'];
+            if (!isset(Cot::$out['head_head'])) Cot::$out['head_head'] = '';
+            if (!empty($html)) Cot::$out['head_head'] = $html . Cot::$out['head_head'];
 
             $html = Resources::renderFooter();
-            if (!isset(cot::$out['footer_rc'])) cot::$out['footer_rc'] = '';
-            if (!empty($html)) cot::$out['footer_rc'] = $html . cot::$out['footer_rc'];
+            if (!isset(Cot::$out['footer_rc'])) Cot::$out['footer_rc'] = '';
+            if (!empty($html)) Cot::$out['footer_rc'] = $html . Cot::$out['footer_rc'];
 
             $t->assign(array(
-                'PFS_HEAD' => cot::$out['head_head'],
+                'PFS_HEAD' => Cot::$out['head_head'],
                 'PFS_HEADER_JAVASCRIPT' => cot_rc('files_pfs_code_header_javascript',
                     array('c2'=>$c2,
                         'pfs_code_addthumb' => $pfs_code_addthumb,
@@ -588,7 +588,7 @@ class PfsController
                     )),
                 'PFS_C1' => $c1,
                 'PFS_C2' => $c2,
-                'FOOTER_RC' => cot::$out['footer_rc']
+                'FOOTER_RC' => Cot::$out['footer_rc']
             ));
 
             $t->parse('MAIN.STANDALONE_HEADER');
@@ -656,7 +656,7 @@ class PfsController
         $folderArr = $folder->toArray();
 
         $folder->delete();
-        cot_message(sprintf(cot::$L['files_folder_deleted'], $folderArr['ff_title']));
+        cot_message(sprintf(Cot::$L['files_folder_deleted'], $folderArr['ff_title']));
         cot_redirect(cot_url('files', $urlParams, '', true));
     }
 }

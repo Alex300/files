@@ -14,12 +14,12 @@ defined('COT_CODE') or die('Wrong URL');
 
 // If the topic is deleted to the trash, we do not delete files
 if (
-    (!cot_plugin_active('trashcan') || !cot::$cfg['plugin']['trashcan']['trash_forum']) &&
+    (!cot_plugin_active('trashcan') || !Cot::$cfg['plugin']['trashcan']['trash_forum']) &&
     !empty($topicId)
 ) {
     $filesCond = [
         ['file_source', 'forums',],
-        ['SQL', 'file_item IN (SELECT fp_id FROM ' . cot::$db->quoteTableName(cot::$db->forum_posts) .
+        ['SQL', 'file_item IN (SELECT fp_id FROM ' . Cot::$db->quoteTableName(Cot::$db->forum_posts) .
             " WHERE fp_topicid = $topicId)",],
     ];
     $files = files_model_File::findByCondition($filesCond);

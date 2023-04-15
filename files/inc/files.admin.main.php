@@ -22,7 +22,7 @@ class MainController
         $tpl = new XTemplate(cot_tplfile('files.admin.main'));
 
         if (!function_exists('gd_info')){
-            cot_message(cot::$L['files_nogd'], 'warning');
+            cot_message(Cot::$L['files_nogd'], 'warning');
         }else{
             $gd_datas = gd_info();
             foreach ($gd_datas as $k => $i){
@@ -36,21 +36,21 @@ class MainController
             $tpl->parse('MAIN.GD_INFO');
         }
 
-        $pfsUrl = cot_url('files', array('m'=>'pfs', 'uid'=>cot::$usr['id']));
-        $filesUrl = cot_url('files', array('uid'=>cot::$usr['id']));
-        $albumUrl = cot_url('files', array('a'=>'album', 'uid'=>cot::$usr['id']));
-        $adminhelp  = cot::$L['files_userfilespace'].": <a href=\"{$pfsUrl}\" target=\"_blank\">{$pfsUrl}</a> (".
-            cot::$L['files_userfilespace_desc'].")<br />";
-        $adminhelp .= cot::$L['files_userpublic_files'].": <a href=\"{$filesUrl}\" target=\"_blank\">{$filesUrl}</a><br />";
-        $adminhelp .= cot::$L['files_userpublic_albums'].": <a href=\"{$albumUrl}\" target=\"_blank\">{$albumUrl}</a><br /><br />";
+        $pfsUrl = cot_url('files', array('m'=>'pfs', 'uid'=>Cot::$usr['id']));
+        $filesUrl = cot_url('files', array('uid'=>Cot::$usr['id']));
+        $albumUrl = cot_url('files', array('a'=>'album', 'uid'=>Cot::$usr['id']));
+        $adminhelp  = Cot::$L['files_userfilespace'].": <a href=\"{$pfsUrl}\" target=\"_blank\">{$pfsUrl}</a> (".
+            Cot::$L['files_userfilespace_desc'].")<br />";
+        $adminhelp .= Cot::$L['files_userpublic_files'].": <a href=\"{$filesUrl}\" target=\"_blank\">{$filesUrl}</a><br />";
+        $adminhelp .= Cot::$L['files_userpublic_albums'].": <a href=\"{$albumUrl}\" target=\"_blank\">{$albumUrl}</a><br /><br />";
 
-        $adminhelp .= "<strong>«".cot::$L['files_cleanup']."»</strong> ".cot::$L['files_cleanup_desc'].".<br />";
-        $adminhelp .= cot::$L['files_deleteallthumbs_desc'];
+        $adminhelp .= "<strong>«".Cot::$L['files_cleanup']."»</strong> ".Cot::$L['files_cleanup_desc'].".<br />";
+        $adminhelp .= Cot::$L['files_deleteallthumbs_desc'];
 
-        $adminsubtitle = cot::$L['Files'];
+        $adminsubtitle = Cot::$L['Files'];
 
         $tpl->assign(array(
-            'PAGE_TITLE' => cot::$L['Files'].": ".cot::$L['Administration'],
+            'PAGE_TITLE' => Cot::$L['Files'].": ".Cot::$L['Administration'],
         ));
         $tpl->parse('MAIN');
         return $tpl->text();
@@ -65,12 +65,12 @@ class MainController
     {
         global $adminpath, $adminhelp, $adminsubtitle, $db_files, $db_users, $cot_extrafields;
 
-        $adminpath[] = array(cot_url('admin', 'm=files&s=allpfs'), cot::$L['files_allpfs']);
-        $adminhelp = cot::$L['adm_help_allpfs'] ?? '';
-        $adminsubtitle = cot::$L['files_allpfs'] ?? '';
+        $adminpath[] = array(cot_url('admin', 'm=files&s=allpfs'), Cot::$L['files_allpfs']);
+        $adminhelp = Cot::$L['adm_help_allpfs'] ?? '';
+        $adminsubtitle = Cot::$L['files_allpfs'] ?? '';
 
         $urlParams = array('m'=>'files', 'a'=> 'allpfs');
-        $perPage = cot::$cfg['maxrowsperpage'];
+        $perPage = Cot::$cfg['maxrowsperpage'];
         list($pg, $d, $durl) = cot_import_pagenav('d', $perPage);
 
         /* === Hook === */
@@ -80,10 +80,10 @@ class MainController
         }
         /* ===== */
 
-        $totalitems = cot::$db->query("SELECT COUNT(DISTINCT user_id) FROM $db_files
+        $totalitems = Cot::$db->query("SELECT COUNT(DISTINCT user_id) FROM $db_files
             WHERE file_source='pfs'")->fetchColumn();
 
-       $pagenav = cot_pagenav('admin', $urlParams, $d, $totalitems, $perPage, 'd', '', cot::$cfg['jquery'] && cot::$cfg['turnajax']);
+       $pagenav = cot_pagenav('admin', $urlParams, $d, $totalitems, $perPage, 'd', '', Cot::$cfg['jquery'] && Cot::$cfg['turnajax']);
 
         $sqlOrder = $order = 'u.user_name ASC';
 
@@ -120,7 +120,7 @@ class MainController
         }
         // /Если есть экстраполя ФИО, то сортировать по ним
 
-        $sql_pfs = cot::$db->query("SELECT DISTINCT f.user_id as uid, u.*, COUNT(*) as count FROM $db_files AS f
+        $sql_pfs = Cot::$db->query("SELECT DISTINCT f.user_id as uid, u.*, COUNT(*) as count FROM $db_files AS f
 	        LEFT JOIN $db_users AS u ON f.user_id=u.user_id
 	        WHERE file_source='pfs' GROUP BY f.user_id ORDER BY $sqlOrder LIMIT $d, ".$perPage);
 
@@ -166,7 +166,7 @@ class MainController
             'ALLPFS_PAGINATION_NEXT' => $pagenav['next'],
             'ALLPFS_TOTALITEMS' => $totalitems,
             'ALLPFS_ON_PAGE' => $ii,
-            'PAGE_TITLE' => cot::$L['files_allpfs'],
+            'PAGE_TITLE' => Cot::$L['files_allpfs'],
         ));
 
         /* === Hook  === */
@@ -193,7 +193,7 @@ class MainController
         $trashTable = '';
         if (cot_plugin_active('trashcan')) {
             require_once cot_incfile('trashcan', 'plug');
-            $trashTable = cot::$db->trash;
+            $trashTable = Cot::$db->trash;
         }
 
         $count = 0;
@@ -202,7 +202,7 @@ class MainController
             // Remove unused forum attachments
             require_once cot_incfile('forums', 'module');
 
-            $postsTable = cot::$db->forum_posts;
+            $postsTable = Cot::$db->forum_posts;
 
             $join = '';
             $where = '';
@@ -232,7 +232,7 @@ class MainController
             // Remove unused page attachments
             require_once cot_incfile('page', 'module');
 
-            $pageTable = cot::$db->pages;
+            $pageTable = Cot::$db->pages;
 
             $join = '';
             $where = '';
@@ -260,7 +260,7 @@ class MainController
 
         $count += cot_files_formGarbageCollect();
 
-        cot_message(cot::$L['files_items_removed'].': ' . $count);
+        cot_message(Cot::$L['files_items_removed'].': ' . $count);
 
         // Return to the main page and show messages
         cot_redirect(cot_url('admin', 'm=files', '', true));
@@ -269,27 +269,27 @@ class MainController
 
     public function delAllThumbsAction()
     {
-        if (empty(cot::$cfg['files']['folder']) || !file_exists(cot::$cfg['files']['folder'].'/_thumbs')) {
+        if (empty(Cot::$cfg['files']['folder']) || !file_exists(Cot::$cfg['files']['folder'].'/_thumbs')) {
             cot_redirect(cot_url('admin', 'm=files', '', true));
         }
 
-        rrmdir(cot::$cfg['files']['folder'].'/_thumbs');
+        rrmdir(Cot::$cfg['files']['folder'].'/_thumbs');
 
         // Очистим кеш, чтобы миниатюры могли перегенерироваться
-        if (cot::$cache){
-            if (cot::$cfg['cache_page']){
-                cot::$cache->page->clear('page');
+        if (Cot::$cache){
+            if (Cot::$cfg['cache_page']){
+                Cot::$cache->page->clear('page');
             }
-            if (cot::$cfg['cache_index']){
-                cot::$cache->page->clear('index');
+            if (Cot::$cfg['cache_index']){
+                Cot::$cache->page->clear('index');
             }
-            if (cot::$cfg['cache_forums']){
-                cot::$cache->page->clear('forums');
+            if (Cot::$cfg['cache_forums']){
+                Cot::$cache->page->clear('forums');
             }
         }
 
 
-        cot_message(cot::$L['files_thumbs_removed']);
+        cot_message(Cot::$L['files_thumbs_removed']);
 
         // Return to the main page and show messages
         cot_redirect(cot_url('admin', 'm=files', '', true));

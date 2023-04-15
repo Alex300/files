@@ -32,8 +32,8 @@ if(cot_auth('files', 'a', 'W')){
     }
 
     $t->assign(array(
-        'COMMENTS_FORM_PFS' => cot_files_buildPfs(cot::$usr['id'], $form_name, $input_name, cot::$L['Mypfs'], cot::$sys['parser']),
+        'COMMENTS_FORM_PFS' => cot_files_buildPfs(Cot::$usr['id'], $form_name, $input_name, Cot::$L['Mypfs'], Cot::$sys['parser']),
         'COMMENTS_FORM_SFS' => (cot_auth('files', 'a', 'A')) ? cot_files_buildPfs(0, $form_name, $input_name,
-                    cot::$L['SFS'], cot::$sys['parser']) : ''
+                    Cot::$L['SFS'], Cot::$sys['parser']) : ''
     ));
 }
