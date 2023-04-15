@@ -403,7 +403,7 @@ class UploadController
         list(Cot::$usr['auth_read'], Cot::$usr['auth_write'], Cot::$usr['isadmin']) = cot_auth('files', 'a');
 
         if (!$this->preValidate($uploaded_file, $file, $error, $index)) {
-            $file->debug['path'] = $file->path;
+            //$file->debug['path'] = $file->path;
             $file->debug['uploaded_file'] = $uploaded_file;
             $file->debug['upload_dir'] = cot_files_tempDir();
 
@@ -1008,7 +1008,7 @@ class UploadController
     {
         global $source, $item, $field;
 
-        if(!cot_auth('files', 'a', 'W')){
+        if (!cot_auth('files', 'a', 'W')) {
             $file->error = Cot::$L['files_err_perms'];
             return false;
         }

@@ -13,8 +13,6 @@ defined('COT_CODE') or die('Wrong URL.');
  */
 class MainController
 {
-
-
     /**
      * файлы пользователя
      * @param string $type
@@ -39,8 +37,7 @@ class MainController
         if(!$f && $uid != $usr['id']) $urlParams['uid'] = $uid;
 
         /* === Hook === */
-        foreach (cot_getextplugins('files.first') as $pl)
-        {
+        foreach (cot_getextplugins('files.first') as $pl) {
             include $pl;
         }
         /* ===== */
@@ -50,7 +47,7 @@ class MainController
         $folders_count = 0;
         $isSFS = false;                        // is Site File Space
 
-        if($f > 0){
+        if ($f > 0) {
             $folder = files_model_Folder::getById($f);
             if(!$folder) cot_die_message(404);
             $uid = (int)$folder->user_id;
@@ -61,16 +58,16 @@ class MainController
             }
             $type = ($folder->ff_album) ? 'image' : 'all';
 
-        }else{
+        } else {
             $foldersCond = array(
                 array('user_id', $uid),
             );
-            if($type == 'image'){
+            if ($type == 'image'){
                 $foldersCond[] = array('ff_album', 1);
-            }else{
+            } else {
                 $foldersCond[] = array('ff_album', 0);
             }
-            if(!$usr['isadmin'] && $uid != $usr['id']){
+            if (!$usr['isadmin'] && $uid != $usr['id']) {
                 $foldersCond[] = array('ff_public', 1);
             }
             $folders = files_model_Folder::findByCondition($foldersCond, $perPage, $df, array(array('ff_title', 'ASC')));
@@ -78,46 +75,50 @@ class MainController
             $onPageFoldersCount = count($folders);
         }
 
-        if($uid === 0){
+        if ($uid === 0) {
             $isSFS = true;
             cot_block($usr['id'] > 0);     // Незареги не видят sfs вообще
         }
 
         $crumbs = array();
         $title = '';
-        if($isSFS){
+        if ($isSFS) {
             $tmp = $urlParams;
-            if($uid != $usr['id']) $tmp['uid'] = $uid;
-            if($folder){
+            if ($uid != $usr['id']) {
+                $tmp['uid'] = $uid;
+            }
+            if ($folder) {
                 $crumbs[] = array(cot_url('files', $tmp), Cot::$L['SFS']);
                 $crumbs[] = $title = $folder->ff_title;
-            }else{
+            } else {
                 $crumbs[] = $title = Cot::$L['SFS'];
             }
 
-        }else{
+        } else {
 
             $urr = cot_user_data($uid);
-            if(empty($urr) && !$usr['isadmin']) cot_die_message(404);   // Вдруг пользователь удален, а файлы остались?
+            if (empty($urr) && !$usr['isadmin']) {
+                // Вдруг пользователь удален, а файлы остались?
+                cot_die_message(404);
+            }
 
-            if($uid == $usr['id']){
+            if ($uid == $usr['id']) {
                 $crumbs[] = array(cot_url('users', array('m' => 'details')), Cot::$L['files_mypage']);
-                if($folder){
-                    if($type == 'image'){
+                if ($folder) {
+                    if ($type == 'image') {
                         $crumbs[] = array(cot_url('files', array_merge($urlParams, array('a' => 'album'))), Cot::$L['files_albums']);
-                    }else{
+                    } else {
                         $crumbs[] = array(cot_url('files', $urlParams), Cot::$L['Mypfs']);
                     }
                     $crumbs[] = $title = $folder->ff_title;
-                }else{
-                    if($type == 'image'){
+                } else {
+                    if ($type == 'image') {
                         $crumbs[] = $title = Cot::$L['files_albums'];
-                    }else{
+                    } else {
                         $crumbs[] = $title = Cot::$L['Mypfs'];
                     }
                 }
-
-            }else{
+            } else {
                 $crumbs[] = array(cot_url('users'), Cot::$L['Users']);
                 $crumbs[] = array(cot_url('users', 'm=details&id='.$urr['user_id'].'&u='.$urr['user_name']),
                     cot_user_full_name($urr));
