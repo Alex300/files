@@ -1,4 +1,8 @@
 <?php
+
+use cot\modules\files\model\File;
+use cot\modules\files\services\FileService;
+
 defined('COT_CODE') or die('Wrong URL.');
 
 /**
@@ -159,7 +163,7 @@ class PfsController
         }
         foreach($allowedExts as $ext) {
             $t->assign(array(
-                'ALLOWED_ROW_ICON_URL' => files_model_File::typeIcon($ext),
+                'ALLOWED_ROW_ICON_URL' => FileService::typeIcon($ext),
                 'ALLOWED_ROW_EXT' => $ext,
                 'ALLOWED_ROW_DESC' => !empty($descriptions[$ext]) ? $descriptions[$ext] : $ext
             ));
@@ -168,13 +172,15 @@ class PfsController
 
 
         $source = $isSFS ? 'sfs' : 'pfs';
-        if($f == 0) {
-            $countCond = array(
-                array('file_source', $source),
-                array('file_item', $f),
-            );
-            if(!$isSFS) $countCond[] = array('user_id', $uid);
-            $files_count = files_model_File::count($countCond);
+        if ($f == 0) {
+            $countCond = [
+                ['source', $source],
+                ['source_id', $f],
+            ];
+            if (!$isSFS) {
+                $countCond[] = ['user_id', $uid];
+            }
+            $files_count = File::count($countCond);
 
         } else {
             $files_count = $folder->ff_count;
@@ -206,10 +212,10 @@ class PfsController
                     $folderIds[] = $folderRow->ff_id;
                 }
 
-                $sql = Cot::$db->query("SELECT file_item as ff_id, COUNT(*) as items_count, SUM(file_size) as size
-                    FROM $db_files WHERE file_source='{$source}' AND file_item IN (".implode(',', $folderIds).")
-                    GROUP BY file_item");
-                while ($pfs_filesinfo = $sql->fetch()){
+                $sql = Cot::$db->query("SELECT source_id as ff_id, COUNT(*) as items_count, SUM(size) as size
+                    FROM $db_files WHERE source = '{$source}' AND source_id IN (" . implode(',', $folderIds) . ")
+                    GROUP BY source_id");
+                while ($pfs_filesinfo = $sql->fetch()) {
                     $ff_filessize[$pfs_filesinfo['ff_id']]  = $pfs_filesinfo['size'];
                     $onPageFoldersFilesCount += $pfs_filesinfo['items_count'];
                 }
@@ -488,16 +494,21 @@ class PfsController
         $folderFormAlbum = cot_checkbox($folder->ff_album, 'ff_album',  Cot::$L['files_isgallery']);
 
         // Если в папке есть файлы не изображения, то это не альбом
-        if($f > 0 && files_model_File::count(array(
-                            array('file_source', $source), array('file_item', $f), array('file_img', 0))
-                    ) > 0) {
+        if (
+            $f > 0
+            && File::count([['source', $source], ['source_id', $f], ['is_img', 0]]) > 0
+        ) {
             $folderFormAlbum = '';
             $folderFormHidden .= cot_inputbox('hidden', 'ff_album', 0);
             $folder->ff_album = 0;
         }
 
-        if(!empty($c1)) $folderFormHidden .= cot_inputbox('hidden', 'c1', $c1);
-        if(!empty($c2)) $folderFormHidden .= cot_inputbox('hidden', 'c2', $c2);
+        if (!empty($c1)) {
+            $folderFormHidden .= cot_inputbox('hidden', 'c1', $c1);
+        }
+        if (!empty($c2)) {
+            $folderFormHidden .= cot_inputbox('hidden', 'c2', $c2);
+        }
 
         $t->assign(array(
             'FOLDER_FORM_URL'    => cot_url('files', array('m' => 'pfs', 'a' => 'editFolder')),
@@ -533,7 +544,7 @@ class PfsController
         }
         foreach($allowedExts as $ext) {
             $t->assign(array(
-                'ALLOWED_ROW_ICON_URL' => files_model_File::typeIcon($ext),
+                'ALLOWED_ROW_ICON_URL' => FileService::typeIcon($ext),
                 'ALLOWED_ROW_EXT' => $ext,
                 'ALLOWED_ROW_DESC' => !empty($descriptions[$ext]) ? $descriptions[$ext] : $ext
             ));

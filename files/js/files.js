@@ -202,11 +202,11 @@ $(function () {
                 contentType: false,
                 success: function (data) {
                     data.error = data.error || '';
-                    if(data.error != ''){
+                    if (data.error != '') {
                         $('#files-file'+id).after('<div id="files-error-'+ id +'"><span class="label label-danger">Error</span> ' +
                             data.error + '</div>');
                         $('#files-error-'+ id).fadeOut(3000);
-                    }else{
+                    } else {
                         // Reload the frame
                         // todo обойтись без перезагрузки страницы
                         window.location.reload();
@@ -214,8 +214,9 @@ $(function () {
                 }
 
             }, 'json') .fail(function() {
-                $('#files-file'+id).after('<div id="files-error-'+ id +'"><span class="label label-danger">Error</span></div>');
-                $('#files-error-'+ id).fadeOut('slow');
+                $('#files-file'+id).after('<div id="files-error-'+ id +'"><span class="label label-danger">Error</span> ' +
+                    'The file could not be uploaded</div>');
+                $('#files-error-'+ id).fadeOut(3000);
 
             }).always(function() {
                 $(procDiv).remove();

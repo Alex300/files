@@ -1,4 +1,7 @@
 <?php
+
+use cot\modules\files\model\File;
+
 defined('COT_CODE') or die('Wrong URL.');
 
 if(empty($GLOBALS['db_files_folders'])) {
@@ -59,14 +62,13 @@ class files_model_Folder extends Som_Model_ActiveRecord
         $this->_data['ff_updated'] = date('Y-m-d H:i:s', Cot::$sys['now']);
 
         // Update files count in this folder
-        if(!array_key_exists('ff_count', $this->_oldData)) {
+        if (!array_key_exists('ff_count', $this->_oldData)) {
             $source = ($this->_data['user_id'] > 0) ? 'pfs' : 'sfs';
-            $condition = array(
-                array('file_source', $source),
-                array('file_item', $this->_data['ff_id']),
-            );
-
-            $this->_data['ff_count'] = files_model_File::count($condition);
+            $condition = [
+                ['source', $source],
+                ['source_id', $this->_data['ff_id']],
+            ];
+            $this->_data['ff_count'] = File::count($condition);
         }
         return parent::beforeUpdate();
     }
@@ -77,19 +79,23 @@ class files_model_Folder extends Som_Model_ActiveRecord
      */
     public function delete()
     {
-        $uid = (int)$this->_data['user_id'];
+        $uid = (int) $this->_data['user_id'];
         $isSFS = false;                             // is Site File Space
 
-        if($uid == 0) $isSFS = true;
+        if ($uid == 0) {
+            $isSFS = true;
+        }
         $source = $isSFS ? 'sfs' : 'pfs';
 
         // Remove all files
-        $files = files_model_File::findByCondition(array(
-            array('file_source', $source),
-            array('file_item', $this->_data['ff_id'])
-        ));
+        $files = File::findByCondition(
+            [
+                ['source', $source],
+                ['file_item', $this->_data['ff_id']],
+            ]
+        );
 
-        if(!empty($files)){
+        if (!empty($files)) {
             foreach($files as $fileRow){
                 $fileRow->delete();
             }

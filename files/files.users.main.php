@@ -13,10 +13,13 @@ Hooks=users.main
  * @copyright Copyright (c) Cotonti Team 2014
  * @license BSD
  */
+
+use cot\modules\files\model\File;
+
 defined('COT_CODE') or die('Wrong URL');
 
-if(!empty($sqlusers)){
-    $filesIds = array();
+if (!empty($sqlusers)) {
+    $filesIds = [];
     foreach ($sqlusers as $key => $urr){
         $sqlusers[$key]['user_avatar_file'] = false;
         if($urr['user_avatar'] > 0){
@@ -25,16 +28,16 @@ if(!empty($sqlusers)){
     }
     reset($sqlusers);
 
-    if(!empty($filesIds)){
-        $tmp = files_model_File::findByCondition(array(array('file_id', $filesIds)));
-        $files = array();
-        if($tmp){
+    if (!empty($filesIds)) {
+        $tmp = File::findByCondition([['id', $filesIds]]);
+        $files = [];
+        if ($tmp) {
             foreach($tmp as $fileRow){
-                $files[$fileRow->file_id] = $fileRow;
+                $files[$fileRow->id] = $fileRow;
             }
 
             foreach ($sqlusers as $key => $urr){
-                if($urr['user_avatar'] > 0 && !empty($files[$urr['user_avatar']])){
+                if ($urr['user_avatar'] > 0 && !empty($files[$urr['user_avatar']])) {
                     $sqlusers[$key]['user_avatar_file'] = $files[$urr['user_avatar']];
                 }
             }

@@ -1,26 +1,37 @@
 <?php
+
+namespace cot\modules\files\controllers;
+
+use cot\modules\files\dto\FileDto;
+use cot\modules\files\model\File;
+use cot\modules\files\services\FileService;
+use image\Image;
+
 defined('COT_CODE') or die('Wrong URL.');
 
 /**
  * Files Controller class for the Files module
  *
- *  Функционал для работы с файлами, который не входит в стандартный jQuery Uploader
+ * Функционал для работы с файлами, который не входит в стандартный jQuery Uploader
  * 
  * @package Files
- * @subpackage pfs
- * @author Cotonti Team
- * @copyright (c) Cotonti Team 2008-2014
+ * @author Kalnov Alexey <kalnovalexey@yandex.ru>
  */
 class FilesController
 {
-    public function displayAction() {
+    public function displayAction()
+    {
         $source = cot_import('source', 'G', 'ALP');
         $item = cot_import('item', 'G', 'INT');
         $field = (string) cot_import('field', 'G', 'TXT');
         $limit = cot_import('limit', 'G', 'INT');
-        if (is_null($limit)) $limit = -1;
+        if (is_null($limit)) {
+            $limit = -1;
+        }
         $type = (string) cot_import('type', 'G', 'TXT');
-        if(!$type) $type = 'all';
+        if (!$type) {
+            $type = 'all';
+        }
 
         $html = cot_files_filebox($source, $item, $field, $type, $limit, 'files.files', 2);
 
@@ -38,16 +49,16 @@ class FilesController
             cot_die_message(404);
         }
 
-        $file = files_model_File::getById($id);
+        $file = File::getById($id);
         if (!$file) {
             cot_die_message(404);
         }
 
         // Increase downloads counter
-        $file->file_count += 1;
+        $file->downloads_count += 1;
         $file->save();
 
-        $filePath = Cot::$cfg['files']['folder'] . '/' . $file->file_path;
+        $filePath = \Cot::$cfg['files']['folder'] . '/' . $file->fullName;
 
         // Detect MIME type if possible
         $contenttype = cot_files_getMime($filePath);
@@ -131,7 +142,7 @@ class FilesController
         header("Content-Type: $contenttype");
         header("Content-Length: $filesize");
         header('Last-Modified: '.gmdate('D, d M Y H:i:s T', filemtime($filePath)));
-        header('Content-Disposition: attachment; filename="'.$file->file_name.'"');
+        header('Content-Disposition: attachment; filename="' . $file->original_name . '"');
         header('Accept-Ranges: bytes');
 
         if ($partial) {
@@ -168,32 +179,32 @@ class FilesController
      */
     public function updateValueAction()
     {
-        global $cot_extrafields;
+        $response = ['error' => ''];
 
-        $response = array( 'error' => '');
-
-        $extFields = $cot_extrafields[files_model_File::tableName()];
+        $extFields = \Cot::$extrafields[File::tableName()];
 
         $id = cot_import('id', 'P', 'INT');
         $field = cot_import('key', 'P', 'ALP');
         $value = cot_import('value', 'P', 'TXT');
 
-        if(!$id || !$field){
+        if (!$id || !$field) {
             cot_sendheaders('application/json', cot_files_ajax_get_status(404));
             exit;
         }
 
-        $file = files_model_File::getById($id);
-        if (!$file) cot_files_ajax_die(404);
+        $file = File::getById($id);
+        if (!$file) {
+            cot_files_ajax_die(404);
+        }
 
-        // Можно изменить только title или что то из экстраполей
-        if($field != 'file_title') {
-            if(empty($extFields)) {
+        // Можно изменить только title или что-то из экстраполей
+        if ($field != 'title') {
+            if (empty($extFields)) {
                 cot_sendheaders('application/json', cot_files_ajax_get_status(404));
                 exit;
             }
-            $extfName = str_replace('file_', '', $field);
-            if(!array_key_exists($extfName, $extFields)){
+            $extfName = str_replace('file_', '', $field); // @todo
+            if (!array_key_exists($extfName, $extFields)) {
                 cot_sendheaders('application/json', cot_files_ajax_get_status(404));
                 exit;
             }
@@ -202,7 +213,7 @@ class FilesController
 
         cot_sendheaders('application/json', cot_files_ajax_get_status(200));
 
-        if(cot_error_found()) {
+        if (cot_error_found()) {
             $response['error'] = cot_implode_messages();
             cot_clear_messages();
             echo json_encode($response);
@@ -210,8 +221,8 @@ class FilesController
         }
 
 
-        if (!cot_auth('files', 'a', 'A') && $file->user_id != Cot::$usr['id']){
-            $response['error'] = Cot::$L['files_err_perms'];
+        if (!cot_auth('files', 'a', 'A') && $file->user_id != \Cot::$usr['id']){
+            $response['error'] = \Cot::$L['files_err_perms'];
             echo json_encode($response);
             exit;
         }
@@ -240,20 +251,26 @@ class FilesController
         cot_sendheaders('application/json', cot_files_ajax_get_status(200));
 
         // Check permission
-        if (!cot_auth('files', 'a', 'A') &&
-            Cot::$db->query("SELECT COUNT(*) FROM $db_files WHERE file_source = ? AND file_item = ? AND user_id = ?",
-                array($source, $item, Cot::$usr['id']))->fetchColumn() == 0)
+        if (
+            !cot_auth('files', 'a', 'A')
+            && \Cot::$db->query(
+                "SELECT COUNT(*) FROM $db_files WHERE source = ? AND source_id = ? AND user_id = ?",
+                [$source, $item, \Cot::$usr['id']]
+            )->fetchColumn() == 0)
         {
-            $response['error'] = Cot::$L['files_err_perms'];
+            $response['error'] = \Cot::$L['files_err_perms'];
             echo json_encode($response);
             exit;
         }
 
         $orders = cot_import('orders', 'P', 'ARR');
-        foreach ($orders as $order => $id){
-            Cot::$db->update($db_files, array('file_order' => $order),
-                "file_id = ? AND file_source = ? AND file_item = ? AND file_field = ? AND file_order != ?",
-                array((int)$id, $source, $item, $field, $order));
+        foreach ($orders as $order => $id) {
+            \Cot::$db->update(
+                $db_files,
+                ['sort_order' => $order],
+                "id = ? AND source = ? AND source_id = ? AND source_field = ? AND sort_order != ?",
+                [(int) $id, $source, $item, $field, $order]
+            );
         }
 
         $response['status'] = 1;
@@ -264,126 +281,147 @@ class FilesController
 
     /**
      * Замена файла
-     * @todo все отправить в UploadController::handle_image_file()
-     * @see UploadController::handle_image_file()
      */
     public function replaceAction()
     {
         $id = cot_import('id', 'P', 'INT');
 
-        $response = array( 'error' => '');
+        $response = ['error' => ''];
 
-        if(!$id) {
-            cot_sendheaders('application/json', cot_files_ajax_get_status(404));
-            exit;
+        if (!$id) {
+            cot_files_ajax_die(404);
         }
 
-        $file = files_model_File::getById($id);
-        if (!$file) cot_files_ajax_die(404);
+        $file = File::getById($id);
+        if (!$file) {
+            cot_files_ajax_die(404);
+        }
 
-        $file->file_name = $this->getFilename('file');
-        $file->file_ext = cot_files_get_ext($file->file_name);
+        $fileData = new FileDto();
+        $fileData->original_name = $this->getFilename('file');
+        $fileData->ext = mb_strtolower(cot_files_get_ext($fileData->original_name));
+        $fileData->path = cot_files_tempDir();
+        $fileData->file_name = $file->source . '_' . $file->source_id . '_' . $file->id. '_' . \Cot::$usr['id'] . '_' . time() . '_tmp.'
+            . $fileData->ext;
 
-        $limits = cot_files_getLimits(Cot::$usr['id'], $file->file_source, $file->file_item);
+        $limits = cot_files_getLimits(\Cot::$usr['id'], $file->source, $file->source_id);
         $upload = $this->getUploadedFile('file', $limits);
 
         cot_sendheaders('application/json', cot_files_ajax_get_status(200));
 
-        //if (cot_files_checkFile($file->file_ext) && !cot_error_found()){
-        if (cot_files_isExtensionAllowed($file->file_ext) && !cot_error_found()){
-            if (!cot_auth('files', 'a', 'A') && $file->user_id != Cot::$usr['id']){
-                $response['error'] = Cot::$L['files_err_perms'];
-                echo json_encode($response);
-                exit;
-            }
+        if (!cot_files_isExtensionAllowed($fileData->ext)) {
+            cot_error(\Cot::$L['files_err_type']);
+        }
 
-            if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-                $uploaded_file = $_FILES['file']['tmp_name'];
-                if ($uploaded_file && is_uploaded_file($uploaded_file)) {
-                    $valid_exts = explode(',', Cot::$cfg['files']['exts']);
-                    $valid_exts = array_map('trim', $valid_exts);
-
-                    $handle = fopen($uploaded_file, "rb");
-                    $tmp = fread ($handle , 10);
-                    fclose($handle);
-                    if (!in_array('php', $valid_exts) && (mb_stripos(trim($tmp), '<?php') === 0))  {
-                        $response['error'] = Cot::$L['files_err_type'];
-                        echo json_encode($response);
-                        exit;
-                    }
-
-                }
-            }
-
-            $path = Cot::$cfg['files']['folder'] .'/'. $file->file_path;
-            $file->remove_thumbs();
-            if (file_exists($path)) {
-                if (!@unlink($path)) {
-                    $response['error'] = Cot::$L['files_err_replace'];
-                    echo json_encode($response);
-                    exit;
-                }
-            }
-
-            $file->file_path = cot_files_path($file->file_source, $file->file_item, $file->file_id, $file->file_ext, $file->user_id);
-            $filePath = Cot::$cfg['files']['folder'] .'/'. $file->file_path;
-
-            if ($this->saveUploadedFile($upload, $filePath)) {
-                $file->file_size = filesize($filePath);
-                $file->file_img = cot_files_isValidImageFile($filePath) ? 1 : 0;
-
-                if ($file->file_img) {
-                    // @todo все отправить в handle_image_file()
-                    // Image resize
-                    if (Cot::$cfg['files']['image_resize']) {
-                        list($width_orig, $height_orig) = getimagesize($filePath);
-                        if ($width_orig > Cot::$cfg['files']['image_maxwidth'] || $height_orig > Cot::$cfg['files']['image_maxheight']) {
-                            $input_file = $filePath;
-                            $tmp_file   = $filePath.'tmp.'.$file->file_ext;
-                            cot_files_thumbnail($input_file, $tmp_file, Cot::$cfg['files']['image_maxwidth'],
-                                Cot::$cfg['files']['image_maxheight'], 'auto', (int) Cot::$cfg['files']['quality']);
-                            @unlink($input_file);
-                            @rename($tmp_file, $input_file);
-                            $file->file_size = filesize($filePath);
-                        }
-                    }
-                }
-
-                $file->save();
-
-            } else {
-                $response['error'] = Cot::$L['files_err_move'];
-                echo json_encode($response);
-                exit;
-            }
-        } else {
+        if (cot_error_found()) {
             $messages = cot_get_messages();
-            $errors = array();
+            $errors = [];
             foreach ($messages as $msg) {
-                $errors[] = isset(Cot::$L[$msg['text']]) ? Cot::$L[$msg['text']] : $msg['text'];
+                $errors[] = isset(\Cot::$L[$msg['text']]) ? \Cot::$L[$msg['text']] : $msg['text'];
             }
             cot_clear_messages();
 
-            if (empty($errors)) $errors[] = Cot::$L['error'];
+            if (empty($errors)) {
+                $errors[] = \Cot::$L['error'];
+            }
             $response['error'] = implode(',', $errors);
+
+            echo json_encode($response);
+            exit;
         }
 
-        echo json_encode($response);
+        if (!cot_auth('files', 'a', 'A') && $file->user_id != \Cot::$usr['id']){
+            $response['error'] = \Cot::$L['files_err_perms'];
+            echo json_encode($response);
+            exit;
+        }
+
+        if (!$this->saveUploadedFile($upload, $fileData->getFullName())) {
+            $response['error'] = \Cot::$L['files_err_move'];
+            echo json_encode($response);
+            exit;
+        }
+
+        $validExts = explode(',', \Cot::$cfg['files']['exts']);
+        $validExts = array_map('trim', $validExts);
+        if (!in_array('php', $validExts)) {
+            $handle = fopen($fileData->getFullName(), "rb");
+            $tmp = fread($handle, 10);
+            fclose($handle);
+            if (mb_stripos(trim($tmp), '<?php') === 0) {
+                @unlink($fileData->getFullName());
+                $response['error'] = \Cot::$L['files_err_type'];
+                echo json_encode($response);
+                exit;
+            }
+        }
+
+        // @todo Fix File extension
+
+        $fileData->size = filesize($fileData->getFullName());
+        $fileData->isImage = cot_files_isValidImageFile($fileData->getFullName()) ? 1 : 0;
+
+        if ($fileData->isImage) {
+            FileService::processImageFile($fileData);
+        }
+        if (!empty($fileData->getErrors())) {
+            if (file_exists($fileData->getFullName())) {
+                unlink($fileData->getFullName());
+            }
+            $response['error'] = implode('; ', $fileData->getErrors());
+            echo json_encode($response);
+            exit;
+        }
+
+        $path = \Cot::$cfg['files']['folder'] . '/' . $file->fullName;
+        $file->remove_thumbs();
+        if (file_exists($path)) {
+            if (!@unlink($path)) {
+                @unlink($fileData->getFullName());
+                $response['error'] = \Cot::$L['files_err_replace'];
+                echo json_encode($response);
+                exit;
+            }
+        }
+
+        $relativeFileName = cot_files_path($file->source, $file->source_id, $file->id, $fileData->ext, $file->user_id);
+        // Path relative to site root directory
+        $fileFullName = \Cot::$cfg['files']['folder'] . '/' . $relativeFileName;
+
+        if (!@rename($fileData->getFullName(), $fileFullName)) {
+            // Fail to move file from temporary directory to the files directory
+            // Delete temporary file
+            @unlink($fileData->getFullName());
+            unset($fileData->path, $fileData->file_name, $fileData->ext);
+            $response['error'] = \Cot::$L['files_err_replace'];
+            echo json_encode($response);
+            exit;
+        }
+
+        $fileData->path = dirname($fileFullName);
+        $fileData->file_name = basename($fileFullName);
+
+        $file->path = dirname($relativeFileName);
+        $file->file_name = $fileData->file_name;
+        $file->size = $fileData->size;
+        $file->ext = $fileData->ext;
+        $file->is_img = $fileData->isImage;
+        $file->original_name =  $fileData->original_name;
+        $file->save();
+
+        echo json_encode($fileData->toArray());
         exit;
     }
 
     /**
      * Returns original name of a file being uploaded
-     * @param  string $input Input name
-     * @return string        Original file name and extension
+     * @param string $input Input name
+     * @return string Original file name and extension
      */
     public function getFilename($input){
-        if ($_SERVER['REQUEST_METHOD'] == 'POST')
-        {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             return $_FILES[$input]['name'];
-        }
-        else
-        {
+        } else {
             return $_GET[$input];
         }
     }
@@ -411,43 +449,44 @@ class FilesController
      * Checks if the file has been uploaded and the size is
      * acceptable and returns the file stream if necessary.
      * @param  string $input Input name (only for POST)
-     * @return mixed         Uploaded file stream (for GET, PUT, etc.) or input name (only for POST)
+     * @return false|resource|string Uploaded file stream (for GET, PUT, etc.) or input name (only for POST)
      */
-    public function getUploadedFile($input = '', $limits = false){
+    public function getUploadedFile($input = '', $limits = false)
+    {
         if ($_SERVER['REQUEST_METHOD'] == 'POST'){
             if ($_FILES[$input]['size'] > 0 && is_uploaded_file($_FILES[$input]['tmp_name'])){
                 if ($_FILES[$input]['size'] > $limits['size_maxfile']){
-                    cot_error(Cot::$L['files_err_toobig']);
+                    cot_error(\Cot::$L['files_err_toobig']);
                 }
                 if ($_FILES[$input]['size'] > $limits['size_left']){
-                    cot_error(Cot::$L['files_err_nospace']);
+                    cot_error(\Cot::$L['files_err_nospace']);
                 }
 
-            }else{
-                cot_error(Cot::$L['files_err_upload']);
+            } else {
+                cot_error(\Cot::$L['files_err_upload']);
             }
             return $input;
 
         } else {
             $input = fopen('php://input', 'r');
-            $temp = '';
-            while (!feof($input)) {
-                $temp .= fread($input, att_get_filesize(''));
-            }
+//            $temp = '';
+//            while (!feof($input)) {
+//                $temp .= fread($input, att_get_filesize(''));
+//            }
             $temp = tmpfile();
             $size = stream_copy_to_stream($input, $temp);
             fclose($input);
 
-            if (!$size){
-                cot_error(Cot::$L['files_err_upload']);
+            if (!$size) {
+                cot_error(\Cot::$L['files_err_upload']);
 
             } else {
                 if ($size > $limits['size_maxfile']){
-                    cot_error(Cot::$L['files_err_toobig']);
+                    cot_error(\Cot::$L['files_err_toobig']);
                 }
 
                 if ($size > $limits['size_left']){
-                    cot_error(Cot::$L['files_err_nospace']);
+                    cot_error(\Cot::$L['files_err_nospace']);
                 }
             }
             return $temp;
@@ -470,7 +509,8 @@ class FilesController
         }
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            if (file_exists($_FILES[$input]['tmp_name']) && file_exists($path) && is_writable($path)) {
+            $directory = dirname($path);
+            if (file_exists($_FILES[$input]['tmp_name']) && is_writable($directory)) {
                 return move_uploaded_file($_FILES[$input]['tmp_name'], $path);
             }
             return false;

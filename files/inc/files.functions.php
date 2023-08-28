@@ -6,6 +6,11 @@
  * @author Cotonti Team
  * @author Kalnov Alexey    <kalnovalexey@yandex.ru>
  */
+
+use cot\modules\files\model\File;
+use image\exception\ImageException;
+use image\Image;
+
 defined('COT_CODE') or die('Wrong URL.');
 
 // Additional API requirements
@@ -115,21 +120,25 @@ function cot_files_formGroupClass($name)
  * @param  string  $file  Full file name
  * @return boolean        true if all checks passed, false if something was wrong
  */
-function cot_files_checkFile($file)
-{
-    $file_ext = cot_files_get_ext($file);
-    if(!cot_files_isExtensionAllowed($file_ext)) return false;
-
-    $valid_exts = explode(',', Cot::$cfg['files']['exts']);
-    $valid_exts = array_map('trim', $valid_exts);
-
-    $handle = fopen($file, "rb");
-    $tmp = fread ( $handle , 10 );
-    fclose($handle);
-    if(!in_array('php', $valid_exts) && mb_stripos(trim($tmp), '<?php' === 0))  return false;
-
-    return true;
-}
+//function cot_files_checkFile($file)
+//{
+//    $file_ext = cot_files_get_ext($file);
+//    if (!cot_files_isExtensionAllowed($file_ext)) {
+//        return false;
+//    }
+//
+//    $valid_exts = explode(',', Cot::$cfg['files']['exts']);
+//    $valid_exts = array_map('trim', $valid_exts);
+//
+//    $handle = fopen($file, "rb");
+//    $tmp = fread ( $handle , 10 );
+//    fclose($handle);
+//    if (!in_array('php', $valid_exts) && mb_stripos(trim($tmp), '<?php') === 0) {
+//        return false;
+//    }
+//
+//    return true;
+//}
 
 /**
  * Checks if file extension is allowed for upload. Returns error message or empty string.
@@ -153,70 +162,84 @@ function cot_files_isExtensionAllowed($ext)
 
 /**
  * Returns number of attachments for a specific item.
- * @param  string $source   Target module/plugin code
- * @param  integer $item    Target item id
- * @param  string $field    Target item field
- * @param  string $type     Attachment type filter: 'files', 'images'. By default includes all attachments.
- * @return integer          Number of attachments
+ * @param string $source Target module/plugin code
+ * @param int $sourceId Target item id
+ * @param string $sourceField Target item field
+ * @param string $type Attachment type filter: 'files', 'images'. By default includes all attachments.
+ * @return int Number of attachments
  */
-function cot_files_count($source, $item, $field = '', $type = 'all')
+function cot_files_count($source, $sourceId, $sourceField = '', $type = 'all')
 {
+    static $a_cache = [];
 
-    static $a_cache = array();
-
-    $cacheField = ($field != '') ? $field : '_empty_field_name_';
-    if (!isset($a_cache[$source][$item][$cacheField][$type])){
-        $cond = array(
-            array('file_source', $source),
-            array('file_item', $item),
-        );
-        if ($type == 'files'){
-            $cond[] = array('file_img', 0);
-        }elseif ($type == 'images'){
-            $cond[] = array('file_img', 1);
+    $cacheField = ($sourceField != '') ? $sourceField : '_empty_field_name_';
+    if (!isset($a_cache[$source][$sourceId][$cacheField][$type])) {
+        $cond = [
+            ['source', $source],
+            ['source_id', $sourceId],
+        ];
+        if ($type === 'files') {
+            if (Image::currentDriver() === Image::DRIVER_GD) {
+                $cond[] = [[
+                    ['is_img', 0],
+                    ['ext', Image::supportedFormats(), '<>', 'OR'],
+                ]];
+            } else {
+                $cond[] = ['is_img', 0];
+            }
+        } elseif ($type === 'images') {
+            $cond[] = ['is_img', 1];
+            if (Image::currentDriver() === Image::DRIVER_GD) {
+                $cond[] = ['ext', Image::supportedFormats()];
+            }
         }
-        if($field != '_all_') $cond[] = array('file_field', $field);
+        if ($sourceField !== '_all_') {
+            $cond[] = ['source_field', $sourceField];
+        }
 
-        $a_cache[$source][$item][$cacheField][$type] = files_model_File::count($cond);
+        $a_cache[$source][$sourceId][$cacheField][$type] = File::count($cond);
     }
-    return $a_cache[$source][$item][$cacheField][$type];
+    return $a_cache[$source][$sourceId][$cacheField][$type];
 }
 
 /**
  * Fetches a single attachment object for a given item.
- * @param  string $source   Target module/plugin code.
- * @param  integer $item    Target item id.
- * @param  string $field    Target item field
- * @param  string $column   Empty string to return full row, one of the following to return a single value: 'id',
- *                              'user_id', 'path', 'name', 'ext', 'img', 'size', 'title', 'count'
- * @param  string $number   Attachment number within item, or one of these values: 'first', 'rand' or 'last'. Defines which image is selected.
- * @return mixed            Scalar column value, files_model_File object or NULL if no attachments found.
+ * @param string $source Target module/plugin code.
+ * @param int $sourceId Target item id.
+ * @param string $sourceField Target item field
+ * @param string $column Empty string to return full row, one of the following to return a single value: 'id',
+ *                              'user_id', 'path', 'file_name', 'original_name', 'ext', 'is_img', 'size', 'title', 'downloads_count'
+ * @param string $number Attachment number within item, or one of these values: 'first', 'rand' or 'last'. Defines which image is selected.
+ * @return File|int|string|null Scalar column value, File object or NULL if no attachments found.
  */
-function cot_files_get($source, $item, $field = '', $column = '', $number = 'first')
+function cot_files_get($source, $sourceId, $sourceField = '', $column = '', $number = 'first')
 {
     static $a_cache;
 
-    if (!isset($a_cache[$source][$item][$number]))
-    {
-        $order_by = $number == 'rand' ? 'RAND()' : 'file_order';
-        if ($number == 'last') $order_by .= ' DESC';
+    if (!isset($a_cache[$source][$sourceId][$number])) {
+        $order_by = $number == 'rand' ? 'RAND()' : 'sort_order';
+        if ($number == 'last') {
+            $order_by .= ' DESC';
+        }
 
-        $offset = is_numeric($number) && $number > 1 ? ((int)$number - 1) . ',' : 0;
+        $offset = is_numeric($number) && $number > 1 ? ((int) $number - 1) . ',' : 0;
+        $cond = [
+            ['source', $source],
+            ['source_id', $sourceId],
+        ];
 
-        $cond = array(
-            array('file_source', $source),
-            array('file_item', $item),
-        );
-        if($field != '_all_') $cond[] = array('file_field', $field);
-        $file = files_model_File::findByCondition($cond, 1, $offset, $order_by);
-        if(!$file) return null;
-        $a_cache[$source][$item][$number] = current($file);
+        if ($sourceField != '_all_') {
+            $cond[] = ['source_field', $sourceField];
+        }
+        $file = File::findByCondition($cond, 1, $offset, $order_by);
+        if (!$file) {
+            return null;
+        }
+        $a_cache[$source][$sourceId][$number] = current($file);
 
     }
-    $tmp = 'file_'.$column;
-    if($column == 'user_id') $tmp = 'user_id';
 
-    return empty($column) ? $a_cache[$source][$item][$number] : $a_cache[$source][$item][$number]->{$tmp};
+    return empty($column) ? $a_cache[$source][$sourceId][$number] : $a_cache[$source][$sourceId][$number]->{$column};
 }
 
 /**
@@ -246,9 +269,11 @@ function cot_files_get_ext($filename)
  */
 function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = '')
 {
-    if(!is_null($uid)) $uid = (int)$uid;
+    if (!is_null($uid)) {
+        $uid = (int) $uid;
+    }
 
-    $limits = array(
+    $limits = [
         'size_maxfile' => 0,
         'size_maxtotal' => 0,
         'size_used' => 0,
@@ -256,11 +281,11 @@ function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = '')
         'count_max' => 0,
         'count_used'=> 0,
         'count_left'=> 0,
-    );
+    ];
 
     // Use current user
-    if($uid <= 0) {
-        if(Cot::$usr['id'] == 0) {
+    if ($uid <= 0) {
+        if (Cot::$usr['id'] == 0) {
             // Default guest user data
             $urr = array(
                 'user_id' => 0,
@@ -276,17 +301,18 @@ function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = '')
     } else {
         // Get specified user
         $urr = cot_user_data($uid);
-        if(!$urr) {
+        if (!$urr) {
             throw new Exception('User not found');
-            //cot_diefatal('User not found');
         }
     }
 
-    if (isset($urr['auth'])) unset($urr['auth']);
+    if (isset($urr['auth'])) {
+        unset($urr['auth']);
+    }
 
-    if($source == 'sfs') {
+    if ($source == 'sfs') {
         // Site file space
-        if(cot_auth('files', 'a', 'A')){
+        if (cot_auth('files', 'a', 'A')) {
             $limits['size_maxfile']  = 100000000000000000;
             $limits['size_maxtotal'] = 100000000000000000;
             $limits['size_used']     = 0;
@@ -300,23 +326,23 @@ function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = '')
     }
 
     $sql_condGroup = "g.grp_id={$urr['user_maingrp']}";
-    if($urr['user_id'] > 0) {
-        $sql_condGroup = "g.grp_id IN (SELECT gru_groupid FROM ".Cot::$db->groups_users." WHERE gru_userid = {$urr['user_id']})";
+    if ($urr['user_id'] > 0) {
+        $sql_condGroup = 'g.grp_id IN (SELECT gru_groupid FROM ' . Cot::$db->groups_users . " WHERE gru_userid = {$urr['user_id']})";
     }
 
-    $sql = "SELECT MAX(g.grp_pfs_maxfile) AS size_maxfile,  MAX(g.grp_pfs_maxtotal) AS size_maxtotal,
-            SUM(f.file_size) as size_used, MAX(g.grp_files_perpost) as count_max
-          FROM ".Cot::$db->groups." as g
-          LEFT JOIN ".Cot::$db->files." as f ON f.file_source!='sfs' AND f.user_id={$urr['user_id']}
+    $sql = "SELECT MAX(g.grp_pfs_maxfile) AS size_maxfile, MAX(g.grp_pfs_maxtotal) AS size_maxtotal,
+            SUM(f.size) as size_used, MAX(g.grp_files_perpost) as count_max
+          FROM " . Cot::$db->groups . " as g
+          LEFT JOIN " . Cot::$db->files . " as f ON f.source != 'sfs' AND f.user_id = {$urr['user_id']}
           WHERE $sql_condGroup";
 
     $tmp = Cot::$db->query($sql)->fetch();
 
-    $limits['size_maxfile']  = (int)$tmp['size_maxfile'];
-    if($limits['size_maxfile'] == -1) {
+    $limits['size_maxfile']  = (int) $tmp['size_maxfile'];
+    if ($limits['size_maxfile'] == -1) {
         $limits['size_maxfile'] = 0;
 
-    } elseif($limits['size_maxfile'] == 0) {
+    } elseif ($limits['size_maxfile'] == 0) {
         $limits['size_maxfile']  = 100000000000000000;
     }
 
@@ -369,11 +395,11 @@ function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = '')
         $limits['count_max']  = 100000000000000000;
     }
 
-    $limits['count_used'] = files_model_File::count(array(
-        array('file_source', $source),
-        array('file_item', $item),
-        array('file_field', $field),
-    ));
+    $limits['count_used'] = File::count([
+        ['source', $source],
+        ['source_id', $item],
+        ['source_field', $field],
+    ]);
     $limits['count_left'] = $limits['count_max'] - $limits['count_used'];
 
     return $limits;
@@ -381,11 +407,15 @@ function cot_files_getLimits($uid = 0, $source = 'pfs', $item = 0, $field = '')
 
 /**
  * Detects file MIME type
- * @param  string $path File path
- * @return string       MIME type
+ * @param string $path File path
+ * @return string|null MIME type
  */
 function cot_files_getMime($path)
 {
+    if (!file_exists($path)) {
+        return null;
+    }
+
     $mime_types = array(
         'txt'  => 'text/plain',
         'htm'  => 'text/html',
@@ -450,9 +480,11 @@ function cot_files_getMime($path)
     $ext = cot_files_get_ext($path);
 
     if (function_exists('mime_content_type')) {
+        // Php extension 'fileinfo' is required
         return mime_content_type($path);
 
     } elseif (function_exists('finfo_open')) {
+        // Php extension 'fileinfo' is required
         $finfo = finfo_open(FILEINFO_MIME);
         $mimetype = finfo_file($finfo, $path);
         finfo_close($finfo);
@@ -472,35 +504,16 @@ function cot_files_getMime($path)
  */
 function cot_files_isValidImageFile($fileName)
 {
-    $ext = cot_files_get_ext($fileName);
-    if (!in_array(
-        $ext,
-        ['avif', 'bmp', 'gd2', 'gd', 'gif', 'jpg', 'jpeg', 'png', 'tga' ,'tpic', 'wbmp', 'webp', 'xbm'])
-    ) {
+    $mime = cot_files_getMime($fileName);
+    if (!$mime) {
+        return false;
+    }
+    list($type, $subtype) = explode('/', $mime);
+    if ($type !== 'image') {
         return false;
     }
 
-    // AVIF support added in PHP 8.1
-    if ($ext == 'avif' && version_compare(PHP_VERSION, '8.1', '<')) {
-        return false;
-    }
-
-    // BMP support added in PHP 7.2
-    if ($ext == 'bmp' && version_compare(PHP_VERSION, '7.2', '<')) {
-        return false;
-    }
-
-    // TGA support added in PHP 7.4
-    if (in_array($ext, ['tga' ,'tpic']) && version_compare(PHP_VERSION, '7.4', '>=')) {
-        return false;
-    }
-
-    if (function_exists('exif_imagetype')) {
-        return (bool) @exif_imagetype($fileName);
-    }
-
-    $image_info = getimagesize($fileName);
-    return $image_info && $image_info[0] && $image_info[1];
+    return true;
 }
 
 /**
@@ -514,42 +527,43 @@ function cot_files_linkFiles($source, $item){
     $formId = "{$source}_0";
 
     $unikey = cot_import('cf_'.$formId, 'P', 'TXT');
-    if(!$unikey) $unikey = cot_import('cf_'.$formId, 'G', 'TXT');
+    if (!$unikey) {
+        $unikey = cot_import('cf_'.$formId, 'G', 'TXT');
+    }
     //$unikey = cot_import_buffered('cf_'.$formId, $unikey);
 
     if($unikey && $item > 0){
-        $condition = array(
-            array('file_source', $source),
-            array('file_item', 0),
-            array('file_unikey', $unikey)
-        );
+        $condition = [
+            ['source', $source],
+            ['source_id', 0],
+            ['unikey', $unikey],
+        ];
 
-        $files = files_model_File::findByCondition($condition);
+        $files = File::findByCondition($condition);
 
         if ($files) {
-            foreach($files as $fileRow){
-                $oldFullPath = Cot::$cfg['files']['folder']. '/' . $fileRow->file_path;
-                $newPath = cot_files_path($source, $item, $fileRow->file_id, $fileRow->file_ext, $fileRow->user_id);
-                $newFullPath = Cot::$cfg['files']['folder']. '/' . $newPath;
+            foreach ($files as $fileRow){
+                $oldFullPath = \Cot::$cfg['files']['folder']. '/' . $fileRow->fullName;
+                $newPath = cot_files_path($source, $item, $fileRow->id, $fileRow->ext, $fileRow->user_id);
+                $newFullPath = \Cot::$cfg['files']['folder']. '/' . $newPath;
 
                 $file_dir = dirname($newFullPath);
                 if (!is_dir($file_dir)) {
-                    mkdir($file_dir, Cot::$cfg['dir_perms'], true);
+                    mkdir($file_dir, \Cot::$cfg['dir_perms'], true);
                 }
                 if (!@rename($oldFullPath, $newFullPath)) {
-                    cot_error(Cot::$L['files_err_upload']);
+                    cot_error(\Cot::$L['files_err_upload']);
                     $fileRow->delete();
 
                 } else {
-                    $fileRow->file_item = $item;
-                    $fileRow->file_path = $newPath;
-                    $fileRow->file_unikey = '';
+                    $fileRow->source_id = $item;
+                    $fileRow->path = dirname($newPath);
+                    $fileRow->file_name = basename($newPath);
+                    $fileRow->unikey = '';
                     $fileRow->save();
                 }
-
             }
         }
-
     }
 
     cot_files_formGarbageCollect();
@@ -565,6 +579,8 @@ function cot_files_linkFiles($source, $item){
  * @param  string $ext  File extension. Leave it empty to auto-detect.
  * @param  int    $uid   User ID for pfs
  * @return string|false  Path for the file on disk
+ *
+ * @todo обфускация имени файла или использование оригинального имени файла
  */
 function cot_files_path($source, $item, $id, $ext = '', $uid = 0)
 {
@@ -660,24 +676,20 @@ function cot_files_tempDir($create = true)
 /**
  * Returns attachment thumbnail path. Generates the thumbnail first if
  * it does not exist.
- * @param  mixed   $id     File ID or instance of files_model_File.
- * @param  integer $width  Thumbnail width in pixels
- * @param  integer $height Thumbnail height in pixels
- * @param  string  $frame  Framing mode: 'width', 'height', 'auto', 'border_auto' or 'crop'
- * @param  bool    $watermark - set watermark if Cot::$cfg['files']['thumb_watermark'] not empty?
- * @return string|false    Thumbnail path on success or false on error
+ * @param File|int $id File ID or instance of File.
+ * @param int $width Thumbnail width in pixels
+ * @param int $height Thumbnail height in pixels
+ * @param string $frame Framing mode: one of \image\Image::THUMBNAIL_XXX constants (for backwards compatibility 'auto' and 'crop' also supported)
+ * @param bool $watermark - set watermark if Cot::$cfg['files']['thumb_watermark'] not empty?
+ * @return string|null Thumbnail path on success or null on error
+ *
+ * @todo Проверка на конвертирование в JPEG. Если файл подлежит конвертированию, то миниатюра должна быть в JPEG.
  */
 function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark = true)
 {
-    // Support rows fetched by att_get()
-//    if (is_array($id)){
-//        $row = $id;
-//        $id = $row['file_id'];
-//    }
-
-    if ($id instanceof files_model_File) {
+    if ($id instanceof File) {
         $row = $id;
-        $id = $row->file_id;
+        $id = $row->id;
     }
 
     // Validate arguments
@@ -689,7 +701,13 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
         $watermark = false;
     }
 
-    if (empty($frame) || !in_array($frame, array('width', 'height', 'auto', 'crop', 'border_auto'))) {
+    if (
+        empty($frame)
+        || !in_array(
+            $frame,
+            [Image::THUMBNAIL_OUTBOUND, Image::THUMBNAIL_INSET, Image::THUMBNAIL_WIDTH, Image::THUMBNAIL_HEIGHT, 'auto', 'crop']
+        )
+    ) {
         $frame = Cot::$cfg['files']['thumb_framing'];
     }
 
@@ -706,41 +724,66 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
     if (!file_exists($cache_folder)) {
         mkdir($cache_folder, Cot::$cfg['dir_perms'], true);
     }
-    $thumb_path = cot_files_thumb_path($id, $width, $height, $frame);
+    $thumbPath = cot_files_thumb_path($id, $width, $height, $frame);
 
-    if (!$thumb_path || !file_exists($thumb_path)) {
+    if (!$thumbPath || !file_exists($thumbPath)) {
         // Generate a new thumbnail
-        if (!isset($row)){
-            $row = files_model_File::getById($id);
-        }
-        if (!$row || !$row->file_img) {
-            return false;
+        if ($frame === 'crop') {
+            $frame = Image::THUMBNAIL_OUTBOUND;
+        } elseif ($frame === 'auto') {
+            $frame = Image::THUMBNAIL_INSET;
         }
 
-        $orig_path = Cot::$cfg['files']['folder'] . '/' . $row->file_path;
-        if (!file_exists($orig_path) || !is_readable($orig_path)) {
-            return false;
+        if (!isset($row)) {
+            $row = File::getById($id);
+        }
+        if (!$row || !$row->is_img || !in_array(mb_strtolower($row->ext), Image::supportedFormats())) {
+            return null;
+        }
+
+        $originalFile = Cot::$cfg['files']['folder'] . '/' . $row->fullName;
+        if (!is_readable($originalFile)) {
+            return null;
         }
 
         $thumbs_folder = $thumbs_folder . '/' . $id;
-        $thumb_path = $thumbs_folder . '/'
-            . Cot::$cfg['files']['prefix'] . $id . '-' . $width . 'x' . $height . '-' . $frame . '.' . $row->file_ext;
+        $thumbPath = $thumbs_folder . '/'
+            . \Cot::$cfg['files']['prefix'] . $id . '-' . $width . 'x' . $height . '-' . $frame . '.' . $row->ext;
 
-        $thumb_path = cot_files_thumbnail($orig_path, $thumb_path, $width, $height, $frame, (int) Cot::$cfg['files']['quality'],
-            (int) Cot::$cfg['files']['upscale']);
+        try {
+            $image = Image::load($originalFile)->thumbnail($width, $height, $frame, (bool)\Cot::$cfg['files']['upscale']);
+        } catch (ImageException $e) {
+            return null;
+        }
 
         // Watermark
         if (
-            $thumb_path &&
-            $watermark &&
-            !empty(Cot::$cfg['files']['thumb_watermark']) &&
-            file_exists(Cot::$cfg['files']['thumb_watermark'])
+            $watermark
+            && !empty(\Cot::$cfg['files']['thumb_watermark'])
+            && is_readable(\Cot::$cfg['files']['thumb_watermark'])
+            && $image->getWidth() >= \Cot::$cfg['files']['thumb_wm_widht']
+            && $image->getHeight() >= \Cot::$cfg['files']['thumb_wm_height']
         ) {
-            list($th_width, $th_height) = getimagesize($thumb_path);
-
-            if ($th_width >= Cot::$cfg['files']['thumb_wm_widht'] && $th_height >= Cot::$cfg['files']['thumb_wm_height']) {
-                cot_files_watermark($thumb_path, $thumb_path, Cot::$cfg['files']['thumb_watermark']);
+            $watermarkImage = Image::load(\Cot::$cfg['files']['thumb_watermark']);
+            $imageWidth = $image->getWidth();
+            $imageHeight = $image->getHeight();
+            $wmWidth = $watermarkImage->getWidth();
+            $wmHeight = $watermarkImage->getHeight();
+            if (
+                ($wmWidth + 60) < $imageWidth
+                && ($wmHeight + 40) < $imageHeight
+            ) {
+                // Insert watermark to the right bottom corner
+                $image->paste($watermarkImage, $imageWidth - 40 - $wmWidth, $imageHeight - $wmHeight - 20);
             }
+            unset($watermarkImage);
+        }
+
+        try {
+            $image->save($thumbPath, (int) Cot::$cfg['files']['quality']);
+        } catch (ImageException $e) {
+            unset($image);
+            return null;
         }
     }
 
@@ -750,139 +793,10 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
     }
     /* ===== */
 
-    return $thumb_path;
+    unset($image);
+
+    return $thumbPath;
 }
-
-
-/**
- * Creates image thumbnail
- *
- * @param string $source Original image path
- * @param string $target Thumbnail path
- * @param int $width Thumbnail width
- * @param int $height Thumbnail height
- * @param string $resize Resize options: crop auto width height
- * @param int $quality JPEG quality in %
- * @param boolean $upscale Upscale images smaller than thumb size
- * @return string|false
- *
- * @todo 'border_auto' resize mode
- */
-function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop', $quality = 85, $upscale = false)
-{
-    if (!file_exists($source) || !is_readable($source)) {
-        return false;
-    }
-    if (!cot_files_isValidImageFile($source)) {
-        return false;
-    }
-
-    $ext = cot_files_get_ext($source);
-
-    /**
-     * @var int $width_orig
-     * @var int $height_orig
-     */
-    list($width_orig, $height_orig) = getimagesize($source);
-
-    if (!$upscale && $width_orig <= $width && $height_orig <= $height) {
-        // Do not upscale smaller images, just copy them
-        copy($source, $target);
-        return $target;
-    }
-
-    $x_pos = 0;
-    $y_pos = 0;
-
-    $width = (mb_substr($width, -1, 1) == '%') ?
-        (int) ($width_orig * (int) mb_substr($width, 0, -1) / 100) : (int) $width;
-    $height = (mb_substr($height, -1, 1) == '%') ?
-        (int) ($height_orig * (int) mb_substr($height, 0, -1) / 100) : (int) $height;
-
-    // Avoid loading images there's not enough memory for
-    if (!cot_img_check_memory($source, (int) ceil($width * $height * 4 / 1048576))) {
-        return false;
-    }
-
-    if ($resize == 'crop') {
-        $newimage = imagecreatetruecolor($width, $height);
-        $width_temp = $width;
-        $height_temp = $height;
-
-        if ($width_orig / $height_orig > $width / $height) {
-            $width = intval($width_orig * $height / $height_orig);
-            $x_pos = intval(-($width - $width_temp) / 2);
-            $y_pos = 0;
-
-        } else {
-            $height = intval($height_orig * $width / $width_orig);
-            $y_pos = intval(-($height - $height_temp) / 2);
-            $x_pos = 0;
-        }
-
-    } else {
-        if ($resize == 'width' || $height == 0) {
-            if ($width_orig > $width) {
-                $height = intval($height_orig * $width / $width_orig);
-            } else {
-                $width = $width_orig;
-                $height = $height_orig;
-            }
-
-        } elseif ($resize == 'height' || $width == 0) {
-            if ($height_orig > $height) {
-                $width = intval($width_orig * $height / $height_orig);
-            } else {
-                $width = $width_orig;
-                $height = $height_orig;
-            }
-
-        } elseif ($resize == 'auto') {
-            if ($width_orig < $width && $height_orig < $height) {
-                $width = $width_orig;
-                $height = $height_orig;
-            } else {
-                if ($width_orig / $height_orig > $width / $height) {
-                    $height = intval($width * $height_orig / $width_orig);
-                } else {
-                    $width = intval($height * $width_orig / $height_orig);
-                }
-            }
-        }
-
-        $newimage = imagecreatetruecolor($width, $height);
-    }
-
-    // Handle transparency in GIF and PNG images:
-    switch ($ext) {
-        case 'gif':
-            imagecolortransparent($newimage, imagecolorallocatealpha($newimage, 0, 0, 0, 127));
-            break;
-
-        case 'png':
-            imagecolortransparent($newimage, imagecolorallocatealpha($newimage, 0, 0, 0, 127));
-            imagealphablending($newimage, false);
-            imagesavealpha($newimage, true);
-            break;
-    }
-
-    // Avoid loading images there's not enough memory for
-    if (!cot_img_check_memory($source)) {
-        return false;
-    }
-
-    $oldimage = cot_files_imageCreate($source);
-
-    imagecopyresampled($newimage, $oldimage, $x_pos, $y_pos, 0, 0, $width, $height, $width_orig, $height_orig);
-
-    $result = cot_files_imageSave($newimage, $target, $quality);
-
-    imagedestroy($newimage);
-    imagedestroy($oldimage);
-
-    return $result;
-}
-
 
 /**
  * Calculates path for the file thumbnail.
@@ -892,8 +806,8 @@ function cot_files_thumbnail($source, $target, $width, $height, $resize = 'crop'
  * @param  int    $frame  Thumbnail framing mode
  * @return string         Path for the file on disk or false file was not found
  */
-function cot_files_thumb_path($id, $width, $height, $frame){
-
+function cot_files_thumb_path($id, $width, $height, $frame)
+{
     $thumbs_folder = Cot::$cfg['files']['folder'] . '/_thumbs/' . $id;
     $mask = $thumbs_folder . '/' . Cot::$cfg['files']['prefix'] . $id . '-' . $width . 'x' . $height . '-' . $frame . '.*';
     $files = glob($mask, GLOB_NOSORT);
@@ -911,6 +825,8 @@ function cot_files_thumb_path($id, $width, $height, $frame){
  * @param string $watermark watermark file
  * @param int $jpegquality
  * @return bool
+ *
+ * @deprecated ?? or @todo
  */
 function cot_files_watermark($source, $target, $watermark = '', $jpegquality = 85){
 
@@ -973,20 +889,22 @@ function cot_files_watermark($source, $target, $watermark = '', $jpegquality = 8
  */
 function cot_files_formGarbageCollect(){
 
-    $yesterday = (int)(Cot::$sys['now'] - 60 * 60 * 24);
-    if($yesterday < 100) return 0;  // Just in case
+    $yesterday = (int) (Cot::$sys['now'] - 60 * 60 * 24);
+    if ($yesterday < 100) {
+        return 0; // Just in case
+    }
 
     //$dateTo = date('Y-m-d H:i:s',  );   // До вчерашнего дня
-    $condition = array(
-        array('file_source', array('sfs', 'pfs'), '<>'),
-        array('file_updated', date('Y-m-d H:i:s',  $yesterday), '<'),
-        array('file_unikey', '', '<>')
-    );
+    $condition = [
+        ['source', ['sfs', 'pfs'], '<>'],
+        ['created', date('Y-m-d H:i:s',  $yesterday), '<'],
+        ['unikey', '', '<>']
+    ];
 
     $cnt = 0;
 
-    $files = files_model_File::findByCondition($condition);
-    if($files){
+    $files = File::findByCondition($condition);
+    if ($files) {
         foreach($files as $fileRow){
             $fileRow->delete();
             $cnt++;
@@ -996,15 +914,17 @@ function cot_files_formGarbageCollect(){
     $tmpDir = cot_files_tempDir(false);
     if (is_dir($tmpDir)) {
         $objects = scandir($tmpDir);
-        $yesterday2 = (int)(Cot::$sys['now'] - 60 * 60 * 24);
-        if($yesterday2 < 100) return 0;
+        $yesterday2 = (int) (Cot::$sys['now'] - 60 * 60 * 24);
+        if ($yesterday2 < 100) {
+            return 0;
+        }
         foreach ($objects as $file) {
             if ($file != "." && $file != "..") {
-                if (filetype($tmpDir.DIRECTORY_SEPARATOR.$file) != "dir") {
+                if (filetype($tmpDir . DIRECTORY_SEPARATOR . $file) != 'dir') {
                     // Delete old temporary files
-                    $currentModified = filectime($tmpDir.DIRECTORY_SEPARATOR.$file);
-                    if($currentModified < $yesterday2) {
-                        @unlink($tmpDir.DIRECTORY_SEPARATOR.$file);
+                    $currentModified = filectime($tmpDir . DIRECTORY_SEPARATOR . $file);
+                    if ($currentModified < $yesterday2) {
+                        @unlink($tmpDir . DIRECTORY_SEPARATOR . $file);
                     }
                 }
             }
@@ -1054,172 +974,6 @@ function rrmdir($dir)
 }
 
 /**
- * Utility function
- * Create a new image from file or URL from any supported format
- *
- * @param string $fileName
- * @return GdImage|false
- */
-function cot_files_imageCreate($fileName)
-{
-    if (!file_exists($fileName) || !is_readable($fileName)) {
-        return false;
-    }
-
-    list($width, $height, $type) = getimagesize($fileName);
-
-    if (empty($width) && empty($height) && empty($type)) {
-        return false;
-    }
-
-    $result = @imagecreatefromstring(file_get_contents($fileName));
-    if (!empty($result)) {
-        return $result;
-    }
-
-    // If imagecreatefromstring() failed to load image
-    $ext = cot_files_get_ext($fileName);
-
-    /** @var GdImage|false $result */
-    $result = false;
-    switch ($type) {
-        case IMAGETYPE_GIF:
-            $result = @imagecreatefromgif($fileName);
-            break;
-
-        case IMAGETYPE_JPEG:
-            $result = @imagecreatefromjpeg($fileName);
-            break;
-
-        case IMAGETYPE_PNG:
-            $result = @imagecreatefrompng($fileName);
-            break;
-
-        case IMAGETYPE_WBMP:
-            $result = @imagecreatefromwbmp($fileName);
-            break;
-
-        case IMAGETYPE_XBM:
-            $result = @imagecreatefromxbm($fileName);
-            break;
-
-        default:
-            // AVIF support added in PHP 8.1
-            if (version_compare(PHP_VERSION, '8.1', '>=') && $type == IMAGETYPE_AVIF) {
-                $result = @imagecreatefromavif($fileName);
-            }
-
-            // BMP support added in PHP 7.2
-            if (version_compare(PHP_VERSION, '7.2', '>=') && $type == IMAGETYPE_BMP) {
-                $result = @imagecreatefrombmp($fileName);
-            }
-
-            // constant IMAGETYPE_WEBP added in PHP 7.1
-            // But imagecreatefromwebp() added in PHP 5.4
-            if (
-                (version_compare(PHP_VERSION, '8.1', '>=') && $type == IMAGETYPE_WEBP) ||
-                $ext == 'webp'
-            ) {
-                $result = @imagecreatefromwebp($fileName);
-            }
-    }
-
-    if (empty($result)) {
-        switch ($ext) {
-            case 'gd2':
-                $result = @imagecreatefromgd2($fileName);
-                break;
-
-            case 'gd':
-                $result = @imagecreatefromgd($fileName);
-                break;
-
-            case 'tga':
-            case 'tpic':
-                // TGA support added in PHP 7.4
-                if (version_compare(PHP_VERSION, '7.4', '>=')) {
-                    $result = imagecreatefromtga($fileName);
-                }
-
-        }
-    }
-
-    return $result;
-}
-
-/**
- * Utility function
- * Create a new image from file or URL from any supported format
- * If result format is not supported, JPG image will be created
- *
- * @param GdImage $image
- * @param string $fileName
- * @param int $quality JPEG quality in %
- * @return string|false file name or false
- */
-function cot_files_imageSave($image, $fileName, $quality = 85)
-{
-    if (empty($image) || empty($fileName)) {
-        return false;
-    }
-
-    $ext = cot_files_get_ext($fileName);
-    $result = false;
-    switch ($ext) {
-        case 'avif':
-            // Todo test $quality
-            if (version_compare(PHP_VERSION, '8.1', '>=')) {
-                $result = imageavif($image, $fileName, $quality);
-            }
-            break;
-
-        case 'bmp':
-            if (version_compare(PHP_VERSION, '7.2', '>=')) {
-                $result = imagebmp($image, $fileName);
-            }
-            break;
-
-        case 'gd2':
-            $result = imagegd2($image, $fileName);
-            break;
-
-        case 'gd':
-            $result = imagegd($image, $fileName);
-            break;
-
-        case 'gif':
-            $result = imagegif($image, $fileName);
-            break;
-
-        case 'png':
-            $result = imagepng($image, $fileName);
-            break;
-
-        case 'wbmp':
-            $result = imagewbmp($image, $fileName);
-            break;
-
-        case 'webp':
-            $result =  imagewebp($image, $fileName);
-            break;
-
-        case 'xbm':
-            $result = imagexbm($image, $fileName);
-            break;
-
-        default:
-            if (!in_array($ext, ['jpg', 'jpeg'])) {
-                $pathInfo = pathinfo($fileName);
-                $fileName = $pathInfo['dirname'] . DIRECTORY_SEPARATOR . $pathInfo['filename'] . '.jpg';
-            }
-            $result = imagejpeg($image, $fileName, $quality);
-            break;
-    }
-
-    return $result ? $fileName : false;
-}
-
-/**
  * Delete user files.
  * Used when deleting a user
  *
@@ -1235,9 +989,9 @@ function cot_delete_user_files($userId)
     }
 
     // Delete all user's PFS files
-    $items = files_model_File::findByCondition([
-        ['file_source', 'pfs',],
-        ['user_id', $userId,],
+    $items = File::findByCondition([
+        ['source', 'pfs'],
+        ['user_id', $userId],
     ]);
     if (!empty($items)) {
         foreach ($items as $itemRow) {
@@ -1260,9 +1014,9 @@ function cot_delete_user_files($userId)
     }
 
     // Delete all user's files
-    $items = files_model_File::findByCondition([
-        ['file_source', 'user',],
-        ['file_item', $userId,],
+    $items = File::findByCondition([
+        ['source', 'user',],
+        ['source_id', $userId,],
     ]);
     if (!empty($items)) {
         foreach ($items as $itemRow) {
@@ -1373,7 +1127,7 @@ function cot_files_avatarbox($userId = null, $tpl = 'files.avatarbox' )
         'UPLOAD_LIMIT'   => $limits['count_max'],
         'UPLOAD_TYPE'    => $type,
         'UPLOAD_PARAM'   => $params,
-        'UPLOAD_CHUNK'   => (int)Cot::$cfg['files']['chunkSize'],
+        'UPLOAD_CHUNK'   => (int) Cot::$cfg['files']['chunkSize'],
         'UPLOAD_EXTS'    => preg_replace('#[^a-zA-Z0-9,]#', '', Cot::$cfg['files']['exts']),
 //        'UPLOAD_ACCEPT'  => preg_replace('#[^a-zA-Z0-9,*/-]#', '',Cot::$cfg['plugin']['attach2']['accept']),
         'UPLOAD_MAXSIZE' => $limits['size_maxfile'],
@@ -1439,43 +1193,52 @@ function cot_files_buildPfs($uid, $formName, $inputName, $title, $parser = '')
  */
 function cot_files_display($source, $item, $field = '',  $tpl = 'files.display', $type = 'all', $limit = 0, $order = '')
 {
-
     $t = new XTemplate(cot_tplfile($tpl, 'module'));
 
-    $t->assign(array(
+    $t->assign([
         'FILES_SOURCE'  => $source,
         'FILES_ITEM'    => $item,
         'FILES_FIELD'   => $field,
-    ));
+    ]);
 
-    $condition = array(array('file_source', $source));
-    if ($type == 'files'){
-        $condition[] = array('file_img', 0);
+    $condition = [['source', $source]];
+    if ($type == 'files') {
+        if (Image::currentDriver() === Image::DRIVER_GD) {
+            $condition[] = [[
+                ['is_img', 0],
+                ['ext', Image::supportedFormats(), '<>', 'OR'],
+            ]];
+        } else {
+            $condition[] = ['is_img', 0];
+        }
     } elseif ($type == 'images') {
-        $condition[] = array('file_img', 1);
+        $condition[] = ['is_img', 1];
+        if (Image::currentDriver() === Image::DRIVER_GD) {
+            $condition[] = ['ext', Image::supportedFormats()];
+        }
     }
 
     if ($field != '_all_') {
-        $condition[] = array('file_field', $field);
+        $condition[] = ['source_field', $field];
     }
 
     if ($order == '') {
-        $order = 'file_order ASC';
+        $order = 'sort_order ASC';
     }
 
     if (is_array($item)) {
         $item = array_map('intval', $item);
     } else {
-        $item = intval($item);
+        $item = (int) $item;
     }
-    $condition[] = array('file_item', $item);
+    $condition[] = ['source_id', $item];
 
-    $files = files_model_File::findByCondition($condition, $limit, 0, $order);
+    $files = File::findByCondition($condition, $limit, 0, $order);
 
     $num = 1;
     if ($files) {
         $t->assign(array(
-            'FILES_COUNT'  => count($files),
+            'FILES_COUNT' => count($files),
         ));
 
         /* === Hook - Part1 : Set === */
@@ -1483,10 +1246,10 @@ function cot_files_display($source, $item, $field = '',  $tpl = 'files.display',
         /* ===== */
 
         foreach ($files as $row) {
-            $t->assign(files_model_File::generateTags($row, 'FILES_ROW_'));
-            $t->assign(array(
+            $t->assign(File::generateTags($row, 'FILES_ROW_'));
+            $t->assign([
                 'FILES_ROW_NUM' => $num,
-            ));
+            ]);
 
             /* === Hook - Part2 : Include === */
             foreach ($extp as $pl) {
@@ -1550,9 +1313,16 @@ function cot_files_downloads($source, $item, $field = '', $tpl = 'files.download
  * @todo no cache parameter for css
  * @todo generate formUnikey
  */
-function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -1, $tpl = 'files.filebox',
-                           $standalone = 0, $userId = null)
-{
+function cot_files_filebox(
+    $source,
+    $item,
+    $name = '',
+    $type = 'all',
+    $limit = -1,
+    $tpl = 'files.filebox',
+    $standalone = 0,
+    $userId = null
+) {
     global $R, $cot_modules, $usr;
 
     list(Cot::$usr['auth_read'], Cot::$usr['auth_write'], Cot::$usr['isadmin']) = cot_auth('files', 'a');
@@ -1561,8 +1331,12 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
     if ($source == 'pfs' && $usr['isadmin']) {
         $uid = $userId;
 
-        if (is_null($uid)) $uid = cot_import('uid', 'G', 'INT');
-        if (is_null($uid)) $uid = $usr['id'];
+        if (is_null($uid)) {
+            $uid = cot_import('uid', 'G', 'INT');
+        }
+        if (is_null($uid)) {
+            $uid = $usr['id'];
+        }
     }
 
     $nc = $cot_modules['files']["version"];
@@ -1579,7 +1353,7 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
         $jQtemplates = $templates->text();
         $jQtemplatesOut = true;
 
-        $modUrl = Cot::$cfg['modules_dir'].'/files';
+        $modUrl = Cot::$cfg['modules_dir'] . '/files';
 
         // Generic page styles
         Resources::linkFile($modUrl.'/tpl/filebox.css');
@@ -1668,38 +1442,44 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
         'type'    => $type,
     );
 
-    $action = 'index.php?e=files&m=upload&source='.$source.'&item='.$item;
-    if (!empty($name)) $action .= '&field='.$name;
+    $action = 'index.php?e=files&m=upload&source=' . $source . '&item=' . $item;
+    if (!empty($name)) {
+        $action .= '&field='.$name;
+    }
 
     static $unikey = '';
 
     $formUnikey = '';
-    if (!in_array($source, array('sfs', 'pfs')) && $item == 0) {
+    if (!in_array($source, ['sfs', 'pfs']) && $item == 0) {
         $unikeyName = "cf_{$source}_{$item}";
 
         if (empty($unikey)) {
             $unikey = cot_import($unikeyName, 'P', 'TXT');
-            if (!$unikey) $unikey = cot_import($unikeyName, 'G', 'TXT');
+            if (!$unikey) {
+                $unikey = cot_import($unikeyName, 'G', 'TXT');
+            }
             $unikey = cot_import_buffered($unikeyName, $unikey);
-            if (!$unikey)  $unikey = mb_substr(md5("{$source}_{$item}" . '_'.Cot::$usr['id'] . rand(0, 99999999)), 0, 15);
+            if (!$unikey) {
+                $unikey = mb_substr(md5("{$source}_{$item}" . '_' . \Cot::$usr['id'] . rand(0, 99999999)), 0, 15);
+            }
         }
         $params['unikey'] = $unikey;
         $formUnikey = cot_inputbox('hidden', $unikeyName, $unikey);
 
-        $action .= '&unikey='.$unikey;
+        $action .= '&unikey=' . $unikey;
     }
 
     $params = base64_encode(serialize($params));
 
     if ($uid != $usr['id']) {
         $t->assign(array(
-            'UPLOAD_UID'     => $uid,
+            'UPLOAD_UID' => $uid,
         ));
-        $action .= '&uid='.$uid;
+        $action .= '&uid=' . $uid;
     }
 
     // Metadata
-    $t->assign(array(
+    $t->assign([
         'UPLOAD_ID'      => $formId,
         'UPLOAD_SOURCE'  => $source,
         'UPLOAD_ITEM'    => $item,
@@ -1715,7 +1495,7 @@ function cot_files_filebox($source, $item, $name = '', $type = 'all', $limit = -
         'UPLOAD_THUMB_WIDTH' => (int) Cot::$cfg['files']['thumb_width'],
         'UPLOAD_THUMB_HEIGHT' => (int) Cot::$cfg['files']['thumb_height'],
         'UPLOAD_X'       => Cot::$sys['xk'],
-    ));
+    ]);
 
     if ($standalone == 2) {
         $html = Resources::render();
@@ -1758,11 +1538,15 @@ function cot_files_user_avatar($file_id = 0, $urr = 0, $width = 0, $height = 0, 
 {
 
     $avatar = cot_rc('files_user_default_avatar');
-    if($file_id == 0 && is_array($urr) && isset($urr['user_avatar'])) $file_id = $urr['user_avatar'];
+    if ($file_id == 0 && is_array($urr) && isset($urr['user_avatar'])) {
+        $file_id = $urr['user_avatar'];
+    }
     $url = cot_files_user_avatar_url($file_id, $width, $height, $frame = '');
     $alt = Cot::$L['Avatar'];
-    if(is_array($urr)) $alt = htmlspecialchars(cot_user_full_name($urr));
-    if($url){
+    if (is_array($urr)) {
+        $alt = htmlspecialchars(cot_user_full_name($urr));
+    }
+    if ($url) {
         $avatar = cot_rc('files_user_avatar', array(
             'src'=> $url,
             'alt' => $alt,
@@ -1772,22 +1556,32 @@ function cot_files_user_avatar($file_id = 0, $urr = 0, $width = 0, $height = 0, 
 }
 
 /**
- * @param $file_id
+ * @param $fileId
  * @param int $width
  * @param int $height
  * @param string $frame
  * @return string
  */
-function cot_files_user_avatar_url($file_id, $width = 0, $height = 0, $frame = '')
+function cot_files_user_avatar_url($fileId, $width = 0, $height = 0, $frame = '')
 {
-    $file = null;
-    if ($file_id instanceof files_model_File) {
-        $file = $file_id;
-        $file_id = $file->file_id;
+    // -------
+    // Если залито обновление модуля до версии 2.0.0-beta1, а таблицы в БД еще не обновлены, эта функция может ломать админку.
+    // @todo убрать через несколько релизов
+    global $cot_modules;
+    if (version_compare($cot_modules['files']['version'], '2.0.0-beta1', '<')) {
+        return '';
+    }
+    // -------
+
+    if ($fileId instanceof File) {
+        $file = $fileId;
+        $fileId = $file->id;
     } else {
-        $file_id = (int)$file_id;
-        if(!$file_id) return '';
-        $file = files_model_File::getById($file_id);
+        $fileId = (int) $fileId;
+        if ($fileId < 1) {
+            return '';
+        }
+        $file = File::getById($fileId);
     }
 
     if (!$file) {
@@ -1857,8 +1651,8 @@ function cot_files_widget($source, $item, $field = '', $tpl = 'files.widget', $w
  * TPL files not allows to execute php code
  * So it will be here
  *
- * Todo not needed with View template engine
- * Todo remove checking if method exists after Cotonti 0.9.20 release
+ * @todo not needed with View template engine
+ * @todo remove checking if method exists after Cotonti 0.9.20 release
  */
 function cot_files_loadBootstrap()
 {

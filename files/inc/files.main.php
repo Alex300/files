@@ -1,4 +1,7 @@
 <?php
+
+use cot\modules\files\model\File;
+
 defined('COT_CODE') or die('Wrong URL.');
 
 /**
@@ -143,19 +146,23 @@ class MainController
 
         $source = $isSFS ? 'sfs' : 'pfs';
 
-        $filesCond = array(
-            array('file_source', $source),
-            array('file_item', $f),
-        );
-        if($type == 'image') $filesCond[] = array('file_img', 1);
+        $filesCond = [
+            ['source', $source],
+            ['source_id', $f],
+        ];
+        if ($type == 'image') {
+            $filesCond[] = ['is_img', 1];
+        }
 
-        if($f == 0){
-            if(!$isSFS) $filesCond[] = array('user_id', $uid);
-            $files_count = intval(files_model_File::count($filesCond));
-        }else{
+        if ($f == 0) {
+            if (!$isSFS) {
+                $filesCond[] = ['user_id', $uid];
+            }
+            $files_count = (int) File::count($filesCond);
+        } else {
             $files_count = $folder->ff_count;
         }
-        $files = files_model_File::findByCondition($filesCond, 0, 0, 'file_order ASC');
+        $files = File::findByCondition($filesCond, 0, 0, 'sort_order ASC');
 
         // Права на редактирование
         $canEdit = 0;
@@ -210,15 +217,15 @@ class MainController
                     $folderIds[] = $folderRow->ff_id;
                 }
 
-                $sql = Cot::$db->query("SELECT file_item as ff_id, COUNT(*) as items_count, SUM(file_size) as size
-                    FROM $db_files WHERE file_source='{$source}' AND file_item IN (".implode(',', $folderIds).")
-                    GROUP BY file_item");
-                while ($pfs_filesinfo = $sql->fetch()){
-                    $ff_filessize[$pfs_filesinfo['ff_id']]  = $pfs_filesinfo['size'];
+                $sql = Cot::$db->query("SELECT source_id as ff_id, COUNT(*) as items_count, SUM(size) as size
+                    FROM $db_files WHERE source = '{$source}' AND source_id IN (" . implode(',', $folderIds) . ")
+                    GROUP BY source_id");
+                while ($pfs_filesinfo = $sql->fetch()) {
+                    $ff_filessize[$pfs_filesinfo['ff_id']] = $pfs_filesinfo['size'];
                     $onPageFoldersFilesCount += $pfs_filesinfo['items_count'];
                 }
 
-                $sql = Cot::$db->query("SELECT SUM(ff_count) as files_count FROM $db_files_folders WHERE user_id=?", $uid);
+                $sql = Cot::$db->query("SELECT SUM(ff_count) as files_count FROM $db_files_folders WHERE user_id = ?", $uid);
                 $foldersFilesCount = $sql->fetchColumn();
 
                 $fLimit = 3;
@@ -228,23 +235,25 @@ class MainController
                     $t->assign(files_model_Folder::generateTags($folderRow, 'FOLDER_ROW_', $urlParams));
                     $t->assign(array(
                         'FOLDER_ROW_NUM' => $i,
-                        'FOLDER_ROW_ITEMS_SIZE' => cot_build_filesize((int)$ff_filessize[$folderRow->ff_id]),
-                        'FOLDER_ROW_ITEMS_SIZE_RAW' => (int)$ff_filessize[$folderRow->ff_id],
+                        'FOLDER_ROW_ITEMS_SIZE' => cot_build_filesize((int) $ff_filessize[$folderRow->ff_id]),
+                        'FOLDER_ROW_ITEMS_SIZE_RAW' => (int) $ff_filessize[$folderRow->ff_id],
                     ));
 
-                    $filesRowCond = array(
-                        array('file_source', $source),
-                        array('file_item', $folderRow->ff_id),
-                    );
-                    if($type == 'image') $filesRowCond[] = array('file_img', 1);
-                    $folderFiles = files_model_File::findByCondition($filesRowCond, $fLimit, 0, 'file_order ASC');
-                    if($folderFiles){
+                    $filesRowCond = [
+                        ['source', $source],
+                        ['source_id', $folderRow->ff_id],
+                    ];
+                    if ($type == 'image') {
+                        $filesRowCond[] = ['is_img', 1];
+                    }
+                    $folderFiles = File::findByCondition($filesRowCond, $fLimit, 0, 'file_order ASC');
+                    if ($folderFiles) {
                         $jj = 0;
-                        foreach($folderFiles as $fileRow){
-                            $t->assign(files_model_File::generateTags($fileRow, 'FILES_ROW_'));
-                            $t->assign(array(
-                                'FILES_ROW_NUM'      => $jj,
-                            ));
+                        foreach ($folderFiles as $fileRow) {
+                            $t->assign(File::generateTags($fileRow, 'FILES_ROW_'));
+                            $t->assign([
+                                'FILES_ROW_NUM' => $jj,
+                            ]);
                             $t->parse('MAIN.FOLDERS.ROW.FILES_ROW');
                             $jj++;
                         }
@@ -256,8 +265,8 @@ class MainController
                 $t->parse('MAIN.FOLDERS.EMPTY');
             }
 
-            if($usr['auth_write']){
-                if(($isSFS && $usr['isadmin']) || ($uid == $usr['id'])){
+            if ($usr['auth_write']) {
+                if (($isSFS && $usr['isadmin']) || ($uid == $usr['id'])) {
                     $formHidden = cot_inputbox('hidden', 'uid', $uid).cot_inputbox('hidden', 'act', 'save');
                     $formAlbum = cot_checkbox(true, 'ff_album',  Cot::$L['files_isgallery']);
                     if($type == 'image'){
@@ -313,10 +322,10 @@ class MainController
         }
 
 
-        if($files){
+        if ($files) {
             $jj = 0;
-            foreach($files as $fileRow){
-                $t->assign(files_model_File::generateTags($fileRow, 'FILES_ROW_'));
+            foreach($files as $fileRow) {
+                $t->assign(File::generateTags($fileRow, 'FILES_ROW_'));
                 $t->assign(array(
                     'FILES_ROW_NUM'      => $jj,
                 ));

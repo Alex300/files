@@ -56,13 +56,13 @@
             {% if (file.error) { %}
                 <div><span class="label label-danger">Error</span> {%=file.error%}</div>
             {% } else { %}
-
-                {% for (var j=0, element; element=file.editForm[j]; j++) { %}
-                    <label>{%=element.title%}</label> {%#element.element%}
+                {% if (file.editForm) { %}
+                    {% for (var j=0, element; element=file.editForm[j]; j++) { %}
+                        <label>{%=element.title%}</label> {%#element.element%}
+                    {% } %}
                 {% } %}
-
                 {% if (window.FormData) { %}
-                <input type="file" name="replacement" class="files-replace-file" data-id="{%=file.id%}" id="files-file{%=file.id%}">
+                    <input type="file" name="replacement" class="files-replace-file" data-id="{%=file.id%}" id="files-file{%=file.id%}">
                 {% } %}
             {% } %}
             </div>

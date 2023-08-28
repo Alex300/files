@@ -4,56 +4,73 @@
 Hooks=module
 [END_COT_EXT]
 ==================== */
+
  /**
- * module Social for Cotonti Siena
- *
+  * module Files for Cotonti Siena
   * @package Files
-  * @author Cotonti Team
-  * @copyright Copyright (c) Cotonti Team 2011-2014
-  * @license BSD License
- */
+  */
 defined('COT_CODE') or die('Wrong URL.');
 
 // Environment setup
-$env['location'] = 'files';
+\Cot::$env['location'] = 'files';
 
 // Self requirements
 require_once cot_incfile('files', 'module');
 
-if(empty($m)) $m = 'main';   // Констроллер по-умолчанию
+if (empty($m)) {
+    // Default controller
+    $m = 'main';
+}
 
-//if (COT_AJAX && !$m) $m = 'ajax';
-
-// Only if the file exists...
-if (file_exists(cot_incfile('files', 'module', $m))) {
-    require_once cot_incfile('files', 'module', $m);
-
-    $outHeaderFooter = true;
-
-    /* Create the controller */
-    $_class = ucfirst($m).'Controller';
-    $controller = new $_class();
-    
-    // TODO кеширование
-    /* Perform the Request task */
-    $action = $a.'Action';
-    if (!$a && method_exists($controller, 'indexAction')){
-        $content = $controller->indexAction();
-    }elseif (method_exists($controller, $action)){
-        $content = $controller->$action();
-    }else{
-        // Error page
-		cot_die_message(404);
-		exit;
+// Old contrillers
+$oldControllers = ['main', 'pfs'];
+if (in_array($m, $oldControllers)) {
+    if (file_exists(cot_incfile('files', 'module', $m))) {
+        require_once cot_incfile('files', 'module', $m);
     }
-    
-    //ob_clean();
-    if($outHeaderFooter) require_once $cfg['system_dir'] . '/header.php';
-    if (isset($content)) echo $content;
-    if($outHeaderFooter) require_once $cfg['system_dir'] . '/footer.php';
+    $controllerClassName = ucfirst($m).'Controller';
+} else {
+    $controllerClassName = '\\cot\\modules\\files\\controllers\\' . ucfirst($m) . 'Controller';
+}
 
-}else{
+if (!class_exists($controllerClassName)) {
     // Error page
     cot_die_message(404);
     exit;
 }
+
+$outHeaderFooter = true;
+
+/* Create the controller */
+$controller = new $controllerClassName();
+
+/* Perform the Request task */
+$content = '';
+$actionExists = false;
+if (!empty($a)) {
+    $controllerAction = $a . 'Action';
+    if (method_exists($controller, $controllerAction)) {
+        $actionExists = true;
+        $content = $controller->$controllerAction();
+    }
+} elseif (method_exists($controller, 'indexAction')) {
+    $actionExists = true;
+    $content = $controller->indexAction();
+}
+
+if (!$actionExists) {
+    cot_die_message(404);
+    exit;
+}
+
+//ob_clean();
+if ($outHeaderFooter) {
+    require_once \Cot::$cfg['system_dir'] . '/header.php';
+}
+if (isset($content)) {
+    echo $content;
+}
+if ($outHeaderFooter) {
+    require_once \Cot::$cfg['system_dir'] . '/footer.php';
+}
+

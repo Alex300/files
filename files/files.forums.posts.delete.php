@@ -11,13 +11,16 @@ Hooks=forums.posts.delete.first
  * @package Files
  * @author Kalnov Alexey <kalnovalexey@yandex.ru>
  */
+
+use cot\modules\files\model\File;
+
 defined('COT_CODE') or die('Wrong URL');
 
 // If the post is deleted to the trash, we do not delete files
 if (!cot_plugin_active('trashcan') || !Cot::$cfg['plugin']['trashcan']['trash_forum']) {
 	require_once cot_incfile('files', 'module');
 
-    $files = files_model_File::findByCondition([['file_source', 'forums'], ['file_item', $p],]);
+    $files = File::findByCondition([['source', 'forums'], ['source_id', $p],]);
     if ($files) {
         foreach ($files as $fileRow) {
             $fileRow->delete();

@@ -13,6 +13,8 @@ Hooks=trash.delete.done
  * @author Kalnov Alexey <kalnovalexey@yandex.ru>
  */
 
+use cot\modules\files\model\File;
+
 defined('COT_CODE') or die('Wrong URL');
 
 if (!empty($res) && !empty($res['tr_itemid'])) {
@@ -34,9 +36,9 @@ if (!empty($res) && !empty($res['tr_itemid'])) {
     if ($deleteFiles) {
         require_once cot_incfile('files', 'module');
 
-        $files = files_model_File::findByCondition([
-            ['file_source', $source],
-            ['file_item', $res['tr_itemid'],],
+        $files = File::findByCondition([
+            ['source', $source],
+            ['source_id', $res['tr_itemid']],
         ]);
 
         if ($files) {

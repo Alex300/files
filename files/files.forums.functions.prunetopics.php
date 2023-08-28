@@ -10,19 +10,22 @@ Hooks=forums.functions.prunetopics
  * @package Files
  * @author Kalnov Alexey <kalnovalexey@yandex.ru>
  */
+
+use cot\modules\files\model\File;
+
 defined('COT_CODE') or die('Wrong URL');
 
 // If the topic is deleted to the trash, we do not delete files
 if (
-    (!cot_plugin_active('trashcan') || !Cot::$cfg['plugin']['trashcan']['trash_forum']) &&
-    !empty($topicId)
+    (!cot_plugin_active('trashcan') || !Cot::$cfg['plugin']['trashcan']['trash_forum'])
+    && !empty($topicId)
 ) {
     $filesCond = [
-        ['file_source', 'forums',],
-        ['SQL', 'file_item IN (SELECT fp_id FROM ' . Cot::$db->quoteTableName(Cot::$db->forum_posts) .
+        ['source', 'forums',],
+        ['SQL', 'source_id IN (SELECT fp_id FROM ' . Cot::$db->quoteTableName(Cot::$db->forum_posts) .
             " WHERE fp_topicid = $topicId)",],
     ];
-    $files = files_model_File::findByCondition($filesCond);
+    $files = File::findByCondition($filesCond);
     if ($files) {
         foreach ($files as $fileRow) {
             $fileRow->delete();

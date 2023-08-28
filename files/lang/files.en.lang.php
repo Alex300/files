@@ -1,4 +1,5 @@
 <?php
+
 /**
  * English Language File for the Files Module
  *
@@ -12,9 +13,11 @@ $L['info_desc'] = 'Personal file space and attach images and files and build gal
 $L['info_notes'] = 'DO NOT FORGET to create a writable folder for the files. Jquery must be on.';
 
 // if lang/en/main.en.lang.php is not loaded
-if(!isset($L['PFS'])) {
+if (!isset($L['PFS'])) {
     $mainLangFile = cot_langfile('main', 'core');
-    if(file_exists($mainLangFile)) include $mainLangFile;
+    if (file_exists($mainLangFile)) {
+        include $mainLangFile;
+    }
 }
 
 $L['files_add'] = 'Add files';
@@ -68,10 +71,11 @@ $L['files_cleanup_desc'] = 'Will remove all files attached to pages and forum po
     reason they were not removed automatically';
 $L['files_deleteallthumbs'] = 'Remove all thumbnails';
 $L['files_deleteallthumbs_conf'] = 'All thumbnails for all images will be deleted. New thumbnails will be generated when they are needed';
-$L['files_deleteallthumbs_desc'] = 'If you have changed thumbnails settings and want to regenerate them, use the
-    <strong>«Remove all thumbnails»</strong>. New thumbnails will be generated when they are needed. It can cause
-    problems on pages with lots of thumbnails';
+$L['files_deleteallthumbs_desc'] = 'If you have changed thumbnails settings and want to regenerate them, use the '
+    . '<strong>«Remove all thumbnails»</strong>. New thumbnails will be generated when they are needed. It can cause problems on pages with lots of '
+    . 'thumbnails.';
 $L['files_gd'] = 'GD graphical library';
+$L['files_imagick'] = 'Imagick graphical library';
 $L['files_itemsperpost'] = 'Attachments per post (max.), 0 - unlimited';
 $L['files_items_removed'] = 'Items removed';
 $L['files_thumbs_removed'] = 'Thumbnails removed';
@@ -89,16 +93,18 @@ $L['files_extrafields_folders'] = 'File folders Extrafields';
 $L['files_err_abort'] = 'File upload aborted';
 $L['files_err_count'] = 'Exceeded maximum number of files';
 $L['files_err_move'] = 'Failed to move the uploaded file';
+$L['files_err_no_driver'] = 'There are no supported graphics libraries on this hosting, Cotonti will not be able to create thumbnails for images.';
 $L['files_err_nospace'] = 'Not enough personal disk space';
 $L['files_err_perms'] = 'You are not permitted to do this';
 $L['files_err_toobig'] = 'File is too big';
 $L['files_err_type'] = 'This type of files is not allowed';
 $L['files_err_replace'] = 'Could not replace file';
+$L['files_err_unknown'] = 'Unknown error';
 $L['files_err_upload'] = 'The file could not be uploaded';
 $L['files_folder_deleted'] = 'Folder «%1$s» deleted';
 $L['files_foldertitlemissing'] = 'A folder title is required.';
-$L['files_nogd'] = 'The GD graphical library is not supported by this host, Cotonti won\'t be able to create
-    thumbnails for images.';
+//$L['files_nogd'] = 'The GD graphical library is not supported by this host, Cotonti won\'t be able to create
+//    thumbnails for images.'; // @todo
 $L['files_saved'] = 'Saved.';
 
 
@@ -123,11 +129,13 @@ $L['cfg_chunkSize_hint'] = 'Large files can be uploaded in smaller chunks with
     browsers supporting the Blob API. (Leave empty to disable)';
 
 $L['cfg_img_separator'] = 'Image options';
-$L['cfg_image_convert'] = 'Convert all images to JPG on upload';
-$L['cfg_image_resize'] = array('Reduce uploaded images', 'Loaded images will be proportionally reduced
-    In accordance with the following parameters');
+$L['cfg_image_convert'] = 'Convert images to JPEG on upload';
+$L['cfg_image_to_convert'] = 'Image extensions/types to convert to JPEG';
+$L['cfg_image_to_convert_hint'] = 'If the option above is enabled. If empty, all images will be converted. (comma separated, no dots and spaces)';
+$L['cfg_image_resize'] = ['Reduce uploaded images', 'Loaded images will be proportionally reduced In accordance with the following parameters'];
 $L['cfg_image_maxwidth']  = 'Reduce image width to';
 $L['cfg_image_maxheight'] = 'Reduce image height to';
+$L['cfg_image_maxheight_hint'] = 'UltraHD (4k): 3840x2160, FullHd (2k): 1920x1080';
 $L['cfg_quality'] = 'JPEG quality in %';
 
 $L['cfg_th_separator'] = 'Thumbnails options';
@@ -135,13 +143,13 @@ $L['cfg_thumbs'] = 'Display image thumbnails?';
 $L['cfg_thumb_width'] = 'Default thumbnail width';
 $L['cfg_thumb_height'] = 'Default thumbnail height';
 $L['cfg_thumb_framing'] = 'Default thumbnail framing mode';
-$L['cfg_thumb_framing_params'] = array(
+$L['cfg_thumb_framing_params'] = [
     'height' => 'By height',
-    'width'  => 'By width',
-    'auto'   => 'Auto',
+    'width' => 'By width',
+    'auto' => 'Auto',
     'border_auto' => 'Auto with border',
-    'crop'   => 'Crop'
-);
+    'crop' => 'Crop',
+];
 $L['cfg_thumb_border'] = 'Thumbnails, border size, px';
 $L['cfg_thumb_border_hint'] = 'If thumbnail framing mode is «Auto with border»';
 $L['cfg_thumb_bordercolor'] = 'Thumbnails, border color';
@@ -161,10 +169,10 @@ $L['cfg_av_separator'] = 'User avatar options';
 $L['cfg_avatar_width'] = 'Default avatar width';
 $L['cfg_avatar_height'] = 'Default avatar height';
 $L['cfg_avatar_framing'] = 'Default avatar framing mode';
-$L['cfg_avatar_framing_params'] = array(
+$L['cfg_avatar_framing_params'] = [
     'height' => 'By height',
-    'width'  => 'By width',
-    'auto'   => 'Auto',
+    'width' => 'By width',
+    'auto' => 'Auto',
     'border_auto' => 'Auto with border',
-    'crop'   => 'Crop'
-);
+    'crop' => 'Crop',
+];
