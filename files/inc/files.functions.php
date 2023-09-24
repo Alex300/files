@@ -8,6 +8,7 @@
  */
 
 use cot\modules\files\model\File;
+use cot\modules\files\services\FileService;
 use image\exception\ImageException;
 use image\Image;
 
@@ -542,9 +543,10 @@ function cot_files_linkFiles($source, $item){
         $files = File::findByCondition($condition);
 
         if ($files) {
-            foreach ($files as $fileRow){
+            foreach ($files as $fileRow) {
+                $fileRow->source_id = $item;
                 $oldFullPath = \Cot::$cfg['files']['folder']. '/' . $fileRow->fullName;
-                $newPath = cot_files_path($source, $item, $fileRow->id, $fileRow->ext, $fileRow->user_id);
+                $newPath = FileService::generateFileRelativePath($fileRow);
                 $newFullPath = \Cot::$cfg['files']['folder']. '/' . $newPath;
 
                 $file_dir = dirname($newFullPath);
@@ -556,7 +558,6 @@ function cot_files_linkFiles($source, $item){
                     $fileRow->delete();
 
                 } else {
-                    $fileRow->source_id = $item;
                     $fileRow->path = dirname($newPath);
                     $fileRow->file_name = basename($newPath);
                     $fileRow->unikey = '';
@@ -567,43 +568,6 @@ function cot_files_linkFiles($source, $item){
     }
 
     cot_files_formGarbageCollect();
-}
-
-/**
- * Calculates attachment path.
- * Return path relative to Cot::$cfg['files']['folder']
- *
- * @param  string $source Module or plugin code
- * @param  int    $item Parent item ID
- * @param  int    $id   Attachment ID
- * @param  string $ext  File extension. Leave it empty to auto-detect.
- * @param  int    $uid   User ID for pfs
- * @return string|false  Path for the file on disk
- *
- * @todo обфускация имени файла или использование оригинального имени файла
- */
-function cot_files_path($source, $item, $id, $ext = '', $uid = 0)
-{
-    $filesPath = $source . '/' . $item;
-    if ($source == 'pfs') {
-        if ($uid == 0) {
-            $uid = Cot::$usr['id'];
-        }
-        $filesPath = $source . '/'. $uid. '/' . $item;
-    }
-
-    if (empty($ext)) {
-        // Auto-detect extension
-        $mask = $filesPath . '/' . Cot::$cfg['files']['prefix'] . $id . '.*';
-        $files = glob($mask, GLOB_NOSORT);
-        if (!$files || count($files) == 0) {
-            return false;
-        } else {
-            return $files[0];
-        }
-    } else {
-        return $filesPath . '/' . Cot::$cfg['files']['prefix'] . $id . '.' . $ext;
-    }
 }
 
 /**
@@ -649,8 +613,7 @@ function cot_files_tempDir($create = true)
 {
     $tmpDir = sys_get_temp_dir();
     if (!empty($tmpDir) && @is_writable($tmpDir)) {
-        $uplDir = $tmpDir . DIRECTORY_SEPARATOR . 'files_' . mb_substr(md5(Cot::$cfg['secret_key']), 10) .
-            '_upload';
+        $uplDir = $tmpDir . DIRECTORY_SEPARATOR . 'files_' . mb_substr(md5(Cot::$cfg['secret_key']), 10) . '_upload';
         if (!$create) {
             return $uplDir;
         }
@@ -674,8 +637,7 @@ function cot_files_tempDir($create = true)
 }
 
 /**
- * Returns attachment thumbnail path. Generates the thumbnail first if
- * it does not exist.
+ * Returns file's thumbnail path. Generates the thumbnail first if it does not exist.
  * @param File|int $id File ID or instance of File.
  * @param int $width Thumbnail width in pixels
  * @param int $height Thumbnail height in pixels
@@ -711,29 +673,31 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
         $frame = Cot::$cfg['files']['thumb_framing'];
     }
 
+    // Support for old framing modes from module version 1.x.
+    if ($frame === 'crop') {
+        $frame = Image::THUMBNAIL_OUTBOUND;
+    } elseif ($frame === 'auto') {
+        $frame = Image::THUMBNAIL_INSET;
+    }
+
     if ($width <= 0)  {
         $width  = (int) Cot::$cfg['files']['thumb_width'];
     }
     if ($height <= 0) {
-        $height = (int) Cot::$cfg['files']['thumb_height'];
+        $height = (int) \Cot::$cfg['files']['thumb_height'];
     }
 
     // Attempt to load from cache
-    $thumbs_folder = Cot::$cfg['files']['folder'] . '/_thumbs';
-    $cache_folder  = $thumbs_folder . '/' . $id;
-    if (!file_exists($cache_folder)) {
-        mkdir($cache_folder, Cot::$cfg['dir_perms'], true);
+    $thumbnailFolder  = FileService::fileThumbnailDirectory($id);
+    if (!file_exists($thumbnailFolder)) {
+        mkdir($thumbnailFolder, \Cot::$cfg['dir_perms'], true);
     }
-    $thumbPath = cot_files_thumb_path($id, $width, $height, $frame);
 
+    // Existing thumbnail
+    $thumbPath = FileService::getExistingThumbnail($id, $width, $height, $frame);
+
+    // Generate a new thumbnail
     if (!$thumbPath || !file_exists($thumbPath)) {
-        // Generate a new thumbnail
-        if ($frame === 'crop') {
-            $frame = Image::THUMBNAIL_OUTBOUND;
-        } elseif ($frame === 'auto') {
-            $frame = Image::THUMBNAIL_INSET;
-        }
-
         if (!isset($row)) {
             $row = File::getById($id);
         }
@@ -746,12 +710,8 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
             return null;
         }
 
-        $thumbs_folder = $thumbs_folder . '/' . $id;
-        $thumbPath = $thumbs_folder . '/'
-            . \Cot::$cfg['files']['prefix'] . $id . '-' . $width . 'x' . $height . '-' . $frame . '.' . $row->ext;
-
         try {
-            $image = Image::load($originalFile)->thumbnail($width, $height, $frame, (bool)\Cot::$cfg['files']['upscale']);
+            $image = Image::load($originalFile)->thumbnail($width, $height, $frame, (bool) \Cot::$cfg['files']['upscale']);
         } catch (ImageException $e) {
             return null;
         }
@@ -779,6 +739,8 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
             unset($watermarkImage);
         }
 
+        $thumbPath = FileService::thumbnailPath($id, $width, $height, $frame, $row->ext);
+
         try {
             $image->save($thumbPath, (int) Cot::$cfg['files']['quality']);
         } catch (ImageException $e) {
@@ -799,23 +761,32 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
 }
 
 /**
- * Calculates path for the file thumbnail.
- * @param  int    $id     File ID
- * @param  int    $width  Thumbnail width
- * @param  int    $height Thumbnail height
- * @param  int    $frame  Thumbnail framing mode
- * @return string         Path for the file on disk or false file was not found
+ * Returns file's thumbnail url. Generates the thumbnail first if it does not exist.
+ * Can be used in template files as callback
+ * @param File|int $id File ID or instance of File.
+ * @param int $width Thumbnail width in pixels
+ * @param int $height Thumbnail height in pixels
+ * @param string $frame Framing mode: one of \image\Image::THUMBNAIL_XXX constants (for backwards compatibility 'auto' and 'crop' also supported)
+ * @param bool $watermark - set watermark if Cot::$cfg['files']['thumb_watermark'] not empty?
+ * @param bool $lastMod Include last file modification time as GET parameter
+ * @return string Thumbnail path on success or null on error
+ *
+ * @see cot_files_thumb()
  */
-function cot_files_thumb_path($id, $width, $height, $frame)
+function cot_filesThumbnailUrl($id, $width = 0, $height = 0, $frame = '', $watermark = true, $lastMod = true)
 {
-    $thumbs_folder = Cot::$cfg['files']['folder'] . '/_thumbs/' . $id;
-    $mask = $thumbs_folder . '/' . Cot::$cfg['files']['prefix'] . $id . '-' . $width . 'x' . $height . '-' . $frame . '.*';
-    $files = glob($mask, GLOB_NOSORT);
-    if (!$files || count($files) == 0) {
-        return false;
-    } else {
-        return $files[0];
+    $thumbnail = cot_files_thumb($id, $width, $height, $frame, $watermark);
+    //if (empty($thumbnail) || !file_exists($thumbnail)) {
+    if (empty($thumbnail)) {
+        return '';
     }
+
+    if ($lastMod) {
+        // FancyBox так не работает
+        return $thumbnail . '?lm=' . filemtime($thumbnail);
+    }
+    return $thumbnail;
+
 }
 
 /**
@@ -887,8 +858,8 @@ function cot_files_watermark($source, $target, $watermark = '', $jpegquality = 8
  * Garbage collect
  * Сборка мусора от несохраненных форм
  */
-function cot_files_formGarbageCollect(){
-
+function cot_files_formGarbageCollect()
+{
     $yesterday = (int) (Cot::$sys['now'] - 60 * 60 * 24);
     if ($yesterday < 100) {
         return 0; // Just in case
@@ -947,11 +918,10 @@ function mb_basename($filepath, $suffix = '')
 
 /**
  * Recursive remove directory
- *
  * @param string $dir
  * @return bool
  */
-function rrmdir($dir)
+function removeDirectoryRecursive($dir)
 {
     if (empty($dir) && $dir != '0') {
         return false;
@@ -960,9 +930,9 @@ function rrmdir($dir)
     if (is_dir($dir)) {
         $objects = scandir($dir);
         foreach ($objects as $object) {
-            if ($object != "." && $object != "..") {
-                if (filetype($dir."/".$object) == "dir") {
-                    rrmdir($dir."/".$object);
+            if ($object != '.' && $object != '..') {
+                if (filetype($dir . '/' . $object) == 'dir') {
+                    removeDirectoryRecursive($dir . '/' . $object);
                 } else {
                     unlink($dir."/".$object);
                 }
@@ -971,6 +941,8 @@ function rrmdir($dir)
         reset($objects);
         rmdir($dir);
     }
+
+    return true;
 }
 
 /**
@@ -1182,26 +1154,38 @@ function cot_files_buildPfs($uid, $formName, $inputName, $title, $parser = '')
 
 /**
  * Renders attached items on page
- * @param  string $source   Target module/plugin code
- * @param  integer $item    Target item id
- * @param  string $field
- * @param  string $tpl      Template code
- * @param  string $type     Attachment type filter: 'files', 'images'. By default includes all attachments.
- * @param  int $limit
- * @param  string $order
- * @return string           Rendered output
+ * @param string $source Target module/plugin code
+ * @param int $item Target item id
+ * @param string $field
+ * @param string $tpl Template code
+ * @param string $type Attachment type filter: 'files', 'images'. By default includes all attachments.
+ * @param int $limit
+ * @param string $order
+ * @return string Rendered output
  */
 function cot_files_display($source, $item, $field = '',  $tpl = 'files.display', $type = 'all', $limit = 0, $order = '')
 {
     $t = new XTemplate(cot_tplfile($tpl, 'module'));
 
     $t->assign([
-        'FILES_SOURCE'  => $source,
-        'FILES_ITEM'    => $item,
-        'FILES_FIELD'   => $field,
+        'FILES_SOURCE' => $source,
+        'FILES_ITEM' => $item,
+        'FILES_FIELD' => $field,
     ]);
 
     $condition = [['source', $source]];
+
+    if (is_array($item)) {
+        $item = array_map('intval', $item);
+    } else {
+        $item = (int) $item;
+    }
+    $condition[] = ['source_id', $item];
+
+    if ($field !== '_all_') {
+        $condition[] = ['source_field', $field];
+    }
+
     if ($type == 'files') {
         if (Image::currentDriver() === Image::DRIVER_GD) {
             $condition[] = [[
@@ -1218,20 +1202,9 @@ function cot_files_display($source, $item, $field = '',  $tpl = 'files.display',
         }
     }
 
-    if ($field != '_all_') {
-        $condition[] = ['source_field', $field];
-    }
-
     if ($order == '') {
         $order = 'sort_order ASC';
     }
-
-    if (is_array($item)) {
-        $item = array_map('intval', $item);
-    } else {
-        $item = (int) $item;
-    }
-    $condition[] = ['source_id', $item];
 
     $files = File::findByCondition($condition, $limit, 0, $order);
 
@@ -1249,6 +1222,7 @@ function cot_files_display($source, $item, $field = '',  $tpl = 'files.display',
             $t->assign(File::generateTags($row, 'FILES_ROW_'));
             $t->assign([
                 'FILES_ROW_NUM' => $num,
+                'FILES_ROW' => $row,
             ]);
 
             /* === Hook - Part2 : Include === */

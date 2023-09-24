@@ -187,6 +187,7 @@ class FileDto
             $result['url'] = \Cot::$cfg['mainurl'] . '/' . $this->getFullName();
 
             $thumbParam = null;
+
             if (!empty($this->file) && $this->file->id > 0) {
                 $thumbParam = $this->file;
             } elseif (!empty($this->extraData['id'])) {
@@ -197,6 +198,7 @@ class FileDto
                 $result['thumbnail'] = '';
             } elseif (($result['isImage'] && $thumbParam)) {
                 $thumbPath = cot_files_thumb($thumbParam);
+                $result['thumbnail'] = '';
                 if ($thumbPath && file_exists($thumbPath)) {
                     $result['thumbnailUrl'] = $result['thumbnail'] = \Cot::$cfg['mainurl'] . '/' . $thumbPath;
                     $result['thumbnailUrl'] .= '?lastmod=' . filemtime($thumbPath);

@@ -142,6 +142,9 @@ class File extends \Som_Model_ActiveRecord
         $filePath = \Cot::$cfg['files']['folder']. '/' . $this->_data['path'] . '/' . $this->_data['file_name'] ;
 
         $path_parts = pathinfo($filePath);
+
+        $res &= $this->removeThumbnails();
+
         $res &= @unlink($filePath);
         $fCnt = array_sum(array_map('is_file', glob($path_parts['dirname'] . '/*')));
         // Delete folder if it is empty
@@ -159,8 +162,7 @@ class File extends \Som_Model_ActiveRecord
             }
         }
 
-        $res &= $this->remove_thumbs();
-        @rmdir(\Cot::$cfg['files']['folder'] . '/_thumbs/' . $this->_data['id']);
+        @rmdir(FileService::fileThumbnailDirectory($this->_data['id']));
 
         return parent::beforeDelete();
     }
@@ -185,16 +187,14 @@ class File extends \Som_Model_ActiveRecord
 
     /**
      * Removes thumbnails matching the arguments.
-     * @return boolean       true on success, false on error
+     * @return bool true on success, false on error
      */
-    public function remove_thumbs()
+    public function removeThumbnails()
     {
         $res = true;
-
-        $thumbs_folder = \Cot::$cfg['files']['folder'] . '/_thumbs/' . $this->_data['id'];
-        $path = $thumbs_folder . '/' . \Cot::$cfg['files']['prefix'] . $this->_data['id'];
-        $thumbPaths =  glob($path . '-*', GLOB_NOSORT);
-
+        //$mask = FileService::fileThumbnailDirectory($this->_data['id']) . '/' . \Cot::$cfg['files']['prefix'] . '*';
+        $mask = FileService::fileThumbnailDirectory($this->_data['id']) . '/*';
+        $thumbPaths =  glob($mask, GLOB_NOSORT);
         if (!empty($thumbPaths) && is_array($thumbPaths)) {
             foreach ($thumbPaths as $thumb) {
                 $res &= @unlink($thumb);

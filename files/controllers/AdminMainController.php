@@ -3,6 +3,7 @@
 namespace cot\modules\files\controllers;
 
 use cot\modules\files\model\File;
+use cot\modules\files\services\FileService;
 use image\Image;
 
 /**
@@ -288,28 +289,30 @@ class AdminMainController
 
     public function delAllThumbsAction()
     {
-        if (empty(\Cot::$cfg['files']['folder']) || !file_exists(\Cot::$cfg['files']['folder'] . '/_thumbs')) {
-            cot_redirect(cot_url('admin', 'm=files', '', true));
+        $thumbnailDirectory = FileService::thumbnailDirectory();
+
+        if (empty(\Cot::$cfg['files']['folder']) || !file_exists($thumbnailDirectory)) {
+            cot_redirect(cot_url('admin', ['m' => 'files'], '', true));
         }
 
-        rrmdir(\Cot::$cfg['files']['folder'].'/_thumbs');
+        removeDirectoryRecursive($thumbnailDirectory);
 
-        // Очистим кеш, чтобы миниатюры могли перегенерироваться
-        if (\Cot::$cache){
-            if (\Cot::$cfg['cache_page']){
-                \Cot::$cache->page->clear('page');
+        // Let's clear the cache so the thumbnails can be regenerated
+        if (\Cot::$cache) {
+            if (\Cot::$cfg['cache_page']) {
+                \Cot::$cache->static->clear('page');
             }
-            if (\Cot::$cfg['cache_index']){
-                \Cot::$cache->page->clear('index');
+            if (\Cot::$cfg['cache_index']) {
+                \Cot::$cache->static->clear('index');
             }
-            if (\Cot::$cfg['cache_forums']){
-                \Cot::$cache->page->clear('forums');
+            if (\Cot::$cfg['cache_forums']) {
+                \Cot::$cache->static->clear('forums');
             }
         }
 
         cot_message(\Cot::$L['files_thumbs_removed']);
 
         // Return to the main page and show messages
-        cot_redirect(cot_url('admin', 'm=files', '', true));
+        cot_redirect(cot_url('admin', ['m' => 'files'], '', true));
     }
 }

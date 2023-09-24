@@ -3,6 +3,7 @@
 namespace cot\modules\files\services;
 
 use cot\modules\files\dto\FileDto;
+use cot\modules\files\model\File;
 use image\exception\ImageException;
 use image\Image;
 
@@ -125,7 +126,7 @@ class FileService
 
         if ($imageChanged) {
             try {
-                $image->save($file->getFullName(), (int)\Cot::$cfg['files']['quality']);
+                $image->save($file->getFullName(), (int) \Cot::$cfg['files']['quality']);
             } catch (\Exception $e) {
                 $message = "Can't save image '" . $file->getFullName() . "'";
                 if (\Cot::$usr['isadmin']) {
@@ -215,5 +216,97 @@ class FileService
         }
 
         return \Cot::$cfg['modules_dir'] . "/files/img/types/$size/archive.png";
+    }
+
+    /**
+     * Thumbnail folder absolute path
+     * @return string
+     */
+    public static function thumbnailDirectory()
+    {
+        return \Cot::$cfg['files']['folder'] . '/_thumbs';
+    }
+
+    /**
+     * Absolute path to the file's thumbnail folder.
+     * @param int $id File ID
+     * @return string
+     */
+    public static function fileThumbnailDirectory($id)
+    {
+        $hash = mb_substr(md5($id . \Cot::$cfg['site_id']), 0, 20);
+        return static::thumbnailDirectory() . '/' . $id . 'a' . $hash;
+    }
+
+    /**
+     * Absolute path for the file's thumbnail.
+     * @param int $id File ID
+     * @param int $width Thumbnail width
+     * @param int $height Thumbnail height
+     * @param int $frame Thumbnail framing mode
+     * @param string $extension
+     * @return string Path for the file on disk or false file was not found
+     */
+    public static function thumbnailPath($id, $width, $height, $frame, $extension = '')
+    {
+        if (empty($extension)) {
+            $extension = '.jpg';
+        }
+        $hash = mb_substr(md5($id . \Cot::$cfg['files']['prefix'] . \Cot::$cfg['site_id'] . $width . $height . $frame), 0, 20);
+        return static::fileThumbnailDirectory($id) . '/' . \Cot::$cfg['files']['prefix'] . $hash . '-' . $width . 'x' . $height
+            . '-' . $frame . '.' . $extension;
+    }
+
+    /**
+     * Get existing thumbnail for file with any file extension
+     * @param int $id File ID
+     * @param int $width Thumbnail width
+     * @param int $height Thumbnail height
+     * @param int $frame Thumbnail framing mode
+     * @return string|false Absolute path to the file on disk or false file was not found
+     */
+    public static function getExistingThumbnail($id, $width, $height, $frame)
+    {
+        $mask = static::thumbnailPath($id, $width, $height, $frame, '*');
+        $files = glob($mask, GLOB_NOSORT);
+        if (!$files || count($files) == 0) {
+            return false;
+        } else {
+            return $files[0];
+        }
+    }
+
+    /**
+     * Calculates new file path.
+     * Return path relative to Cot::$cfg['files']['folder']
+     *
+     * @param File $file
+     * @return ?string  Path for the file on disk
+     */
+    public static function generateFileRelativePath(File $file)
+    {
+        if (empty($file->source) || empty($file->ext)) {
+            return null;
+        }
+
+        $source_id = (int) $file->source_id;
+        $sourceId = max($source_id, 0);
+
+        $filesPath = $file->source . '/' . $sourceId;
+        if ($file->source === 'pfs') {
+            $uid = (int) $file->user_id;
+            if ($uid === 0) {
+                $uid = \Cot::$usr['id'];
+            }
+            $filesPath = $file->source . '/'. $uid. '/' . $sourceId;
+        }
+        $hash = mb_substr(
+            md5(
+                $file->source . $sourceId . $file->original_name . $file->id . \Cot::$cfg['files']['prefix'] . \Cot::$cfg['site_id'] . mt_rand()
+            ),
+            0,
+            20
+        );
+        return $filesPath . '/' . \Cot::$cfg['files']['prefix'] . $file->id . 'a' . $hash . '.' . $file->ext;
     }
 }

@@ -6,7 +6,7 @@ Name=Files
 Description=Personal File Space and attach files to posts and pages
 Category=files-media
 Version=2.0.0-beta1
-Date=2023-07-29
+Date=2023-09-24
 Author=Cotonti Team, Kalnov Alexey <kalnovalexey@yandex.ru>
 Copyright=(c) Cotonti Team, 2014-2023 Lily Software https://lily-software.com
 Notes=DO NOT FORGET to create a writable folder for the files
@@ -18,7 +18,7 @@ Recommends_modules=page,users
 
 [BEGIN_COT_EXT_CONFIG]
 folder=01:string::datas/files:Directory for files
-prefix=02:string::file_:File prefix
+prefix=02:string::file-:File prefix
 exts=03:text::avif,bmp,gif,jpg,jpeg,heic,png,tga,tpic,wbmp,webp,xbm,zip,rar,7z,gz,bz2,pdf,djvu,mp3,ogg,wma,avi,divx,mpg,mpeg,swf,txt,doc,docx,xls,xlsx:Allowed extensions (comma separated, no dots and spaces)
 filecheck=04:radio::1:
 nomimepass=05:radio::1:
@@ -45,7 +45,7 @@ th_separator=30:separator:::
 thumbs=31:radio::1:Display image thumbnails
 thumb_width=32:string::160:Default thumbnail width
 thumb_height=33:string::160:Default thumbnail height
-thumb_framing=34:select:height,width,auto,border_auto,crop:auto:Default thumbnail framing mode
+thumb_framing=34:select:height,width,inset,outbound:inset:Default thumbnail framing mode
 thumb_border=36:string::1:
 thumb_bordercolor=37:string::999999:
 thumb_bgcolor=38:string::FFFFFF:
@@ -61,7 +61,7 @@ av_separator=50:separator:::
 
 avatar_width=51:string::160:Default avatar width
 avatar_height=52:string::160:Default avatar height
-avatar_framing=53:select:height,width,auto,border_auto,crop:crop:Default avatar framing mode
+avatar_framing=53:select:height,width,inset,outbound:outbound:Default avatar framing mode
 [END_COT_EXT_CONFIG]
 ==================== */
 

@@ -8,7 +8,7 @@
     <div class="carousel-inner">
         <!-- BEGIN: FILES_ROW -->
         <div class="item<!-- IF {FILES_ROW_NUM} == 1 --> active<!-- ENDIF -->">
-            <img src="{FILES_ROW_ID|cot_files_thumb($this,1153,523,'crop')}" alt="{FILES_ROW_FILENAME}" class="img-responsive" />
+            <img src="{FILES_ROW|cot_filesThumbnailUrl($this,1153,523,'outbound')}" alt="{FILES_ROW_FILENAME}" class="img-responsive" />
             <!-- IF {FILES_ROW_TITLE} --><div class="carousel-caption">{FILES_ROW_TITLE}</div> <!-- ENDIF -->
         </div>
         <!-- END: FILES_ROW -->

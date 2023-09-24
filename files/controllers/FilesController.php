@@ -374,7 +374,7 @@ class FilesController
         }
 
         $path = \Cot::$cfg['files']['folder'] . '/' . $file->fullName;
-        $file->remove_thumbs();
+        $file->removeThumbnails();
         if (file_exists($path)) {
             if (!@unlink($path)) {
                 @unlink($fileData->getFullName());
@@ -384,7 +384,13 @@ class FilesController
             }
         }
 
-        $relativeFileName = cot_files_path($file->source, $file->source_id, $file->id, $fileData->ext, $file->user_id);
+        // Fill new data
+        $file->size = $fileData->size;
+        $file->ext = $fileData->ext;
+        $file->is_img = $fileData->isImage;
+        $file->original_name =  $fileData->original_name;
+
+        $relativeFileName = FileService::generateFileRelativePath($file);
         // Path relative to site root directory
         $fileFullName = \Cot::$cfg['files']['folder'] . '/' . $relativeFileName;
 
@@ -403,10 +409,6 @@ class FilesController
 
         $file->path = dirname($relativeFileName);
         $file->file_name = $fileData->file_name;
-        $file->size = $fileData->size;
-        $file->ext = $fileData->ext;
-        $file->is_img = $fileData->isImage;
-        $file->original_name =  $fileData->original_name;
         $file->save();
 
         echo json_encode($fileData->toArray());

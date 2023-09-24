@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS `cot_files` (
 	PRIMARY KEY(`id`),
 	KEY `cot_files_source_idx` (`source`, `source_id`),
 	KEY `cot_files_source_2_idx` (`source`, `source_id`, `source_field`),
+    KEY `cot_files_source_is_img_idx` (`source`, `source_id`, `is_img`),
+	KEY `cot_files_source_2_is_img_idx` (`source`, `source_id`, `source_field`, `is_img`),
 	KEY `cot_files_img_idx` (`is_img`)
 );
 

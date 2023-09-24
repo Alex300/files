@@ -33,8 +33,8 @@
                 <!-- BEGIN: FILES_ROW -->
                 <div class="col-xs-4 col-sm-2" data-source="folder-file-row-tooltip-{FILES_ROW_ID}" data-toggle="tooltip"
                      title="" data-html="true">
-                    <a href="{FILES_ROW_ID|cot_files_thumb($this,1600,800,'auto')}" rel="" title="{FILES_ROW_TITLE}" class="thumbnail" >
-                        <img src="{FILES_ROW_ID|cot_files_thumb($this,185,185,'crop')}" alt="{FILES_ROW_FILENAME}" />
+                    <a href="{FILES_ROW|cot_files_thumb($this,1600,800,'inset')}" rel="" title="{FILES_ROW_TITLE}" class="thumbnail" >
+                        <img src="{FILES_ROW|cot_files_thumb($this,185,185,'outbound')}" alt="{FILES_ROW_FILENAME}" />
                     </a>
                 </div>
                 <div id="folder-file-row-tooltip-{FILES_ROW_ID}" class="hidden">
@@ -101,8 +101,8 @@
     <!-- BEGIN: ROW -->
     <div class="col-xs-4 col-sm-2" data-source="folder-file-row-tooltip-{FILES_ROW_ID}" data-toggle="tooltip"
          title="" data-html="true">
-        <a href="{FILES_ROW_ID|cot_files_thumb($this,1600,800,'auto')}" rel="" title="{FILES_ROW_TITLE}" class="thumbnail" >
-            <img src="{FILES_ROW_ID|cot_files_thumb($this,185,185,'crop')}" alt="{FILES_ROW_FILENAME}" />
+        <a href="{FILES_ROW|cot_files_thumb($this,1600,800,'inset', 1, 0)}" rel="" title="{FILES_ROW_TITLE}" class="thumbnail" >
+            <img src="{FILES_ROW|cot_files_thumb($this,185,185,'outbound')}" alt="{FILES_ROW_FILENAME}" />
         </a>
     </div>
     <div id="folder-file-row-tooltip-{FILES_ROW_ID}" class="hidden">

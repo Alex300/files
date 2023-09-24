@@ -3,6 +3,8 @@
  * Update to v.2.0.0
  */
 
+use cot\modules\files\services\FileService;
+
 global $db_files, $db_files_folders;
 
 if (empty($db_files)) {
@@ -48,6 +50,8 @@ Cot::$db->query(
     'ALTER TABLE ' . Cot::$db->quoteTableName(Cot::$db->files)
     . " ADD INDEX `cot_files_source_idx` (`source`, `source_id`),
     ADD INDEX `cot_files_source_2_idx` (`source`, `source_id`, `source_field`),
+    ADD INDEX `cot_files_source_is_img_idx` (`source`, `source_id`, `is_img`),
+    ADD INDEX `cot_files_source_2_is_img_idx` (`source`, `source_id`, `source_field`, `is_img`),
     ADD INDEX `cot_files_img_idx` (`is_img`);"
 );
 
@@ -55,6 +59,69 @@ Cot::$db->query(
 // split fill path to directory name and file name
 $statement = Cot::$db->query('SELECT id, path FROM ' . Cot::$db->quoteTableName(Cot::$db->files));
 while ($row = $statement->fetch()) {
-    Cot::$db->update(Cot::$db->files, ['file_name' => basename($row['path']), 'path' => dirname($row['path'])]);
+    Cot::$db->update(Cot::$db->files, ['file_name' => basename($row['path']), 'path' => dirname($row['path'])], "id = {$row['id']}");
 }
 $statement->closeCursor();
+
+// Update framing mode in module config: 'crop'->'outbound', 'auto'->'inset'
+Cot::$db->update(
+    Cot::$db->config,
+    ['config_value' => 'outbound'],
+    "config_owner = 'module' AND config_cat = 'files' AND config_name = 'thumb_framing' AND config_value = 'crop'"
+);
+Cot::$db->update(
+    Cot::$db->config,
+    ['config_value' => 'inset'],
+    "config_owner = 'module' AND config_cat = 'files' AND config_name = 'thumb_framing' AND config_value = 'auto'"
+);
+
+$thumbnailDirectory = \Cot::$cfg['files']['folder'] . '/_thumbs'; //FileService::thumbnailDirectory();
+
+if (file_exists($thumbnailDirectory)) {
+    // Remove all thumbnails
+    removeDirectoryRecursive($thumbnailDirectory);
+
+    // Let's clear the cache so the thumbnails can be regenerated
+    if (\Cot::$cache) {
+        if (\Cot::$cfg['cache_page']) {
+            \Cot::$cache->static->clear('page');
+        }
+        if (\Cot::$cfg['cache_index']) {
+            \Cot::$cache->static->clear('index');
+        }
+        if (\Cot::$cfg['cache_forums']) {
+            \Cot::$cache->static->clear('forums');
+        }
+    }
+}
+
+if (!function_exists('removeDirectoryRecursive')) {
+    /**
+     * Recursive remove directory
+     * @param string $dir
+     * @return bool
+     */
+    function removeDirectoryRecursive($dir)
+    {
+        if (empty($dir) && $dir != '0') {
+            return false;
+        }
+
+        if (is_dir($dir)) {
+            $objects = scandir($dir);
+            foreach ($objects as $object) {
+                if ($object != '.' && $object != '..') {
+                    if (filetype($dir . '/' . $object) == 'dir') {
+                        removeDirectoryRecursive($dir . '/' . $object);
+                    } else {
+                        unlink($dir . "/" . $object);
+                    }
+                }
+            }
+            reset($objects);
+            rmdir($dir);
+        }
+
+        return true;
+    }
+}

@@ -41,7 +41,7 @@ if (!function_exists('files_thumb_bbcode')) {
 			return $m[0].'err';
 		}
 		$params['id'] = (int) $params['id'];
-		$src = cot_files_thumb($params['id'], $params['width'], $params['height'], $params['frame']);
+		$src = cot_filesThumbnailUrl($params['id'], $params['width'], $params['height'], $params['frame']);
 		if (!$src) {
 			return $m[0].'err2';
 		}

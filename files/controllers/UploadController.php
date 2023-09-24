@@ -131,10 +131,8 @@ class UploadController
             if (!$multi) {
                 return $this->generateResponse($fileData->toArray(), $print_response);
             }
-
             $res['files'][] = $fileData->toArray();
         }
-
 
         return $this->generateResponse($res, $print_response);
     }
@@ -525,7 +523,7 @@ class UploadController
         }
 
         // Path relative to files root directory
-        $relativeFileName = cot_files_path($source, $item, $objFile->id, $objFile->ext, $objFile->user_id);
+        $relativeFileName = FileService::generateFileRelativePath($objFile);
         $objFile->path = dirname($relativeFileName);
         $objFile->file_name = basename($relativeFileName);
 
