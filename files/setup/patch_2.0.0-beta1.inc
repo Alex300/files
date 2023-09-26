@@ -56,7 +56,7 @@ Cot::$db->query(
 );
 
 
-// split fill path to directory name and file name
+// split file path to directory name and file name
 $statement = Cot::$db->query('SELECT id, path FROM ' . Cot::$db->quoteTableName(Cot::$db->files));
 while ($row = $statement->fetch()) {
     Cot::$db->update(Cot::$db->files, ['file_name' => basename($row['path']), 'path' => dirname($row['path'])], "id = {$row['id']}");
@@ -73,6 +73,17 @@ Cot::$db->update(
     Cot::$db->config,
     ['config_value' => 'inset'],
     "config_owner = 'module' AND config_cat = 'files' AND config_name = 'thumb_framing' AND config_value = 'auto'"
+);
+
+Cot::$db->update(
+    Cot::$db->config,
+    ['config_value' => 'outbound'],
+    "config_owner = 'module' AND config_cat = 'files' AND config_name = 'avatar_framing' AND config_value = 'crop'"
+);
+Cot::$db->update(
+    Cot::$db->config,
+    ['config_value' => 'inset'],
+    "config_owner = 'module' AND config_cat = 'files' AND config_name = 'avatar_framing' AND config_value = 'auto'"
 );
 
 $thumbnailDirectory = \Cot::$cfg['files']['folder'] . '/_thumbs'; //FileService::thumbnailDirectory();
