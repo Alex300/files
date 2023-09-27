@@ -695,9 +695,11 @@ function cot_files_thumb($id, $width = 0, $height = 0, $frame = '', $watermark =
 
     // Existing thumbnail
     $thumbPath = FileService::getExistingThumbnail($id, $width, $height, $frame);
+    $thumbnailExists = true;
 
     // Generate a new thumbnail
     if (!$thumbPath || !file_exists($thumbPath)) {
+        $thumbnailExists = false;
         if (!isset($row)) {
             $row = File::getById($id);
         }

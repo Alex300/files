@@ -46,9 +46,6 @@ thumbs=31:radio::1:Display image thumbnails
 thumb_width=32:string::160:Default thumbnail width
 thumb_height=33:string::160:Default thumbnail height
 thumb_framing=34:select:height,width,inset,outbound:inset:Default thumbnail framing mode
-thumb_border=36:string::1:
-thumb_bordercolor=37:string::999999:
-thumb_bgcolor=38:string::FFFFFF:
 upscale=39:radio::0:Upscale images smaller than thumb size
 
 wm_separator=40:separator:::

@@ -146,16 +146,9 @@ $L['cfg_thumb_framing'] = 'Default thumbnail framing mode';
 $L['cfg_thumb_framing_params'] = [
     'height' => 'By height',
     'width' => 'By width',
-    'auto' => 'Auto',
-    'border_auto' => 'Auto with border',
-    'crop' => 'Crop',
+    'inset' => 'Auto',
+    'outbound' => 'Crop',
 ];
-$L['cfg_thumb_border'] = 'Thumbnails, border size, px';
-$L['cfg_thumb_border_hint'] = 'If thumbnail framing mode is «Auto with border»';
-$L['cfg_thumb_bordercolor'] = 'Thumbnails, border color';
-$L['cfg_thumb_bordercolor_hint'] = 'Hex color code. If thumbnail framing mode is «Auto with border»';
-$L['cfg_thumb_bgcolor'] = 'Thumbnails, background color';
-$L['cfg_thumb_bgcolor_hint'] = 'If thumbnail framing mode is «Auto with border»';
 $L['cfg_upscale'] = 'Upscale images smaller than thumb size';
 
 $L['cfg_wm_separator'] = 'Watermark options';
@@ -169,10 +162,4 @@ $L['cfg_av_separator'] = 'User avatar options';
 $L['cfg_avatar_width'] = 'Default avatar width';
 $L['cfg_avatar_height'] = 'Default avatar height';
 $L['cfg_avatar_framing'] = 'Default avatar framing mode';
-$L['cfg_avatar_framing_params'] = [
-    'height' => 'By height',
-    'width' => 'By width',
-    'auto' => 'Auto',
-    'border_auto' => 'Auto with border',
-    'crop' => 'Crop',
-];
+$L['cfg_avatar_framing_params'] = $L['cfg_thumb_framing_params'];
