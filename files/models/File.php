@@ -45,7 +45,6 @@ if (empty($GLOBALS['db_files'])) {
  * @property int    $updated_by     ID пользователя, обновившего файл
  *
  * @property-read string $fullName The filename with path relative to the Files module root directory for files (Cot::$cfg['files']['folder'])
- * @property-read string $icon File icon url
  */
 class File extends \Som_Model_ActiveRecord
 {
@@ -375,7 +374,7 @@ class File extends \Som_Model_ActiveRecord
         }
         /* ===== */
 
-        [\Cot::$usr['auth_read'], \Cot::$usr['auth_write'], \Cot::$usr['isadmin']] = cot_auth('files', 'a');
+        [Cot::$usr['auth_read'], Cot::$usr['auth_write'], Cot::$usr['isadmin']] = cot_auth('files', 'a');
 
         if (
             ($item instanceof File)
@@ -417,7 +416,7 @@ class File extends \Som_Model_ActiveRecord
                     'UPDATED' => $item->updated,
                     'UPDATE_DATE' => cot_date($date_format, strtotime($item->updated)),
                     'UPDATED_RAW' => strtotime($item->updated),
-                    'ICON' => $item->icon,
+                    'ICON' => FileService::typeIcon($item->ext, $item->mime_type),
                 ];
 
                 // Extrafields
