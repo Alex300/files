@@ -30,17 +30,17 @@ if(cot_auth('files', 'a', 'W')){
     }
 
     $t->assign(array(
-        $pfs_tag . '_FORM_PFS' => cot_files_buildPfs($usr['id'], 'pageform', 'rpagetext',$L['Mypfs'], $sys['parser']),
-        $pfs_tag . '_FORM_SFS' => (cot_auth('files', 'a', 'A')) ? cot_files_buildPfs(0, 'pageform', 'rpagetext',
+        $pfs_tag . '_FORM_PFS' => cot_filesBuildPfs($usr['id'], 'pageform', 'rpagetext',$L['Mypfs'], $sys['parser']),
+        $pfs_tag . '_FORM_SFS' => (cot_auth('files', 'a', 'A')) ? cot_filesBuildPfs(0, 'pageform', 'rpagetext',
                                 $L['SFS'], $sys['parser']) : '',
-        $pfs_tag . '_FORM_URL_PFS' => cot_files_buildPfs($usr['id'], 'pageform', 'rpageurl', $L['Mypfs']),
-        $pfs_tag . '_FORM_URL_SFS' => (cot_auth('files', 'a', 'A')) ? cot_files_buildPfs(0, 'pageform', 'rpageurl',
+        $pfs_tag . '_FORM_URL_PFS' => cot_filesBuildPfs($usr['id'], 'pageform', 'rpageurl', $L['Mypfs']),
+        $pfs_tag . '_FORM_URL_SFS' => (cot_auth('files', 'a', 'A')) ? cot_filesBuildPfs(0, 'pageform', 'rpageurl',
                                 $L['SFS']) : '',
 
         // Унифицированные теги
-        'PAGE_FORM_PFS' => cot_files_buildPfs($usr['id'], 'pageform', 'rpagetext',$L['Mypfs'], $sys['parser']),
-        'PAGE_FORM_SFS' => (cot_auth('files', 'a', 'A')) ? cot_files_buildPfs(0, 'pageform', 'rpagetext', $L['SFS'], $sys['parser']) : '',
-        'PAGE_FORM_URL_PFS' => cot_files_buildPfs($usr['id'], 'pageform', 'rpageurl', $L['Mypfs']),
-        'PAGE_FORM_URL_SFS' => (cot_auth('files', 'a', 'A')) ? cot_files_buildPfs(0, 'pageform', 'rpageurl',  $L['SFS']) : ''
+        'PAGE_FORM_PFS' => cot_filesBuildPfs($usr['id'], 'pageform', 'rpagetext',$L['Mypfs'], $sys['parser']),
+        'PAGE_FORM_SFS' => (cot_auth('files', 'a', 'A')) ? cot_filesBuildPfs(0, 'pageform', 'rpagetext', $L['SFS'], $sys['parser']) : '',
+        'PAGE_FORM_URL_PFS' => cot_filesBuildPfs($usr['id'], 'pageform', 'rpageurl', $L['Mypfs']),
+        'PAGE_FORM_URL_SFS' => (cot_auth('files', 'a', 'A')) ? cot_filesBuildPfs(0, 'pageform', 'rpageurl',  $L['SFS']) : ''
     ));
 }

@@ -125,6 +125,10 @@ $L['cfg_chunkSize'] = 'Загружать файлы чанками по (бай
 $L['cfg_chunkSize_hint'] = 'Большие файлы могут быть загружены небольшими частями.
     Это позволяет загружать файлы большего размера, чем указано в ограничениях на загрузку файлов через $_POST.
     (Оставьте пустым для отключения)';
+$L['cfg_fixExtensionsByMime'] = 'Исправлять расширения файлов в соответствии с Mime-типом';
+$L['cfg_fixExtensionsByMime_hint'] = 'Лучше работает с установленным '
+    . '<a href="https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/" target="_blank">'
+    . 'https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/</a>';
 
 $L['cfg_img_separator'] = 'Настройки изображений';
 $L['cfg_image_convert'] = 'Конвертировать изображения в JPEG при закачке';

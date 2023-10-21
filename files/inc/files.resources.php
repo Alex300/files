@@ -48,10 +48,10 @@ Cot::$R['files_pfs_code_header_javascript'] = '
 /**
  * PFS Folder Types
  */
-Cot::$R['files_icon_gallery'] =
-	'<img class="icon" src="images/icons/'.Cot::$cfg['defaulticons'].'/gallery.png" alt="'.Cot::$L['Gallery'].'" />';
-Cot::$R['files_icon_folder'] =
-	'<img class="icon" src="images/icons/'.Cot::$cfg['defaulticons'].'/folder.png" alt="'.Cot::$L['Folder'].'" />';
+Cot::$R['files_icon_gallery'] = '<img class="icon" src="' . Cot::$cfg['icons_dir'] . '/' . Cot::$cfg['defaulticons'] .
+    '/modules/pfs/gallery.png" alt="' . Cot::$L['Gallery'] . '" />';
+Cot::$R['files_icon_folder'] = '<img class="icon" src="' . Cot::$cfg['icons_dir'] . '/' . Cot::$cfg['defaulticons'] .
+    '/modules/pfs/folder.png" alt="' . Cot::$L['Folder'] . '" />';
 
 /**
  * Image / Thumb / Link Insert Icons

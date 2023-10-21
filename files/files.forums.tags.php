@@ -40,7 +40,7 @@ if(cot_auth('files', 'a', 'W')){
     }
 
     $t->assign(array(
-        'FORUMS_' . $pfs_tag . '_PFS' => cot_files_buildPfs($usr['id'], $pfs_src, $pfs_name, Cot::$L['Mypfs']),
-        'FORUMS_' . $pfs_tag . '_SFS' => (cot_auth('files', 'a', 'A')) ? cot_files_buildPfs(0, $pfs_src, $pfs_name, Cot::$L['SFS']) : '',
+        'FORUMS_' . $pfs_tag . '_PFS' => cot_filesBuildPfs($usr['id'], $pfs_src, $pfs_name, Cot::$L['Mypfs']),
+        'FORUMS_' . $pfs_tag . '_SFS' => (cot_auth('files', 'a', 'A')) ? cot_filesBuildPfs(0, $pfs_src, $pfs_name, Cot::$L['SFS']) : '',
     ));
 }

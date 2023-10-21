@@ -1,14 +1,17 @@
 <?php
 
-namespace cot\modules\files\model;
+namespace cot\modules\files\models;
 
+use Cot;
 use cot\modules\files\services\FileService;
+use cot\modules\files\services\ThumbnailService;
 use image\Image;
+use Throwable;
 
 defined('COT_CODE') or die('Wrong URL.');
 
 if (empty($GLOBALS['db_files'])) {
-    \Cot::$db->registerTable('files');
+    Cot::$db->registerTable('files');
     cot_extrafields_register_table('files');
 }
 
@@ -16,8 +19,8 @@ if (empty($GLOBALS['db_files'])) {
  * Модель File
  *
  * @method static File getById($pk, $staticCache = true);
- * @method static File fetchOne($conditions = array(), $order = '')
- * @method static File[] findByCondition($conditions = array(), $limit = 0, $offset = 0, $order = '')
+ * @method static File fetchOne($conditions = [], $order = '')
+ * @method static File[] findByCondition($conditions = [], $limit = 0, $offset = 0, $order = '')
  *
  * @property int    $id
  * @property int    $user_id        id пользователя - владельца или 0 - если это site file space
@@ -28,9 +31,11 @@ if (empty($GLOBALS['db_files'])) {
  * @property string $file_name      Имя файла
  * @property string $original_name  Исходное имя файла
  * @property string $ext            Расширение файла
+ * @property string $mime_type      Mime type
  * @property bool   $is_img         Является ли изображением
  * @property int    $size           Размер
  * @property string $title          Название
+ * @property string $filesystem_name Имя файлового хранилища
  * @property int    $downloads_count Количество скачиваний
  * @property int    $sort_order     Порядок для отображения
  * @property string $unikey         Ключ формы для хранения временных файлов от несуществующих объектов
@@ -61,15 +66,6 @@ class File extends \Som_Model_ActiveRecord
         parent::__init($db);
     }
 
-    /**
-     * @return string
-     * @todo перенести в сервис (лучше убрать)
-     */
-    public function getIcon()
-    {
-        return FileService::typeIcon($this->_data['ext']);
-    }
-
     public function makeAvatar()
     {
         if ($this->_data['source'] !== 'pfs' || $this->_data['is_img'] === 0 || !$this->_data['user_id']) {
@@ -91,15 +87,14 @@ class File extends \Som_Model_ActiveRecord
      */
     public function getFullName()
     {
+        if (empty($this->_data['path']) || empty($this->_data['file_name'])) {
+            return '';
+        }
         return $this->_data['path'] . '/' . $this->_data['file_name'];
     }
 
     protected function beforeInsert()
     {
-//        if (empty($this->_data['file_updated'])) {
-//            $this->_data['file_updated'] = date('Y-m-d H:i:s', \Cot::$sys['now']);
-//        }
-
         if (empty($this->_data['sort_order'])) {
             $this->_data['sort_order'] = ((int) static::$_db->query(
                 "SELECT MAX(sort_order) FROM " . static::$_tbname . " WHERE source = ? AND source_id = ?",
@@ -118,7 +113,7 @@ class File extends \Som_Model_ActiveRecord
                 ['source_id', $this->_data['source_id']],
             );
 
-            $folder = \files_model_Folder::getById($this->_data['source_id']);
+            $folder = \files_models_Folder::getById($this->_data['source_id']);
             if ($folder) {
                 $folder->ff_count = File::count($condition);
                 $folder->save();
@@ -128,41 +123,49 @@ class File extends \Som_Model_ActiveRecord
         return parent::afterInsert();
     }
 
-    protected function beforeUpdate()
-    {
-        //$this->_data['file_updated'] = date('Y-m-d H:i:s', \Cot::$sys['now']);
-
-        return parent::beforeUpdate();
-    }
-
     protected function beforeDelete()
     {
         $res = true;
 
-        $filePath = \Cot::$cfg['files']['folder']. '/' . $this->_data['path'] . '/' . $this->_data['file_name'] ;
+        $filePath = $this->getFullName();
+        $filesystem = FileService::getFilesystemByName($this->filesystem_name);
 
-        $path_parts = pathinfo($filePath);
+        $res = $res && $this->removeThumbnails();
 
-        $res &= $this->removeThumbnails();
-
-        $res &= @unlink($filePath);
-        $fCnt = array_sum(array_map('is_file', glob($path_parts['dirname'] . '/*')));
-        // Delete folder if it is empty
-        if ($fCnt === 0)  {
-            @rmdir($path_parts['dirname']);
+        if (empty($this->_data['path']) || empty($this->_data['file_name'])) {
+            return $res && parent::beforeDelete();
         }
 
-        // Delete user's folder in pfs if it is empty
-        if ($this->_data['source'] == 'pfs') {
-            $path = \Cot::$cfg['files']['folder'] . '/pfs/' . $this->_data['user_id'];
-            $fCnt = array_sum(array_map('is_file', glob($path . '/*')));
+        try {
+            $filesystem->delete($filePath);
+        } catch (Throwable $e) {
+            return false;
+        }
 
-            if ($fCnt === 0) {
-                @rmdir($path);
+        $listing = $filesystem->listContents($this->_data['path'], false);
+        if ($listing !== null) {
+            $hasMoreFiles = false;
+            foreach ($listing as $item) {
+                $hasMoreFiles = true;
+                break;
+            }
+
+            // Delete folder if it is empty
+            if (!$hasMoreFiles)  {
+                $filesystem->deleteDirectory($this->_data['path']);
             }
         }
 
-        @rmdir(FileService::fileThumbnailDirectory($this->_data['id']));
+        // Delete user's folder in pfs if it is empty
+        // @todo
+//        if ($this->_data['source'] == 'pfs') {
+//            $path = \Cot::$cfg['files']['folder'] . '/pfs/' . $this->_data['user_id'];
+//            $fCnt = array_sum(array_map('is_file', glob($path . '/*')));
+//
+//            if ($fCnt === 0) {
+//                @rmdir($path);
+//            }
+//        }
 
         return parent::beforeDelete();
     }
@@ -175,7 +178,7 @@ class File extends \Som_Model_ActiveRecord
                 ['source_id', $this->_data['source_id']],
             ];
 
-            $folder = \files_model_Folder::getById($this->_data['source_id']);
+            $folder = \files_models_Folder::getById($this->_data['source_id']);
             if ($folder) {
                 $folder->ff_count = File::count($condition);
                 $folder->save();
@@ -189,19 +192,21 @@ class File extends \Som_Model_ActiveRecord
      * Removes thumbnails matching the arguments.
      * @return bool true on success, false on error
      */
-    public function removeThumbnails()
+    public function removeThumbnails(): bool
     {
-        $res = true;
-        //$mask = FileService::fileThumbnailDirectory($this->_data['id']) . '/' . \Cot::$cfg['files']['prefix'] . '*';
-        $mask = FileService::fileThumbnailDirectory($this->_data['id']) . '/*';
-        $thumbPaths =  glob($mask, GLOB_NOSORT);
-        if (!empty($thumbPaths) && is_array($thumbPaths)) {
-            foreach ($thumbPaths as $thumb) {
-                $res &= @unlink($thumb);
-            }
+        if (!$this->_data['is_img']) {
+            return true;
         }
 
-        return $res;
+        $thumbnailDirectory = ThumbnailService::fileThumbnailDirectory($this->_data['id'], true);
+        try {
+            $filesystem = FileService::getFilesystem($this->_data['source'], $this->_data['source_field'], true);
+            $filesystem->deleteDirectory($thumbnailDirectory);
+        } catch (Throwable $e) {
+            return false;
+        }
+
+        return true;
     }
 
     public static function fieldList()
@@ -262,6 +267,13 @@ class File extends \Som_Model_ActiveRecord
                 'length' => '16',
                 'description' => 'Расширение файла'
             ],
+            'mime_type' => [
+                'name' => 'mime_type',
+                'type' => 'varchar',
+                'length' => '255',
+                'default'   => '',
+                'description' => 'Mime type'
+            ],
             'is_img' => [
                 'name' => 'is_img',
                 'type' => 'bool',
@@ -281,6 +293,13 @@ class File extends \Som_Model_ActiveRecord
                 //'nullable' => true,
                 'default' => '',
                 'description' => 'Название',
+            ],
+            'filesystem_name' => [
+                'name' => 'filesystem_name',
+                'type' => 'varchar',
+                'length' => '255',
+                'default'   => '',
+                'description' => 'Имя файлового хранилища'
             ],
             'downloads_count' => [
                 'name' => 'downloads_count',
@@ -356,7 +375,7 @@ class File extends \Som_Model_ActiveRecord
         }
         /* ===== */
 
-        list(\Cot::$usr['auth_read'], \Cot::$usr['auth_write'], \Cot::$usr['isadmin']) = cot_auth('files', 'a');
+        [\Cot::$usr['auth_read'], \Cot::$usr['auth_write'], \Cot::$usr['isadmin']] = cot_auth('files', 'a');
 
         if (
             ($item instanceof File)

@@ -1,8 +1,8 @@
 <!-- BEGIN: MAIN -->
-<style type="text/css">
-.files-downloads { border:0; }
-.files-downloads .files-icon { width:32px;padding:4px 8px 8px 4px; }
-.files-downloads .files-fileinfo { text-align: left;padding:4px 8px 4px 8px;}
+<style>
+	.files-downloads { border:0; }
+	.files-downloads .files-icon { width: 60px; padding:4px 8px 8px 4px; }
+	.files-downloads .files-fileinfo { text-align: left;padding:4px 8px 4px 8px;}
 </style>
 <table class="files-downloads">
 	<!-- BEGIN: FILES_ROW -->

@@ -2,9 +2,12 @@
 
 namespace cot\modules\files\controllers;
 
-use cot\modules\files\model\File;
+use Cot;
+use cot\modules\files\models\File;
 use cot\modules\files\services\FileService;
+use cot\modules\files\services\ThumbnailService;
 use image\Image;
+use Throwable;
 
 /**
  * @package Files
@@ -94,7 +97,7 @@ class AdminMainController
 
         $urlParams = array('m'=>'files', 'a'=> 'allpfs');
         $perPage = \Cot::$cfg['maxrowsperpage'];
-        list($pg, $d, $durl) = cot_import_pagenav('d', $perPage);
+        [$pg, $d, $durl] = cot_import_pagenav('d', $perPage);
 
         /* === Hook === */
         foreach (cot_getextplugins('admin.files.allpfs.first') as $pl)
@@ -216,7 +219,7 @@ class AdminMainController
         $trashTable = '';
         if (cot_plugin_active('trashcan')) {
             require_once cot_incfile('trashcan', 'plug');
-            $trashTable = \Cot::$db->trash;
+            $trashTable = Cot::$db->trash;
         }
 
         $count = 0;
@@ -225,15 +228,13 @@ class AdminMainController
             // Remove unused forum attachments
             require_once cot_incfile('forums', 'module');
 
-            $postsTable = \Cot::$db->forum_posts;
+            $postsTable = Cot::$db->forum_posts;
 
             $join = '';
             $where = '';
             if (cot_plugin_active('trashcan')) {
                 // If the post is deleted to the trash, we do not delete its files
-                $join = "LEFT JOIN $trashTable ON {$trashTable}.tr_itemid = {$filesTable}.source_id AND " .
-                    "{$trashTable}.tr_type = 'forumpost'";
-
+                $join = "LEFT JOIN $trashTable ON {$trashTable}.tr_itemid = {$filesTable}.source_id AND " . "{$trashTable}.tr_type = 'forumpost'";
                 $where = " AND {$trashTable}.tr_id IS NULL";
             }
 
@@ -255,7 +256,7 @@ class AdminMainController
             // Remove unused page attachments
             require_once cot_incfile('page', 'module');
 
-            $pageTable = \Cot::$db->pages;
+            $pageTable = Cot::$db->pages;
 
             $join = '';
             $where = '';
@@ -279,9 +280,9 @@ class AdminMainController
             }
         }
 
-        $count += cot_files_formGarbageCollect();
+        $count += FileService::formGarbageCollect();
 
-        cot_message(\Cot::$L['files_items_removed'].': ' . $count);
+        cot_message(Cot::$L['files_items_removed'].': ' . $count);
 
         // Return to the main page and show messages
         cot_redirect(cot_url('admin', 'm=files', '', true));
@@ -289,28 +290,47 @@ class AdminMainController
 
     public function delAllThumbsAction()
     {
-        $thumbnailDirectory = FileService::thumbnailDirectory();
+        $thumbnailDirectory = ThumbnailService::thumbnailDirectory(true);
+        $fileSystem = FileService::getFilesystemByName('local');
 
-        if (empty(\Cot::$cfg['files']['folder']) || !file_exists($thumbnailDirectory)) {
-            cot_redirect(cot_url('admin', ['m' => 'files'], '', true));
+        $result = 0;
+        // Проверяем существование папки с миниатюрами только для того, чтобы потом не сбрасывать кеш без необходимости
+        if ($fileSystem->directoryExists($thumbnailDirectory)) {
+            $result++;
+            $fileSystem->deleteDirectory($thumbnailDirectory);
         }
 
-        removeDirectoryRecursive($thumbnailDirectory);
-
-        // Let's clear the cache so the thumbnails can be regenerated
-        if (\Cot::$cache) {
-            if (\Cot::$cfg['cache_page']) {
-                \Cot::$cache->static->clear('page');
-            }
-            if (\Cot::$cfg['cache_index']) {
-                \Cot::$cache->static->clear('index');
-            }
-            if (\Cot::$cfg['cache_forums']) {
-                \Cot::$cache->static->clear('forums');
+        if (!empty(Cot::$cfg['files']['storages'])) {
+            foreach (array_keys(Cot::$cfg['files']['storages']) as $fileSystemNames) {
+                try {
+                    $fileSystem = FileService::getFilesystemByName($fileSystemNames);
+                } catch (Throwable $e) {
+                    continue;
+                }
+                if ($fileSystem->directoryExists($thumbnailDirectory)) {
+                    $result++;
+                    $fileSystem->deleteDirectory($thumbnailDirectory);
+                }
             }
         }
 
-        cot_message(\Cot::$L['files_thumbs_removed']);
+
+        if ($result > 0) {
+            // Let's clear the cache so the thumbnails can be regenerated
+            if (Cot::$cache) {
+                if (Cot::$cfg['cache_page']) {
+                    Cot::$cache->static->clear('page');
+                }
+                if (Cot::$cfg['cache_index']) {
+                    Cot::$cache->static->clear('index');
+                }
+                if (Cot::$cfg['cache_forums']) {
+                    Cot::$cache->static->clear('forums');
+                }
+            }
+
+            cot_message(Cot::$L['files_thumbs_removed']);
+        }
 
         // Return to the main page and show messages
         cot_redirect(cot_url('admin', ['m' => 'files'], '', true));

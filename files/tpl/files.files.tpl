@@ -9,7 +9,7 @@
     <meta charset="utf-8">
     <title>{PHP.L.files_attachments}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {PHP|cot_files_loadBootstrap()}
+    {PHP|cot_filesLoadBootstrap}
     {PHP.out.head_head}
     <!-- Generic page styles -->
     <link rel="stylesheet" href="{PHP.cfg.modules_dir}/files/tpl/widget.css?{PHP.cot_modules.files.version}">
@@ -75,6 +75,7 @@
 <script src="lib/bootstrap/js/bootstrap.min.js?{PHP.cot_modules.files.version}"></script>
 <!-- ENDIF -->
 {PHP.out.footer_rc}
+
 <!-- Cotonti config -->
 <script type="text/javascript">
     if (filesConfig === undefined) {

@@ -12,7 +12,7 @@ Hooks=page.edit.delete.done
  * @author Kalnov Alexey <kalnovalexey@yandex.ru>
  */
 
-use cot\modules\files\model\File;
+use cot\modules\files\models\File;
 
 /**
  * @var int $id Page id for delete

@@ -9,6 +9,7 @@ Hooks=module
   * module Files for Cotonti Siena
   * @package Files
   */
+
 defined('COT_CODE') or die('Wrong URL.');
 
 // Environment setup
@@ -22,7 +23,7 @@ if (empty($m)) {
     $m = 'main';
 }
 
-// Old contrillers
+// Old controllers
 $oldControllers = ['main', 'pfs'];
 if (in_array($m, $oldControllers)) {
     if (file_exists(cot_incfile('files', 'module', $m))) {

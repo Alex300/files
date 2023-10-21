@@ -69,7 +69,7 @@ if (filesConfig === undefined) {
         previewMaxHeight: {UPLOAD_THUMB_HEIGHT},
         autoUpload: {PHP.cfg.files.autoupload},
         sequential: {PHP.cfg.files.sequential},
-        'x':    '{UPLOAD_X}'
+        'x': '{UPLOAD_X}'
     };
 }
 filesConfig.{UPLOAD_ID} = {

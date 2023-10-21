@@ -125,8 +125,11 @@ $L['cfg_upl_separator'] = 'Upload options';
 $L['cfg_autoupload'] = 'Start uploading automatically';
 $L['cfg_sequential'] = 'Sequential uploading instead of concurrent';
 $L['cfg_chunkSize'] = 'Upload files by chunks (in bytes)';
-$L['cfg_chunkSize_hint'] = 'Large files can be uploaded in smaller chunks with
-    browsers supporting the Blob API. (Leave empty to disable)';
+$L['cfg_chunkSize_hint'] = 'Large files can be uploaded in smaller chunks with browsers supporting the Blob API. (Leave empty to disable)';
+$L['cfg_fixExtensionsByMime'] = 'Fix files extensions by mime type';
+$L['cfg_fixExtensionsByMime_hint'] = 'Will work better with '
+    . '<a href="https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/" target="_blank">'
+    . 'https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/</a> installed';
 
 $L['cfg_img_separator'] = 'Image options';
 $L['cfg_image_convert'] = 'Convert images to JPEG on upload';

@@ -31,12 +31,12 @@
       class="form-horizontal" role="form">
     {FOLDER_FORM_HIDDEN}
 
-    <div class="form-group {PHP|cot_files_formGroupClass('ff_title')}">
+    <div class="form-group {PHP|cot_formGroupClass('ff_title')}">
         <label class="col-sm-2 control-label">Название: *</label>
         <div class="col-sm-10">{FOLDER_FORM_TITLE}</div>
     </div>
 
-    <div class="form-group {PHP|cot_files_formGroupClass('ff_desc')}">
+    <div class="form-group {PHP|cot_formGroupClass('ff_desc')}">
         <label class="col-sm-2 control-label">{PHP.L.Description}:</label>
         <div class="col-sm-10">{FOLDER_FORM_DESC}</div>
     </div>

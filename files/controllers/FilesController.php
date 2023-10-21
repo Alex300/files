@@ -2,10 +2,13 @@
 
 namespace cot\modules\files\controllers;
 
+use Cot;
 use cot\modules\files\dto\FileDto;
-use cot\modules\files\model\File;
+use cot\modules\files\models\File;
 use cot\modules\files\services\FileService;
-use image\Image;
+use cot\modules\files\services\ThumbnailService;
+use filesystem\LocalFilesystem;
+use Throwable;
 
 defined('COT_CODE') or die('Wrong URL.');
 
@@ -33,7 +36,7 @@ class FilesController
             $type = 'all';
         }
 
-        $html = cot_files_filebox($source, $item, $field, $type, $limit, 'files.files', 2);
+        $html = cot_filesFileBox($source, $item, $field, $type, $limit, 'files.files', 2);
 
         echo $html;
         exit;
@@ -61,7 +64,7 @@ class FilesController
         $filePath = \Cot::$cfg['files']['folder'] . '/' . $file->fullName;
 
         // Detect MIME type if possible
-        $contenttype = cot_files_getMime($filePath);
+        $contenttype = cot_filesGetMime($filePath);
 
         // Avoid sending unexpected errors to the client - we should be serving a file,
         // we don't want to corrupt the data we send
@@ -102,7 +105,7 @@ class FilesController
         $filesize = filesize($filePath);
         if ($range) {
             $partial = true;
-            list($param, $range) = explode('=', $range);
+            [$param, $range] = explode('=', $range);
             if (strtolower(trim($param)) != 'bytes') {
                 // Bad request - range unit is not 'bytes'
                 cot_die_message(400);
@@ -181,59 +184,48 @@ class FilesController
     {
         $response = ['error' => ''];
 
-        $extFields = \Cot::$extrafields[File::tableName()];
+        $extFields = Cot::$extrafields[File::tableName()];
 
         $id = cot_import('id', 'P', 'INT');
         $field = cot_import('key', 'P', 'ALP');
         $value = cot_import('value', 'P', 'TXT');
 
         if (!$id || !$field) {
-            cot_sendheaders('application/json', cot_files_ajax_get_status(404));
-            exit;
+            cot_ajaxResult(null, 404);
         }
 
         $file = File::getById($id);
         if (!$file) {
-            cot_files_ajax_die(404);
+            cot_ajaxResult(null, 404);
         }
 
         // Можно изменить только title или что-то из экстраполей
         if ($field != 'title') {
             if (empty($extFields)) {
-                cot_sendheaders('application/json', cot_files_ajax_get_status(404));
-                exit;
+                cot_ajaxResult(null, 404);
             }
             $extfName = str_replace('file_', '', $field); // @todo
             if (!array_key_exists($extfName, $extFields)) {
-                cot_sendheaders('application/json', cot_files_ajax_get_status(404));
-                exit;
+                cot_ajaxResult(null, 404);
             }
             $value = cot_import_extrafields($_POST['value'], $extFields[$extfName], 'D', $file->{$field});
         }
 
-        cot_sendheaders('application/json', cot_files_ajax_get_status(200));
-
         if (cot_error_found()) {
             $response['error'] = cot_implode_messages();
-            cot_clear_messages();
-            echo json_encode($response);
-            exit;
+            cot_ajaxResult($response);
         }
 
-
-        if (!cot_auth('files', 'a', 'A') && $file->user_id != \Cot::$usr['id']){
-            $response['error'] = \Cot::$L['files_err_perms'];
-            echo json_encode($response);
-            exit;
+        if (!cot_auth('files', 'a', 'A') && $file->user_id != Cot::$usr['id']){
+            $response['error'] = Cot::$L['files_err_perms'];
+            cot_ajaxResult($response);
         }
 
         $file->{$field} = $value;
         $file->save();
 
         $response['written'] = 1;
-
-        echo json_encode($response);
-        exit;
+        cot_ajaxResult($response);
     }
 
 
@@ -248,24 +240,21 @@ class FilesController
 
         $response = array( 'error' => '');
 
-        cot_sendheaders('application/json', cot_files_ajax_get_status(200));
-
         // Check permission
         if (
             !cot_auth('files', 'a', 'A')
-            && \Cot::$db->query(
+            && Cot::$db->query(
                 "SELECT COUNT(*) FROM $db_files WHERE source = ? AND source_id = ? AND user_id = ?",
-                [$source, $item, \Cot::$usr['id']]
+                [$source, $item, Cot::$usr['id']]
             )->fetchColumn() == 0)
         {
-            $response['error'] = \Cot::$L['files_err_perms'];
-            echo json_encode($response);
-            exit;
+            $response['error'] = Cot::$L['files_err_perms'];
+            cot_ajaxResult($response);
         }
 
         $orders = cot_import('orders', 'P', 'ARR');
         foreach ($orders as $order => $id) {
-            \Cot::$db->update(
+            Cot::$db->update(
                 $db_files,
                 ['sort_order' => $order],
                 "id = ? AND source = ? AND source_id = ? AND source_field = ? AND sort_order != ?",
@@ -274,9 +263,7 @@ class FilesController
         }
 
         $response['status'] = 1;
-
-        echo json_encode($response);
-        exit;
+        cot_ajaxResult($response);
     }
 
     /**
@@ -289,60 +276,50 @@ class FilesController
         $response = ['error' => ''];
 
         if (!$id) {
-            cot_files_ajax_die(404);
+            cot_ajaxResult(null, 404);
         }
 
         $file = File::getById($id);
         if (!$file) {
-            cot_files_ajax_die(404);
+            cot_ajaxResult(null, 404);
         }
 
         $fileData = new FileDto();
-        $fileData->original_name = $this->getFilename('file');
-        $fileData->ext = mb_strtolower(cot_files_get_ext($fileData->original_name));
-        $fileData->path = cot_files_tempDir();
-        $fileData->file_name = $file->source . '_' . $file->source_id . '_' . $file->id. '_' . \Cot::$usr['id'] . '_' . time() . '_tmp.'
+        $fileData->originalName = $this->getFilename('file');
+        $fileData->ext = mb_strtolower(cot_filesGetExtension($fileData->originalName));
+        $fileData->path = FileService::getTemporaryDirectory();
+        $fileData->fileName = $file->source . '_' . $file->source_id . '_' . $file->id. '_' . Cot::$usr['id'] . '_' . time() . '_tmp.'
             . $fileData->ext;
 
-        $limits = cot_files_getLimits(\Cot::$usr['id'], $file->source, $file->source_id);
+        $limits = cot_filesGetLimits(\Cot::$usr['id'], $file->source, $file->source_id);
         $upload = $this->getUploadedFile('file', $limits);
-
-        cot_sendheaders('application/json', cot_files_ajax_get_status(200));
-
-        if (!cot_files_isExtensionAllowed($fileData->ext)) {
-            cot_error(\Cot::$L['files_err_type']);
-        }
 
         if (cot_error_found()) {
             $messages = cot_get_messages();
             $errors = [];
             foreach ($messages as $msg) {
-                $errors[] = isset(\Cot::$L[$msg['text']]) ? \Cot::$L[$msg['text']] : $msg['text'];
+                $errors[] = isset(Cot::$L[$msg['text']]) ? Cot::$L[$msg['text']] : $msg['text'];
             }
             cot_clear_messages();
 
             if (empty($errors)) {
-                $errors[] = \Cot::$L['error'];
+                $errors[] = Cot::$L['error'];
             }
             $response['error'] = implode(',', $errors);
-
-            echo json_encode($response);
-            exit;
+            cot_ajaxResult($response);
         }
 
-        if (!cot_auth('files', 'a', 'A') && $file->user_id != \Cot::$usr['id']){
-            $response['error'] = \Cot::$L['files_err_perms'];
-            echo json_encode($response);
-            exit;
+        if (!cot_auth('files', 'a', 'A') && (int) $file->user_id !== (int) Cot::$usr['id']){
+            $response['error'] = Cot::$L['files_err_perms'];
+            cot_ajaxResult($response);
         }
 
         if (!$this->saveUploadedFile($upload, $fileData->getFullName())) {
-            $response['error'] = \Cot::$L['files_err_move'];
-            echo json_encode($response);
-            exit;
+            $response['error'] = Cot::$L['files_err_move'];
+            cot_ajaxResult($response);
         }
 
-        $validExts = explode(',', \Cot::$cfg['files']['exts']);
+        $validExts = explode(',', Cot::$cfg['files']['exts']);
         $validExts = array_map('trim', $validExts);
         if (!in_array('php', $validExts)) {
             $handle = fopen($fileData->getFullName(), "rb");
@@ -350,69 +327,124 @@ class FilesController
             fclose($handle);
             if (mb_stripos(trim($tmp), '<?php') === 0) {
                 @unlink($fileData->getFullName());
-                $response['error'] = \Cot::$L['files_err_type'];
-                echo json_encode($response);
-                exit;
+                $response['error'] = Cot::$L['files_err_type'];
+                cot_ajaxResult($response);
             }
         }
 
-        // @todo Fix File extension
+        if (Cot::$cfg['files']['fixExtensionsByMime']) {
+            try {
+                FileService::fixFileExtensionByDTO($fileData);
+            } catch (Throwable $e) {
+                $error = Cot::$L['files_err_upload'];
+                if (Cot::$usr['isadmin']) {
+                    $errorMessage = $e->getMessage();
+                    if (!empty($errorMessage)) {
+                        $error .= ': ' . $errorMessage;
+                    }
+                }
+                if (file_exists($fileData->getFullName())) {
+                    @unlink($fileData->getFullName());
+                }
+                $response['error'] = $error;
+                cot_ajaxResult($response);
+            }
+        }
+
+        if (!FileService::isExtensionAllowed($fileData->ext)) {
+            if (file_exists($fileData->getFullName())) {
+                @unlink($fileData->getFullName());
+            }
+            $response['error'] = Cot::$L['files_err_type'];
+            cot_ajaxResult($response);
+
+        }
 
         $fileData->size = filesize($fileData->getFullName());
-        $fileData->isImage = cot_files_isValidImageFile($fileData->getFullName()) ? 1 : 0;
+        $fileData->mimeType = mime_content_type($fileData->getFullName());
+        $fileData->isImage = cot_filesIsValidImageFile($fileData->getFullName()) ? 1 : 0;
 
         if ($fileData->isImage) {
             FileService::processImageFile($fileData);
         }
+
         if (!empty($fileData->getErrors())) {
             if (file_exists($fileData->getFullName())) {
-                unlink($fileData->getFullName());
+                @unlink($fileData->getFullName());
             }
             $response['error'] = implode('; ', $fileData->getErrors());
-            echo json_encode($response);
-            exit;
+            cot_ajaxResult($response);
         }
 
-        $path = \Cot::$cfg['files']['folder'] . '/' . $file->fullName;
         $file->removeThumbnails();
-        if (file_exists($path)) {
-            if (!@unlink($path)) {
+        $fileSystem = FileService::getFilesystemByName($file->filesystem_name);
+        try {
+            $fileSystem->delete($file->getFullName());
+        } catch (Throwable $e) {
+            if (file_exists($fileData->getFullName())) {
                 @unlink($fileData->getFullName());
-                $response['error'] = \Cot::$L['files_err_replace'];
-                echo json_encode($response);
-                exit;
             }
+            $response['error'] = Cot::$L['files_err_replace'];
+            cot_ajaxResult($response);
         }
 
         // Fill new data
         $file->size = $fileData->size;
         $file->ext = $fileData->ext;
         $file->is_img = $fileData->isImage;
-        $file->original_name =  $fileData->original_name;
+        $file->original_name =  $fileData->originalName;
+        $file->mime_type = $fileData->mimeType;
+
+        // Until the file is sent to remote storage, we need to make a thumbnail
+        $thumbnail = null;
+        if ($file->is_img) {
+            $thumbnail = ThumbnailService::thumbnail($file, 0, 0, '', true, $fileData->getFullName());
+            if ($thumbnail) {
+                $fileData->thumbnailUrl = $thumbnail['url'];
+            }
+        }
+
+        // Local filesystem without root directory set
+        $localFileSystem = new LocalFileSystem();
 
         $relativeFileName = FileService::generateFileRelativePath($file);
-        // Path relative to site root directory
-        $fileFullName = \Cot::$cfg['files']['folder'] . '/' . $relativeFileName;
+        $file->path = dirname($relativeFileName);
+        $file->file_name = basename($relativeFileName);
 
-        if (!@rename($fileData->getFullName(), $fileFullName)) {
+        // Path relative to site root directory
+        $fileFullName = Cot::$cfg['files']['folder'] . '/' . $relativeFileName;
+
+        try {
+            if ($fileSystem instanceof LocalFileSystem) {
+                // Save file locally
+                $localFileSystem->move($fileData->getFullName(), $fileFullName);
+            } else {
+                // Upload to remote server
+                $resource = $localFileSystem->readStream($fileData->getFullName());
+                $fileSystem->writeStream($relativeFileName, $resource);
+                fclose($resource);
+            }
+        } catch (Throwable $e) {
             // Fail to move file from temporary directory to the files directory
             // Delete temporary file
             @unlink($fileData->getFullName());
-            unset($fileData->path, $fileData->file_name, $fileData->ext);
-            $response['error'] = \Cot::$L['files_err_replace'];
-            echo json_encode($response);
-            exit;
+            unset($fileData->path, $fileData->fileName, $fileData->ext);
+            cot_ajaxResult($response);
         }
 
-        $fileData->path = dirname($fileFullName);
-        $fileData->file_name = basename($fileFullName);
-
-        $file->path = dirname($relativeFileName);
-        $file->file_name = $fileData->file_name;
         $file->save();
 
-        echo json_encode($fileData->toArray());
-        exit;
+        $fileData->loadFromFile($file);
+        $fileData->fileExists = true;
+        $fileData->lastModified = Cot::$sys['now'];
+
+        /* === Hook === */
+        foreach (cot_getextplugins('files.replace.after_save') as $pl) {
+            include $pl;
+        }
+        /* =========== */
+
+        cot_ajaxResult($fileData->toArray());
     }
 
     /**
@@ -498,10 +530,9 @@ class FilesController
     /**
      * Saves an uploaded file regardless of request method.
      * @param  string   $input A value returned by FilesController::getUploadedFile
-     * @see FilesController::getUploadedFile()
      * @param  string  $path  Target path
      * @return boolean        true on success, false on error
-     *
+     * @see FilesController::getUploadedFile()
      * @todo убедиться, что не остается мусора, если файл залит не через $_POST
      */
     protected  function saveUploadedFile($input, $path)

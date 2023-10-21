@@ -13,7 +13,7 @@ Hooks=trash.delete.done
  * @author Kalnov Alexey <kalnovalexey@yandex.ru>
  */
 
-use cot\modules\files\model\File;
+use cot\modules\files\models\File;
 
 defined('COT_CODE') or die('Wrong URL');
 

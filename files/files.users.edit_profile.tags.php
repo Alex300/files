@@ -10,19 +10,22 @@ Tags=users.profile.tpl:{USERS_PROFILE_AVATAR};users.edit.tpl:{USERS_EDIT_AVATAR}
  * Avatar for users
  *
  * @package Files
- * @author Cotonti Team
- * @copyright Copyright (c) Cotonti Team 2014
- * @license BSD
+ * @author Kalnov Alexey <kalnovalexey@yandex.ru>
  */
 defined('COT_CODE') or die('Wrong URL');
 
-if(cot_get_caller() == 'users.profile'){
+/**
+ * @var ?array $urr
+ * @var XTemplate $t
+ */
+
+if (cot_get_caller() == 'users.profile') {
     $avatarTagPrefix = 'USERS_PROFILE_';
     $uid = null;
-}else{
+} else {
     $avatarTagPrefix = 'USERS_EDIT_';
     $uid = $urr['user_id'];
 }
-$t->assign(array(
-    $avatarTagPrefix.'AVATAR' => cot_files_avatarbox($uid),
-));
+$t->assign([
+    $avatarTagPrefix . 'AVATAR' => cot_filesAvatarBox($uid),
+]);

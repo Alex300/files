@@ -1,6 +1,6 @@
 <?php
 
-use cot\modules\files\model\File;
+use cot\modules\files\models\File;
 
 defined('COT_CODE') or die('Wrong URL.');
 
@@ -12,9 +12,9 @@ if(empty($GLOBALS['db_files_folders'])) {
 /**
  * Модель File Folder
  *
- * @method static files_model_Folder getById($pk, $staticCache = true);
- * @method static files_model_Folder fetchOne($conditions = array(), $order = '')
- * @method static files_model_Folder[] findByCondition($conditions = array(), $limit = 0, $offset = 0, $order = '')
+ * @method static files_models_Folder getById($pk, $staticCache = true);
+ * @method static files_models_Folder fetchOne($conditions = array(), $order = '')
+ * @method static files_models_Folder[] findByCondition($conditions = array(), $limit = 0, $offset = 0, $order = '')
  *
  * @property int    $ff_id
  * @property int    $user_id     id пользователя - владельца или 0 - если это site file space
@@ -27,7 +27,7 @@ if(empty($GLOBALS['db_files_folders'])) {
  * @property string $ff_updated  Дата последнего изменения
  *
  */
-class files_model_Folder extends Som_Model_ActiveRecord
+class files_models_Folder extends Som_Model_ActiveRecord
 {
     protected  static $_db = null;
     protected  static $_tbname = '';
@@ -185,7 +185,7 @@ class files_model_Folder extends Som_Model_ActiveRecord
     /**
      * Returns all Group tags for coTemplate
      *
-     * @param files_model_Folder|int $item vuz_model_Vuz object or ID
+     * @param files_models_Folder|int $item vuz_model_Vuz object or ID
      * @param string $tagPrefix Prefix for tags
      * @param array $urlParams
      * @param bool $cacheitem Cache tags
@@ -210,17 +210,17 @@ class files_model_Folder extends Som_Model_ActiveRecord
 
         if(empty($urlParams)) $urlParams = array('m' => 'pfs');
 
-        list(Cot::$usr['auth_read'], Cot::$usr['auth_write'], Cot::$usr['isadmin']) = cot_auth('files', 'a');
+        [Cot::$usr['auth_read'], Cot::$usr['auth_write'], Cot::$usr['isadmin']] = cot_auth('files', 'a');
 
-        if (($item instanceof files_model_Folder) && isset($cacheArr[$item->ff_id]) && is_array($cacheArr[$item->ff_id])) {
+        if (($item instanceof files_models_Folder) && isset($cacheArr[$item->ff_id]) && is_array($cacheArr[$item->ff_id])) {
             $temp_array = $cacheArr[$item->ff_id];
         } elseif (is_int($item) && is_array($cacheArr[$item])) {
             $temp_array = $cacheArr[$item];
         } else {
             if (is_int($item) && $item > 0) {
-                $item = files_model_Folder::getById($item);
+                $item = files_models_Folder::getById($item);
             }
-            /** @var files_model_Folder $item  */
+            /** @var files_models_Folder $item  */
             if ($item) {
                 $itemUrl = cot_url('files', array('f' => $item->ff_id));
 
@@ -284,4 +284,4 @@ class files_model_Folder extends Som_Model_ActiveRecord
 
 }
 
-files_model_Folder::__init();
+files_models_Folder::__init();

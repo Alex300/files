@@ -21,6 +21,6 @@ require_once cot_incfile('files', 'module');
 $pfs_tag = cot_get_caller() == 'pm.send' ? 'PMSEND_FORM' : 'PM_FORM';
 
 $t->assign(array(
-    $pfs_tag.'_PFS' => cot_files_buildPfs(Cot::$usr['id'], 'newlink', 'newpmtext',Cot::$L['Mypfs']),
-    $pfs_tag.'_SFS' => (cot_auth('files', 'a', 'A')) ? cot_files_buildPfs(0, 'newlink', 'newpmtext', Cot::$L['SFS']) : '',
+    $pfs_tag.'_PFS' => cot_filesBuildPfs(Cot::$usr['id'], 'newlink', 'newpmtext',Cot::$L['Mypfs']),
+    $pfs_tag.'_SFS' => (cot_auth('files', 'a', 'A')) ? cot_filesBuildPfs(0, 'newlink', 'newpmtext', Cot::$L['SFS']) : '',
 ));

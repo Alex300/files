@@ -14,7 +14,7 @@ Hooks=usertags.main
  * @license BSD
  */
 
-use cot\modules\files\model\File;
+use cot\modules\files\models\File;
 
 defined('COT_CODE') or die('Wrong URL');
 
@@ -29,9 +29,9 @@ if ($user_data['user_id'] > 0 && $user_data['user_avatar'] > 0) {
         $user_data['user_avatar_file'] = File::getById($user_data['user_avatar']);
     }
     if ($user_data['user_avatar_file']) {
-        $temp_array['AVATAR'] = cot_files_user_avatar($user_data['user_avatar'], $user_data);
+        $temp_array['AVATAR'] = cot_filesUserAvatar($user_data['user_avatar'], $user_data);
         $temp_array['AVATAR_ID'] = $user_data['user_avatar'];
-        $temp_array['AVATAR_URL'] = cot_files_user_avatar_url($user_data['user_avatar_file']);
+        $temp_array['AVATAR_URL'] = cot_filesUserAvatarUrl($user_data['user_avatar_file']);
         $temp_array['AVATAR_RAW'] = $user_data['user_avatar_file'];
     }
 }

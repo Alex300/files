@@ -14,7 +14,7 @@ Hooks=users.main
  * @license BSD
  */
 
-use cot\modules\files\model\File;
+use cot\modules\files\models\File;
 
 defined('COT_CODE') or die('Wrong URL');
 

@@ -2,9 +2,14 @@
 
 namespace cot\modules\files\controllers;
 
+use Cot;
 use cot\modules\files\dto\FileDto;
-use cot\modules\files\model\File;
+use cot\modules\files\models\File;
 use cot\modules\files\services\FileService;
+use cot\modules\files\services\FilesystemFactory;
+use cot\modules\files\services\ThumbnailService;
+use filesystem\LocalFilesystem;
+use Throwable;
 
 defined('COT_CODE') or die('Wrong URL.');
 
@@ -19,19 +24,20 @@ class UploadController
     protected $options = [
         'input_stream' => 'php://input',
 
-        // Use exif_imagetype on all files to correct file extensions.
-        'correct_image_extensions' => true,
-
         // Add development info in output. Turn it off on production sites.
         'debug' => false,
     ];
 
     /**
      * UploadController constructor.
-     * @param array $options
+     * @param ?array $options
      */
-    public function __construct($options = null, $initialize = true, $error_messages = null)
+    public function __construct(?array $options = null)
     {
+        if (!isset($options['debug'])) {
+            $options['debug'] = (isset(Cot::$cfg['debug_mode']) && Cot::$cfg['debug_mode']) || Cot::$cfg['devmode'];
+        }
+
         if ($options) {
             $this->options = $options + $this->options;
         }
@@ -123,11 +129,16 @@ class UploadController
 
         foreach ($files as $file) {
             $fileData = FileDto::createFromFile($file);
-            $fileFullName = \Cot::$cfg['files']['folder'] . '/' . $file->fullName;
-            if (!file_exists($fileFullName)) {
-                $fileData->addError('File is not exists');
+            $fileSystem = FileService::getFilesystemByName($file->filesystem_name);
+            $fileData->fileExists = !empty($file->fullName) && $fileSystem->fileExists($file->fullName);
+            if ($fileData->fileExists) {
+                if ($file->is_img) {
+                    $fileData->thumbnailUrl = cot_filesThumbnailUrl($file, 0, 0, '', true, false);
+                }
+                $fileData->lastModified = ($fileSystem instanceof LocalFilesystem)
+                    ? $fileSystem->lastModified($file->fullName)
+                    : strtotime($file->updated);
             }
-
             if (!$multi) {
                 return $this->generateResponse($fileData->toArray(), $print_response);
             }
@@ -206,32 +217,32 @@ class UploadController
 
     /**
      * Ajax delete file
-     * @param bool $print_response
+     * @param bool $printResponse
      */
-    public function delete($print_response = true)
+    public function delete(bool $printResponse = true)
     {
-        $res = array(
+        $res = [
             'success' => false
-        );
+        ];
         $id = cot_import('id', 'R', 'INT');
         if (!$id) {
-            $this->generateResponse($res, $print_response);
+            $this->generateResponse($res, $printResponse);
             exit();
         }
 
         $file = File::getById($id);
         if (!$file) {
-            $this->generateResponse($res, $print_response);
+            $this->generateResponse($res, $printResponse);
             exit();
         }
-        if ($file->user_id != \Cot::$usr['id'] && !cot_auth('files', 'a', 'A')) {
-            $this->generateResponse($res, $print_response);
+        if ($file->user_id != Cot::$usr['id'] && !cot_auth('files', 'a', 'A')) {
+            $this->generateResponse($res, $printResponse);
             exit();
         }
 
         $res['success'] = $file->delete();
 
-        $this->generateResponse($res, $print_response);
+        $this->generateResponse($res, $printResponse);
         exit;
     }
 
@@ -290,10 +301,26 @@ class UploadController
         return $content;
     }
 
-    protected function get_file_name($file_path, $name, $source, $item, $type, $content_range)
-    {
+    /**
+     * Get temporary file name for uploading file
+     * @param string $file_path Uploaded file name (temp name) with full path
+     * @param string $name The original name of the uploaded file
+     * @param string $source File source
+     * @param int $sourceId File source item id
+     * @param string $type The mime type of the file (if the browser provided this information)
+     * @param ?array $content_range
+     * @return string
+     */
+    protected function getTemporaryFileName(
+        string $file_path,
+        string $name,
+        string $source,
+        int $sourceId,
+        string $type,
+        ?array $content_range
+    ): string {
         $name = $this->trim_file_name($file_path, $name, $type);
-        $tmp = cot_files_safeName($source . '_' . $item . '_' . $this->fix_file_extension($file_path, $name, $type));
+        $tmp = cot_filesSafeName($source . '_' . $sourceId . '_' . $this->fixFileExtension($name, $type));
 
         return $this->get_unique_filename($tmp, $content_range);
     }
@@ -308,8 +335,8 @@ class UploadController
 
     protected function get_unique_filename($name, $content_range)
     {
-        $tmpDir = cot_files_tempDir() . DIRECTORY_SEPARATOR;
-        while(is_dir($tmpDir.$name)) {
+        $tmpDir = FileService::getTemporaryDirectory() . DIRECTORY_SEPARATOR;
+        while(is_dir($tmpDir . $name)) {
             $name = $this->upcount_name($name);
         }
 
@@ -341,19 +368,27 @@ class UploadController
 
     /**
      * Обработка загрузки файла
-     * @param string $uploaded_file Uploaded full filename (temp name)
-     * @param string $name Original filename
+     * @param string $uploadedFile Uploaded file name (temp name) with full path
+     * @param string $name The original name of the uploaded file
      * @param int $size
-     * @param string $type Mime type
+     * @param string $type The mime type of the file (if the browser provided this information)
      * @param int $error Upload Error code
-     * @param int $index
-     * @param array|null $content_range
+     * @param int|null $index
+     * @param ?array $contentRange
      * @return FileDto
      *
      * @todo если пришел uid и пользователь админ, то сохранять файлы от пользователя с указанным uid
+     * @todo прервать загрузку, если первый чанк не прошел валидацию
      */
-    protected function handleFileUpload($uploaded_file, $name, $size, $type, $error, $index = null, $content_range = null)
-    {
+    protected function handleFileUpload(
+        string $uploadedFile,
+        string $name,
+        int $size,
+        string $type,
+        int $error,
+        ?int $index = null,
+        ?array $contentRange = null
+    ): FileDto {
         $source = cot_import('source', 'R', 'ALP');
         $item = cot_import('item', 'R', 'INT');
         $field = (string) cot_import('field', 'R', 'TXT');
@@ -364,58 +399,49 @@ class UploadController
         }
 
         $fileData = new FileDto();
-        $fileData->original_name = trim(mb_basename(stripslashes($name)));
-        $fileData->file_name = $this->get_file_name($uploaded_file, $name, $source, $item, $type, $content_range);
-        $fileData->ext = mb_strtolower(cot_files_get_ext($fileData->file_name));
+        $fileData->originalName = trim(mb_basename(stripslashes($name)));
+        $fileData->fileName = $this->getTemporaryFileName($uploadedFile, $name, $source, $item, $type, $contentRange);
+        $fileData->ext = mb_strtolower(cot_filesGetExtension($fileData->fileName));
         $fileData->size = $this->fix_integer_overflow((int) $size);
         $fileData->mimeType = $type;
 
         if ($this->options['debug']) {
-            $fileData->addDebug('uploaded_file', $uploaded_file);
-            $fileData->addDebug('upload_dir', cot_files_tempDir());
+            $fileData->addDebug('uploaded_file', $uploadedFile);
+            $fileData->addDebug('upload_dir', FileService::getTemporaryDirectory());
         }
 
-        list(\Cot::$usr['auth_read'], \Cot::$usr['auth_write'], \Cot::$usr['isadmin']) = cot_auth('files', 'a');
+        [Cot::$usr['auth_read'], Cot::$usr['auth_write'], Cot::$usr['isadmin']] = cot_auth('files', 'a');
 
-        if (!$this->preValidate($uploaded_file, $fileData, $source, $item, $field, $params, $error)) {
+        if (!$this->preValidate($uploadedFile, $fileData, $source, $item, $field, $params, $error)) {
             if (empty($fileData->getErrors())) {
-                $fileData->addError(\Cot::$L['files_err_unknown']);
+                $fileData->addError(Cot::$L['files_err_unknown']);
             }
-            unset($fileData->path, $fileData->file_name, $fileData->ext);
+            unset($fileData->path, $fileData->fileName, $fileData->ext);
             if (!$this->options['debug'] && !empty($fileData->getDebug())) {
                 $fileData->clearDebug();
             }
             return $fileData;
         }
 
-        $uploadDir = cot_files_tempDir();
+        $uploadDir = FileService::getTemporaryDirectory();
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, \Cot::$cfg['dir_perms'], true);
+            mkdir($uploadDir, Cot::$cfg['dir_perms'], true);
         }
 
-        $file_path = $uploadDir. '/' . $fileData->file_name;
+        $file_path = $uploadDir. '/' . $fileData->fileName;
 
-        $append_file = $content_range && is_file($file_path) && $fileData->size > $this->get_file_size($file_path);
-        if ($uploaded_file && is_uploaded_file($uploaded_file)) {
+        $append_file = $contentRange && is_file($file_path) && $fileData->size > $this->get_file_size($file_path);
+        if ($uploadedFile && is_uploaded_file($uploadedFile)) {
             // multipart/formdata uploads (POST method uploads)
             if ($append_file) {
-                file_put_contents(
-                    $file_path,
-                    fopen($uploaded_file, 'r'),
-                    FILE_APPEND
-                );
-
+                file_put_contents($file_path, fopen($uploadedFile, 'r'), FILE_APPEND);
             } else {
-                move_uploaded_file($uploaded_file, $file_path);
+                move_uploaded_file($uploadedFile, $file_path);
             }
 
         } else {
             // Non-multipart uploads (PUT method support)
-            file_put_contents(
-                $file_path,
-                fopen($this->options['input_stream'], 'r'),
-                $append_file ? FILE_APPEND : 0
-            );
+            file_put_contents($file_path, fopen($this->options['input_stream'], 'r'), $append_file ? FILE_APPEND : 0);
         }
 
         $file_size = $this->get_file_size($file_path, $append_file);
@@ -426,7 +452,12 @@ class UploadController
             if ($file_path && file_exists($file_path)) {
                 unlink($file_path);
             }
-            unset($fileData->path, $fileData->file_name, $fileData->ext);
+            $error = Cot::$L['files_err_upload'];
+            if (Cot::$usr['isadmin']) {
+                $error .= ": Can't allocate memory.";
+            }
+            $fileData->addError($error);
+            unset($fileData->path, $fileData->fileName, $fileData->ext);
             if (!$this->options['debug'] && !empty($fileData->getDebug())) {
                 $fileData->clearDebug();
             }
@@ -437,27 +468,55 @@ class UploadController
         if ($file_size !== $fileData->size) {
             $fileData->size = $file_size;
 //            if (!$content_range && $this->options['discard_aborted_uploads']) {
-            if (!$content_range) {
+            if (!$contentRange) {
                 unlink($file_path);
-                $fileData->addError(\Cot::$L['files_err_abort']);
+                $fileData->addError(Cot::$L['files_err_abort']);
             }
-            unset($fileData->path, $fileData->file_name, $fileData->ext);
+            unset($fileData->path, $fileData->fileName, $fileData->ext);
             if (!$this->options['debug'] && !empty($fileData->getDebug())) {
                 $fileData->clearDebug();
             }
             return $fileData;
         }
 
+
         // File is uploaded
         $fileData->setFullName($file_path);
-        $fileData->isImage = cot_files_isValidImageFile($file_path);
+        unset($file_path);
+
+        if (Cot::$cfg['files']['fixExtensionsByMime']) {
+            // При загрузке файла чанками, невозможно определить mime-тип куска файла. Только если с первого чанка либо используя файл,
+            // куда сливаются чанки.
+            // По этому проверяем расширение только после полной загрузки файла
+            try {
+                FileService::fixFileExtensionByDTO($fileData);
+            } catch (Throwable $e) {
+                @unlink($fileData->getFullName());
+                $error = Cot::$L['files_err_upload'];
+                if (Cot::$usr['isadmin']) {
+                    $errorMessage = $e->getMessage();
+                    if (!empty($errorMessage)) {
+                        $error .= ': ' . $errorMessage;
+                    }
+                }
+                $fileData->addError($error);
+                unset($fileData->path, $fileData->fileName, $fileData->ext);
+                if (!$this->options['debug'] && !empty($fileData->getDebug())) {
+                    $fileData->clearDebug();
+                }
+                return $fileData;
+            }
+        }
+
+        $fileData->mimeType = cot_filesGetMime($fileData->getFullName());
+        $fileData->isImage = cot_filesIsValidImageFile($fileData->getFullName());
 
         // Validate uploaded file
         if (!$this->validate($fileData) || !empty($fileData->getErrors())) {
-            if ($file_path && file_exists($file_path)) {
-                unlink($file_path);
+            if (file_exists($fileData->getFullName())) {
+                @unlink($fileData->getFullName());
             }
-            unset($fileData->path, $fileData->file_name, $fileData->ext);
+            unset($fileData->path, $fileData->fileName, $fileData->ext);
             if (!$this->options['debug'] && !empty($fileData->getDebug())) {
                 $fileData->clearDebug();
             }
@@ -467,36 +526,39 @@ class UploadController
         if ($fileData->isImage) {
             FileService::processImageFile($fileData);
         }
+
         if (!empty($fileData->getErrors())) {
-            if ($file_path && file_exists($file_path)) {
-                unlink($file_path);
+            if (file_exists($fileData->getFullName())) {
+                @unlink($fileData->getFullName());
             }
-            unset($fileData->path, $fileData->file_name, $fileData->ext);
+            unset($fileData->path, $fileData->fileName, $fileData->ext);
             if (!$this->options['debug'] && !empty($fileData->getDebug())) {
                 $fileData->clearDebug();
             }
             return $fileData;
         }
 
-        $uid = \Cot::$usr['id'];
-        if (\Cot::$usr['isadmin']) {
+        $uid = Cot::$usr['id'];
+        if (Cot::$usr['isadmin']) {
             $uid = cot_import('uid', 'G', 'INT');
             if (is_null($uid)) {
-                $uid = \Cot::$usr['id'];
+                $uid = Cot::$usr['id'];
             }
         }
 
         // Saving
         $objFile = new File();
-        $objFile->original_name = $fileData->original_name;
+        $objFile->original_name = $fileData->originalName;
         $objFile->user_id = $uid;
         $objFile->source = $source;
         $objFile->source_id = $item;
         $objFile->source_field = $field;
         $objFile->ext = $fileData->ext;
+        $objFile->mime_type = $fileData->mimeType;
         $objFile->is_img = $fileData->isImage ? 1 : 0;
         $objFile->size = $fileData->size;
 
+        $unikey = null;
         if (!in_array($source, ['sfs', 'pfs']) && $item == 0) {
             $unikey = cot_import('unikey', 'G', 'TXT');
             if ($unikey) {
@@ -511,14 +573,14 @@ class UploadController
         /* ===== */
 
         if (!($id = $objFile->save())) {
-            if ($file_path && file_exists($file_path)) {
-                unlink($file_path);
+            if (file_exists($fileData->getFullName())) {
+                @unlink($fileData->getFullName());
             }
-            unset($fileData->path, $fileData->file_name, $fileData->ext);
+            unset($fileData->path, $fileData->fileName, $fileData->ext);
             if (!$this->options['debug'] && !empty($fileData->getDebug())) {
                 $fileData->clearDebug();
             }
-            $fileData->addError(\Cot::$L['files_err_upload']);
+            $fileData->addError(Cot::$L['files_err_upload']);
             return $fileData;
         }
 
@@ -527,25 +589,60 @@ class UploadController
         $objFile->path = dirname($relativeFileName);
         $objFile->file_name = basename($relativeFileName);
 
-        // Path relative to site root directory
-        $fileFullName = \Cot::$cfg['files']['folder'] . '/' . $relativeFileName;
-        $file_dir = dirname($fileFullName);
+//        if (!in_array($source, ['sfs', 'pfs'], true) && $objFile->source_id === 0 && !empty($unikey)) {
+//            // Temporary files are saved in the local file system until binding to an object
+//            $objFile->filesystem_name = 'local';
+        //} else {
+            $objFile->filesystem_name = FileService::getFilesystemName($objFile->source, $objFile->source_field);
+        //}
+        $targetFileSystem = FileService::getFilesystemByName($objFile->filesystem_name);
 
-        if (!is_dir($file_dir)) {
-            mkdir($file_dir, \Cot::$cfg['dir_perms'], true);
+        // Local filesystem without root directory set
+        $localFileSystem = new LocalFileSystem();
+
+        // Path relative to site root directory
+        $fileFullName = Cot::$cfg['files']['folder'] . '/' . $relativeFileName;
+
+        // Until the file is sent to remote storage, we need to make a thumbnail
+        $thumbnail = null;
+        if ($objFile->is_img) {
+            $thumbnail = ThumbnailService::thumbnail($objFile, 0, 0, '', true, $fileData->getFullName());
+            if ($thumbnail) {
+                $fileData->thumbnailUrl = $thumbnail['url'];
+            }
         }
-        if (!@rename($fileData->getFullName(), $fileFullName)) {
+
+        try {
+            if ($targetFileSystem instanceof LocalFileSystem) {
+                // Save file locally
+                $localFileSystem->move($fileData->getFullName(), $fileFullName);
+            } else {
+                // Upload to remote server
+                $resource = $localFileSystem->readStream($fileData->getFullName());
+                $targetFileSystem->writeStream($relativeFileName, $resource);
+                fclose($resource);
+            }
+        } catch (Throwable $e) {
             // Fail to move file from temporary directory to the files directory
             // Delete temporary file
             @unlink($fileData->getFullName());
-            unset($fileData->path, $fileData->file_name, $fileData->ext);
+            unset($fileData->path, $fileData->fileName, $fileData->ext);
             if (!$this->options['debug'] && !empty($fileData->getDebug())) {
                 $fileData->clearDebug();
             }
-            $fileData->addError(\Cot::$L['files_err_upload']);
+            $error = Cot::$L['files_err_upload'];
+            if (Cot::$usr['isadmin']) {
+                $errorMessage = $e->getMessage();
+                if (!empty($errorMessage)) {
+                    $error .= ': ' . $errorMessage;
+                }
+            }
+            $fileData->addError($error);
             $objFile->delete();
+
             return $fileData;
         }
+
         $objFile->save();
 
         // Avatar support
@@ -553,14 +650,16 @@ class UploadController
             $objFile->makeAvatar();
         }
 
-        // Дозаполнить DTO
+        // Finish filling out the DTO
         $fileData->loadFromFile($objFile);
+        $fileData->fileExists = true;
+        $fileData->lastModified = Cot::$sys['now'];
 
         /* === Hook === */
         foreach (cot_getextplugins('files.upload.after_save') as $pl) {
             include $pl;
         }
-        /* ===== */
+        /* =========== */
 
         if (!$this->options['debug'] && !empty($fileData->getDebug())) {
             $fileData->clearDebug();
@@ -610,11 +709,11 @@ class UploadController
     protected function send_content_type_header()
     {
         header('Vary: Accept');
-        if (strpos($this->get_server_var('HTTP_ACCEPT'), 'application/json') !== false) {
-            header('Content-type: application/json');
-        } else {
-            header('Content-type: text/plain');
-        }
+        //if (strpos($this->get_server_var('HTTP_ACCEPT'), 'application/json') !== false) {
+            header('Content-type: application/json; charset=UTF-8');
+//        } else {
+//            header('Content-type: text/plain');
+//        }
     }
 
     /**
@@ -645,45 +744,56 @@ class UploadController
         return $name;
     }
 
-    protected function fix_file_extension($file_path, $name, $type)
+    /**
+     * Add missing file extension for known image types:
+     * @param string $name The original name of the uploaded file
+     * @param string $type The mime type of the file (if the browser provided this information)
+     * @return mixed|string
+     *
+     */
+    protected function fixFileExtension(string $name, string $type): string
     {
+        if (empty($type) || $type === 'application/octet-stream') {
+            return $name;
+        }
+
         // Add missing file extension for known image types:
-        if (strpos($name, '.') === false && preg_match('/^image\/(gif|jpe?g|png)/', $type, $matches)) {
+        if (strpos($name, '.') === false && preg_match('/^image\/(avif|gif|jpe?g|png|webp|)/', $type, $matches)) {
             $name .= '.'.$matches[1];
         }
 
-        if ($this->options['correct_image_extensions'] && function_exists('exif_imagetype')) {
-            switch (@exif_imagetype($file_path)){
-                case IMAGETYPE_JPEG:
-                    $extensions = array('jpg', 'jpeg');
-                    break;
-
-                case IMAGETYPE_PNG:
-                    $extensions = array('png');
-                    break;
-
-                case IMAGETYPE_GIF:
-                    $extensions = array('gif');
-                    break;
-            }
-
-            // Adjust incorrect image file extensions:
-            if (!empty($extensions)) {
-                $parts = explode('.', $name);
-                $extIndex = count($parts) - 1;
-                $ext = strtolower(@$parts[$extIndex]);
-                if (!in_array($ext, $extensions)) {
-                    $parts[$extIndex] = $extensions[0];
-                    $name = implode('.', $parts);
-                }
-            }
-        }
+        // @todo Опробовать на большом bmp чанками, но врядли сработает. Надо передавать имя файла в который сливаются чанки.
+//        if ($this->options['correct_image_extensions'] && function_exists('exif_imagetype')) {
+//            switch (@exif_imagetype($file_path)){
+//                case IMAGETYPE_JPEG:
+//                    $extensions = array('jpg', 'jpeg');
+//                    break;
+//
+//                case IMAGETYPE_PNG:
+//                    $extensions = array('png');
+//                    break;
+//
+//                case IMAGETYPE_GIF:
+//                    $extensions = array('gif');
+//                    break;
+//            }
+//
+//            // Adjust incorrect image file extensions:
+//            if (!empty($extensions)) {
+//                $parts = explode('.', $name);
+//                $extIndex = count($parts) - 1;
+//                $ext = strtolower(@$parts[$extIndex]);
+//                if (!in_array($ext, $extensions)) {
+//                    $parts[$extIndex] = $extensions[0];
+//                    $name = implode('.', $parts);
+//                }
+//            }
+//        }
         return $name;
     }
 
     /**
      * Preliminary file validation
-     *
      * At upload stage, chunk
      *
      * @param string $uploaded_file Uploaded full filename (temp name)
@@ -698,28 +808,20 @@ class UploadController
     protected function preValidate($uploaded_file, FileDto $file, $source, $item, $field, $params, $error)
     {
         if (!cot_auth('files', 'a', 'W')) {
-            $file->addError(\Cot::$L['files_err_perms']);
+            $file->addError(Cot::$L['files_err_perms']);
             return false;
         }
 
         if ($error) {
             if (is_int($error)) {
-                $file->addError(
-                    isset(FileService::$fileUploadErrors[$error]) ? FileService::$fileUploadErrors[$error] : \Cot::$L['files_err_unknown']
-                );
+                $file->addError(FileService::FILE_UPLOAD_ERRORS[$error] ?? Cot::$L['files_err_unknown']);
             } else {
                 $file->addError($error);
             }
             return false;
         }
-        if (empty($file->file_name)) {
+        if (empty($file->fileName)) {
             $file->addError('missingFileName');
-            return false;
-        }
-
-        $file_ext = cot_files_get_ext($file->file_name);
-        if (!cot_files_isExtensionAllowed($file_ext)) {
-            $file->addError(\Cot::$L['files_err_type']);
             return false;
         }
 
@@ -744,7 +846,7 @@ class UploadController
             $file->addDebug('file_size', $file->size);
         }
 
-        $limits = cot_files_getLimits(\Cot::$usr['id'], $source, $item);
+        $limits = cot_filesGetLimits(\Cot::$usr['id'], $source, $item);
         if ($file_size > $limits['size_maxfile'] || $file->size > $limits['size_maxfile']) {
             $file->addError(\Cot::$L['files_err_toobig']);
             return false;
@@ -794,7 +896,7 @@ class UploadController
 
         $handle = @fopen($file->getFullName(), "rb");
         if ($handle === false) {
-            $file->addError(\Cot::$usr['isadmin'] ? 'Can\'t open file: "' . $file->getFullName() . '"' : 'Can\'t open file');
+            $file->addError(Cot::$usr['isadmin'] ? 'Can\'t open file: "' . $file->getFullName() . '"' : 'Can\'t open file');
             return false;
         }
         $tmp = fread($handle, 10);
@@ -805,7 +907,13 @@ class UploadController
         }
         unset($tmp);
 
-        $mime = cot_files_getMime($file->getFullName());
+        $fileExtension = cot_filesGetExtension($file->fileName);
+        if (!FileService::isExtensionAllowed($fileExtension)) {
+            $file->addError(Cot::$L['files_err_type']);
+            return false;
+        }
+
+        $mime = cot_filesGetMime($file->getFullName());
 
         if ($this->options['debug']) {
             $file->addDebug('mimeType', $mime);
@@ -820,7 +928,7 @@ class UploadController
                 if (in_array('all' , $params['type'])) {
                     $typeOk = true;
 
-                } elseif (in_array('image' , $params['type']) && cot_files_isValidImageFile($file->getFullName())) {
+                } elseif (in_array('image' , $params['type']) && cot_filesIsValidImageFile($file->getFullName())) {
                     $typeOk = true;
 
                 } elseif (in_array('video' , $params['type']) && mb_stripos($mime, 'video') !== false) {

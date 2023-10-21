@@ -16,7 +16,7 @@ Hooks=parser.last
  * @todo дописать
  */
 
-use cot\modules\files\model\File;
+use cot\modules\files\models\File;
 
 defined('COT_CODE') or die('Wrong URL.');
 
@@ -113,7 +113,7 @@ if (!function_exists('files_thumb_bbcode')) {
             return $m[0].'err';
         }
         $params['f'] = (int) $params['f'];
-        $folder = files_model_Folder::getById($params['f']);
+        $folder = files_models_Folder::getById($params['f']);
         if(!$folder) return $m[0].'err - NotFound';
         $source = $folder->user_id > 0 ? 'pfs' : 'sfs';
 
@@ -129,7 +129,7 @@ if (!function_exists('files_thumb_bbcode')) {
             }
         }
 
-        $html = cot_files_gallery($source, $folder->ff_id, '', $tpl, 0, $order);
+        $html = cot_filesGallery($source, $folder->ff_id, '', $tpl, 0, $order);
         if (!$html) return $m[0].'err2';
 
         return $html;

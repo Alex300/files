@@ -1,21 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace cot\modules\files\services;
 
+use Cot;
 use cot\modules\files\dto\FileDto;
-use cot\modules\files\model\File;
-use image\exception\ImageException;
+use cot\modules\files\models\File;
+use filesystem\exceptions\UnableToMoveFile;
+use fileSystem\FilesystemFactory;
+use filesystem\LocalFilesystem;
+use image\exceptions\ImageException;
 use image\Image;
+use League\Flysystem\FilesystemOperator;
+use League\MimeTypeDetection\GeneratedExtensionToMimeTypeMap;
+use Throwable;
 
 /**
  * @package Files
  *
- * @todo при загрузке файлов проверять временную директорию и удалять фалы старше 2-х дней? \cot_files_tempDir()
+ * @todo при загрузке файлов проверять временную директорию и удалять фалы старше 2-х дней? \cot_filesTempDir()
  * c:/ospanel/userdata/temp\files_bd4fd02e3abc35abf77622_upload/
  */
 class FileService
 {
-    public static $fileUploadErrors = [
+    public const FILE_UPLOAD_ERRORS = [
         UPLOAD_ERR_OK => 'There is no error, the file uploaded with success',
         UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini',
         UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form',
@@ -25,6 +34,198 @@ class FileService
         UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
         UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.',
     ];
+
+    public const MIME_TYPES = [
+        'txt'  => 'text/plain',
+        'htm'  => 'text/html',
+        'html' => 'text/html',
+        'php'  => 'text/html',
+        'css'  => 'text/css',
+        'js'   => 'application/javascript',
+        'json' => 'application/json',
+        'xml'  => 'application/xml',
+        'swf'  => 'application/x-shockwave-flash',
+        'flv'  => 'video/x-flv',
+
+        // images
+        'png'  => 'image/png',
+        'jpg'  => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'jpe'  => 'image/jpeg',
+        'gif'  => 'image/gif',
+        'bmp'  => 'image/bmp',
+        'ico'  => 'image/vnd.microsoft.icon',
+        'tiff' => 'image/tiff',
+        'tif'  => 'image/tiff',
+        'svg'  => 'image/svg+xml',
+        'svgz' => 'image/svg+xml',
+
+        // archives
+        'zip' => 'application/zip',
+        'rar' => 'application/x-rar-compressed',
+        'exe' => 'application/x-msdownload',
+        'msi' => 'application/x-msdownload',
+        'cab' => 'application/vnd.ms-cab-compressed',
+        '7z'  => 'application/x-7z-compressed',
+
+        // audio/video
+        'mp3' => 'audio/mpeg',
+        'qt'  => 'video/quicktime',
+        'mov' => 'video/quicktime',
+        'mp4' => 'video/mp4',
+
+        // adobe
+        'pdf' => 'application/pdf',
+        'psd' => 'image/vnd.adobe.photoshop',
+        'ai'  => 'application/postscript',
+        'eps' => 'application/postscript',
+        'ps'  => 'application/postscript',
+
+        // ms office
+        'doc'  => 'application/msword',
+        'rtf'  => 'application/rtf',
+        'xls'  => 'application/vnd.ms-excel',
+        'ppt'  => 'application/vnd.ms-powerpoint',
+        'docx' => 'application/msword',
+        'xlsx' => 'application/vnd.ms-excel',
+        'pptx' => 'application/vnd.ms-powerpoint',
+
+        // open office
+        'odt' => 'application/vnd.oasis.opendocument.text',
+        'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
+    ];
+
+    /**
+     * Configuration example
+     *
+     * File systems configuration example:
+     * $cfg['filesystem'] = [
+     *    'Yandex.Cloud' => [
+     *       'adapter' => '\League\Flysystem\AwsS3V3\AwsS3V3Adapter',
+     *       'config' => [
+     *          'bucket' => 'my-bucket-name',
+     *          'endpoint' => 'https://storage.yandexcloud.net',
+     *          'region' => 'ru-central1',
+     *          'accessKey' => 'MyAccessKey',
+     *          'secretKey' => 'MySecretKey',
+     *          'pathPrefix' => 'a/path/prefix',
+     *       ],
+     *     ]
+     * ];
+     *
+     *  $cfg['files']['storages'] = [
+     *    'Yandex.Cloud' => [
+     *       ['source' => 'page'],
+     *    ],
+     *    'Google.Drive' => ['page'],
+     *    'SomeStorage' => [
+     *       ['source' => 'forums', 'field' => 'attachments'],
+     *       ['source' => 'page', 'field' => ['gallery', 'someField']], // Так тоже можно
+     *    ],
+     *  ];
+     */
+    public static function getFilesystemName($fileSource = '', $fileField = '', $isThumbnail = false): string
+    {
+        $fileSystemName = 'default';
+
+        // Calculate storage name
+        // разбор конфига
+        if (!empty(Cot::$cfg['files']['storages']) && !empty($fileSource)) {
+            foreach (Cot::$cfg['files']['storages'] as $name => $storage) {
+                if (empty($storage) || !is_array($storage)) {
+                    continue;
+                }
+                foreach ($storage as $sources) {
+                    if (empty($sources)) {
+                        continue;
+                    }
+                    if (!is_array($sources)) {
+                        if ($sources === $fileSource) {
+                            $fileSystemName = $name;
+                            if (empty($fileField)) {
+                                break 2;
+                            }
+                            continue;
+                        }
+                    }
+
+                    if (isset($sources['source']) && $sources['source'] === $fileSource) {
+                        if (empty($sources['field'])) {
+                            $fileSystemName = $name;
+                            if (empty($fileField)) {
+                                break 2;
+                            }
+                            continue;
+                        }
+                        if (!is_array($sources['field'])) {
+                            $sources['field'] = [$sources['field']];
+                        }
+                        if (in_array($fileField, $sources['field'])) {
+                            $fileSystemName = $sources['filesystem'];
+                            break 2;
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($fileSystemName === 'default' && empty(Cot::$cfg['filesystem']['default'])) {
+            $fileSystemName = 'local';
+        }
+
+        return $fileSystemName;
+    }
+
+    /**
+     * @return FilesystemOperator|LocalFilesystem
+     * @see FilesystemFactory::getFilesystem()
+     */
+    public static function getFilesystem($fileSource = '', $fileField = '', $isThumbnail = false)
+    {
+        $fileSystemName = null;
+        $fileSystem = null;
+
+        /* === Hook === */
+        foreach (cot_getextplugins('files.getFileSystem') as $pl) {
+            include $pl;
+        }
+        /* ============ */
+
+        if (!empty($fileSystem)) {
+            return $fileSystem;
+        }
+
+        if (!empty($fileSystemName)) {
+            return static::getFilesystemByName($fileSystemName);
+        }
+
+        if (function_exists('cot_filesGetFilesystem')) {
+            $result = cot_filesGetFilesystem($fileSource, $fileField = '',$isThumbnail);
+            if ($result !== null) {
+                return $result;
+            }
+        }
+
+        $fileSystemName = static::getFilesystemName($fileSource, $fileField, $isThumbnail);
+
+        if ($fileSystemName === 'default' && empty(Cot::$cfg['filesystem']['default'])) {
+            $fileSystemName = 'local';
+        }
+
+        return static::getFilesystemByName($fileSystemName);
+    }
+
+    /**
+     * @return FilesystemOperator|LocalFilesystem
+     * @see FilesystemFactory::getFilesystem()
+     */
+    public static function getFilesystemByName(string $fileSystemName = 'local')
+    {
+        if (empty($fileSystemName)) {
+            $fileSystemName = 'local';
+        }
+        return FilesystemFactory::getFilesystem($fileSystemName, Cot::$cfg['files']['folder']);
+    }
 
     /**
      * @param FileDto $file
@@ -64,9 +265,9 @@ class FileService
         $imageChanged = false;
 
         // Resize image if needed
-        if (\Cot::$cfg['files']['image_resize']) {
-            $neededWidth = (int) \Cot::$cfg['files']['image_maxwidth'];
-            $neededHeight = (int) \Cot::$cfg['files']['image_maxheight'];
+        if (Cot::$cfg['files']['image_resize']) {
+            $neededWidth = (int) Cot::$cfg['files']['image_maxwidth'];
+            $neededHeight = (int) Cot::$cfg['files']['image_maxheight'];
             if (
                 ($neededWidth > 0 && $image->getWidth() > $neededWidth)
                 || ($neededHeight > 0 && $image->getHeight() > $neededHeight)
@@ -117,10 +318,10 @@ class FileService
         }
 
         // Convert to JPEG
-        if (FileService::isNeedToConvertToJpeg($file->file_name)) {
+        if (FileService::isNeedToConvertToJpeg($file->fileName)) {
             $file->ext = 'jpg';
-            $file->file_name = pathinfo($file->file_name, PATHINFO_FILENAME) . '.' . $file->ext;
-            $file->original_name = pathinfo($file->original_name, PATHINFO_FILENAME) . '.' . $file->ext;
+            $file->fileName = pathinfo($file->fileName, PATHINFO_FILENAME) . '.' . $file->ext;
+            $file->originalName = pathinfo($file->originalName, PATHINFO_FILENAME) . '.' . $file->ext;
             $imageChanged = true;
         }
 
@@ -141,6 +342,8 @@ class FileService
             }
 
             $file->size = filesize($file->getFullName());
+            $mime = cot_filesGetMime($file->getFullName());
+            $file->mimeType = $mime ?? '';
         }
 
         unset($image);
@@ -172,7 +375,7 @@ class FileService
             }
         }
 
-        $ext = cot_files_get_ext($fileName);
+        $ext = cot_filesGetExtension($fileName);
         if (
             (empty($toConvert) && !in_array($ext, ['jpg', 'jpeg']))
             || !empty($toConvert) && in_array($ext, $toConvert)
@@ -184,96 +387,65 @@ class FileService
     }
 
     /**
-     * Get file type icon by extension
-     * @param string $ext
-     * @param int $size
-     * @return string
+     * Get file type icon by extension or mime type
      */
-    public static function typeIcon($ext, $size = 48)
+    public static function typeIcon(string $ext, string $mimeType = '', int $size = 48): string
     {
-        $iconUrl = '';
-        if (isset(\Cot::$R["files_icon_type_{$size}_{$ext}"])) {
-            $iconUrl = \Cot::$R["files_icon_type_{$size}_{$ext}"];
-
-        } elseif(isset(\Cot::$R["files_icon_type_48_{$ext}"])) {
-            $iconUrl = \Cot::$R["files_icon_type_48_{$ext}"];
+        if (isset(Cot::$R["files_icon_type_{$size}_{$ext}"])) {
+            return Cot::$R["files_icon_type_{$size}_{$ext}"];
+        }
+        if (isset(Cot::$R["files_icon_type_48_{$ext}"])) {
+            return Cot::$R["files_icon_type_48_{$ext}"];
         }
 
-        if (!empty($iconUrl)) {
-            return $iconUrl;
-        }
-
-        if (!file_exists(\Cot::$cfg['modules_dir'] . "/files/img/types/$size")) {
+        if (!file_exists(Cot::$cfg['modules_dir'] . "/files/img/types/{$size}")) {
             $size = 48;
         }
 
-        if (file_exists(\Cot::$cfg['modules_dir'] . "/files/img/types/$size/{$ext}.png")) {
-            return \Cot::$cfg['modules_dir'] . "/files/img/types/$size/{$ext}.png";
+        if (file_exists(Cot::$cfg['modules_dir'] . "/files/img/types/{$size}/{$ext}.png")) {
+            return Cot::$cfg['modules_dir'] . "/files/img/types/{$size}/{$ext}.png";
         }
 
         if (in_array($ext, ['avif','bmp','gif','jpg','jpeg','heic','png','tga','tpic','wbmp','webp','xbm'])) {
             return \Cot::$cfg['modules_dir'] . "/files/img/types/$size/image.png";
         }
 
-        return \Cot::$cfg['modules_dir'] . "/files/img/types/$size/archive.png";
-    }
+        if (!empty($mimeType)) {
+            $mimeParts = explode('/', $mimeType);
 
-    /**
-     * Thumbnail folder absolute path
-     * @return string
-     */
-    public static function thumbnailDirectory()
-    {
-        return \Cot::$cfg['files']['folder'] . '/_thumbs';
-    }
+            if (isset(Cot::$R["files_icon_type_{$size}_{$mimeParts[1]}"])) {
+                return Cot::$R["files_icon_type_{$size}_{$mimeParts[1]}"];
+            }
+            if (isset(Cot::$R["files_icon_type_48_{$mimeParts[1]}"])) {
+                return Cot::$R["files_icon_type_48_{$mimeParts[1]}"];
+            }
 
-    /**
-     * Absolute path to the file's thumbnail folder.
-     * @param int $id File ID
-     * @return string
-     */
-    public static function fileThumbnailDirectory($id)
-    {
-        $hash = mb_substr(md5($id . \Cot::$cfg['site_id']), 0, 20);
-        return static::thumbnailDirectory() . '/' . $id . 'a' . $hash;
-    }
+            $fileName = Cot::$cfg['modules_dir'] . "/files/img/types/{$size}/{$mimeParts[1]}.png";
+            if (file_exists($fileName)) {
+                return $fileName;
+            }
 
-    /**
-     * Absolute path for the file's thumbnail.
-     * @param int $id File ID
-     * @param int $width Thumbnail width
-     * @param int $height Thumbnail height
-     * @param int $frame Thumbnail framing mode
-     * @param string $extension
-     * @return string Path for the file on disk or false file was not found
-     */
-    public static function thumbnailPath($id, $width, $height, $frame, $extension = '')
-    {
-        if (empty($extension)) {
-            $extension = '.jpg';
+            if ($mimeParts[0] !== 'application') {
+                if (isset(Cot::$R["files_icon_type_{$size}_{$mimeParts[0]}"])) {
+                    return Cot::$R["files_icon_type_{$size}_{$mimeParts[0]}"];
+                }
+                if (isset(Cot::$R["files_icon_type_48_{$mimeParts[0]}"])) {
+                    return Cot::$R["files_icon_type_48_{$mimeParts[0]}"];
+                }
+
+                $fileName = Cot::$cfg['modules_dir'] . "/files/img/types/{$size}/{$mimeParts[0]}.png";
+                if (file_exists($fileName)) {
+                    return $fileName;
+                }
+            }
+
+//            $icon = '';
+//            switch ($mimeParts[0]) {
+//
+//            }
         }
-        $hash = mb_substr(md5($id . \Cot::$cfg['files']['prefix'] . \Cot::$cfg['site_id'] . $width . $height . $frame), 0, 20);
-        return static::fileThumbnailDirectory($id) . '/' . \Cot::$cfg['files']['prefix'] . $hash . '-' . $width . 'x' . $height
-            . '-' . $frame . '.' . $extension;
-    }
 
-    /**
-     * Get existing thumbnail for file with any file extension
-     * @param int $id File ID
-     * @param int $width Thumbnail width
-     * @param int $height Thumbnail height
-     * @param int $frame Thumbnail framing mode
-     * @return string|false Absolute path to the file on disk or false file was not found
-     */
-    public static function getExistingThumbnail($id, $width, $height, $frame)
-    {
-        $mask = static::thumbnailPath($id, $width, $height, $frame, '*');
-        $files = glob($mask, GLOB_NOSORT);
-        if (!$files || count($files) == 0) {
-            return false;
-        } else {
-            return $files[0];
-        }
+        return Cot::$cfg['modules_dir'] . "/files/img/types/$size/archive.png";
     }
 
     /**
@@ -308,5 +480,265 @@ class FileService
             20
         );
         return $filesPath . '/' . \Cot::$cfg['files']['prefix'] . $file->id . 'a' . $hash . '.' . $file->ext;
+    }
+
+    /**
+     * Get file extension by Mime type
+     */
+    public static function getFileExtensionByMimeType(string $mimeType): ?string
+    {
+        if (class_exists('\League\MimeTypeDetection\GeneratedExtensionToMimeTypeMap')) {
+            $map = new GeneratedExtensionToMimeTypeMap();
+            $ext = $map->lookupExtension($mimeType);
+        } else {
+            $ext = array_search($mimeType, static::MIME_TYPES);
+        }
+
+        if ($ext === 'jpeg') {
+            $ext = 'jpg';
+        }
+
+        return $ext ?: null;
+    }
+
+    /**
+     * Get all file extensions by Mime type
+     * @return string[]
+     */
+    public static function getAllFileExtensionsByMimeType(string $mimeType): array
+    {
+        if (class_exists('\League\MimeTypeDetection\GeneratedExtensionToMimeTypeMap')) {
+            $map = new GeneratedExtensionToMimeTypeMap();
+            $extensions = $map->lookupAllExtensions($mimeType);
+        } else {
+            $extensions = array_keys(static::MIME_TYPES, $mimeType, true);
+        }
+
+        return $extensions;
+    }
+
+    /**
+     * Temporary folder for file upload
+     * @param bool $create Create folder if not exists?
+     * @return string
+     */
+    public static function getTemporaryDirectory(bool $create = true): string
+    {
+        $tmpDir = sys_get_temp_dir();
+        if (!empty($tmpDir) && @is_writable($tmpDir)) {
+            $uplDir = $tmpDir . DIRECTORY_SEPARATOR . 'files_' . mb_substr(md5(Cot::$cfg['secret_key']), 10) . '_upload';
+            if (!$create) {
+                return $uplDir;
+            }
+
+            if (!file_exists($uplDir)) {
+                mkdir($uplDir, Cot::$cfg['dir_perms'], true);
+            }
+            if (is_writable($uplDir)) {
+                return $uplDir;
+            }
+        }
+
+        // Fall back
+        $uplDir = Cot::$cfg['files']['folder'] . '/' . mb_substr(md5(Cot::$cfg['secret_key']), 10) . '_upload';
+        if ($create && !file_exists($uplDir)) {
+            mkdir($uplDir, Cot::$cfg['dir_perms'], true);
+        }
+
+        return $uplDir;
+    }
+
+    /**
+     * Fix file extension by mime type
+     */
+    public static function fixFileExtension(string $fileName): string
+    {
+        $mimeType = mime_content_type($fileName);
+        if (empty($mimeType) || $mimeType === 'application/octet-stream') {
+            return $fileName;
+        }
+        $ext = cot_filesGetExtension($fileName);
+
+        $possibleExtensions = FileService::getAllFileExtensionsByMimeType($mimeType);
+        if (empty($possibleExtensions) || in_array($ext, $possibleExtensions)) {
+            return $fileName;
+        }
+
+        $rightExt = $possibleExtensions[0];
+        if ($rightExt === 'jpeg') {
+            $rightExt = 'jpg';
+        }
+
+        if (
+            empty($rightExt)
+            || $ext === $rightExt
+            || (in_array($ext, ['jpg', 'jpeg'], true) && $rightExt === 'jpg')
+            || ($ext === 'csv' && $rightExt === 'txt')
+            || ($ext === 'heic' && $rightExt === 'heif')
+        ) {
+            return $fileName;
+        }
+
+        if (empty($ext) || mb_strlen($ext) > 4) {
+            $newName = $fileName . '.' . $rightExt;
+        } else {
+            $newName = mb_substr($fileName, 0, mb_strrpos($fileName, $ext) - 1) . '.' . $rightExt;
+        }
+
+        if (!@rename($fileName, $newName)) {
+            throw UnableToMoveFile::fromLocationTo($fileName, $newName);
+        }
+
+        return $newName;
+    }
+
+    public static function fixFileExtensionByDTO(FileDto $file): void
+    {
+        $fileName = $file->getFullName();
+        $newName = static::fixFileExtension($fileName);
+        if ($newName === $fileName) {
+            return;
+        }
+        $file->setFullName($newName);
+        $rightExt = cot_filesGetExtension($newName);
+        if (isset($file->originalName)) {
+            $file->originalName .= '.' . $rightExt;
+        }
+    }
+
+    /**
+     * Garbage collect
+     * Сборка мусора от несохраненных форм
+     */
+    public static function formGarbageCollect()
+    {
+        $yesterday = (int) (Cot::$sys['now'] - 60 * 60 * 24);
+        if ($yesterday < 100) {
+            return 0; // Just in case
+        }
+
+        //$dateTo = date('Y-m-d H:i:s',  );   // До вчерашнего дня
+        $condition = [
+            ['source', ['sfs', 'pfs'], '<>'],
+            ['created', date('Y-m-d H:i:s',  $yesterday), '<'],
+            ['unikey', '', '<>']
+        ];
+
+        $cnt = 0;
+
+        $files = File::findByCondition($condition);
+        if ($files) {
+            foreach($files as $fileRow){
+                $fileRow->delete();
+                $cnt++;
+            }
+        }
+
+        $tmpDir = FileService::getTemporaryDirectory(false);
+        if (is_dir($tmpDir)) {
+            $objects = scandir($tmpDir);
+            $yesterday2 = (int) (Cot::$sys['now'] - 60 * 60 * 24);
+            if ($yesterday2 < 100) {
+                return 0;
+            }
+            foreach ($objects as $file) {
+                if ($file != "." && $file != "..") {
+                    if (filetype($tmpDir . DIRECTORY_SEPARATOR . $file) != 'dir') {
+                        // Delete old temporary files
+                        $currentModified = filectime($tmpDir . DIRECTORY_SEPARATOR . $file);
+                        if ($currentModified < $yesterday2) {
+                            @unlink($tmpDir . DIRECTORY_SEPARATOR . $file);
+                        }
+                    }
+                }
+            }
+        }
+
+        return $cnt;
+    }
+
+    /**
+     * Checks if file extension is allowed for upload. Returns error message or empty string.
+     * Emits error messages via cot_error().
+     *
+     * @param  string $ext File extension
+     * @return bool true if all checks passed, false if something was wrong
+     */
+    public static function isExtensionAllowed(string $ext): bool
+    {
+        if (!Cot::$cfg['files']['filecheck']) {
+            return true;
+        }
+
+        $validExtensions = explode(',', Cot::$cfg['files']['exts']);
+        $validExtensions = array_map('trim', $validExtensions);
+        if (empty($ext) || !in_array($ext, $validExtensions)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Привязка ранее загруженных файлов к только что созданному объекту
+     *
+     * @param $source
+     * @param $item
+     */
+    public static function linkFiles($source, $item)
+    {
+        $formId = "{$source}_0";
+
+        $unikey = cot_import('cf_'.$formId, 'P', 'TXT');
+        if (!$unikey) {
+            $unikey = cot_import('cf_'.$formId, 'G', 'TXT');
+        }
+        //$unikey = cot_import_buffered('cf_'.$formId, $unikey);
+
+        if ($unikey && $item > 0) {
+            $condition = [
+                ['source', $source],
+                ['source_id', 0],
+                ['unikey', $unikey],
+            ];
+
+            $files = File::findByCondition($condition);
+
+            if ($files) {
+                foreach ($files as $fileRow) {
+                    $fileRow->source_id = $item;
+
+                    $newRelativePath = FileService::generateFileRelativePath($fileRow);
+
+                    $fileSystem = FileService::getFilesystemByName($fileRow->filesystem_name);
+                    $targetFileSystemName = FileService::getFilesystemName($fileRow->source, $fileRow->source_field);
+
+                    try {
+                        if ($fileRow->filesystem_name === $targetFileSystemName) {
+                            $fileSystem->move($fileRow->getFullName(), $newRelativePath);
+                        } else {
+                            $targetFileSystem = FileService::getFilesystemByName($targetFileSystemName);
+                            $stream = $fileSystem->readStream($fileRow->getFullName());
+                            $targetFileSystem->writeStream($newRelativePath, $stream);
+                            if (is_resource($stream) && get_resource_type($stream) === 'stream') {
+                                fclose($stream);
+                            }
+                        }
+                    } catch (Throwable $e) {
+                        cot_error(Cot::$L['files_err_upload']);
+                        $fileRow->delete();
+                        continue;
+                    }
+
+                    $fileRow->path = dirname($newRelativePath);
+                    $fileRow->file_name = basename($newRelativePath);
+                    $fileRow->unikey = '';
+                    $fileRow->filesystem_name = $targetFileSystemName;
+                    $fileRow->save();
+                }
+            }
+        }
+
+        self::formGarbageCollect();
     }
 }

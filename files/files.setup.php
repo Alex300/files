@@ -5,8 +5,8 @@ Code=files
 Name=Files
 Description=Personal File Space and attach files to posts and pages
 Category=files-media
-Version=2.0.0-beta1
-Date=2023-09-24
+Version=2.0.0
+Date=2023-10-21
 Author=Cotonti Team, Kalnov Alexey <kalnovalexey@yandex.ru>
 Copyright=(c) Cotonti Team, 2014-2023 Lily Software https://lily-software.com
 Notes=DO NOT FORGET to create a writable folder for the files
@@ -19,7 +19,7 @@ Recommends_modules=page,users
 [BEGIN_COT_EXT_CONFIG]
 folder=01:string::datas/files:Directory for files
 prefix=02:string::file-:File prefix
-exts=03:text::avif,bmp,gif,jpg,jpeg,heic,png,tga,tpic,wbmp,webp,xbm,zip,rar,7z,gz,bz2,pdf,djvu,mp3,ogg,wma,avi,divx,mpg,mpeg,swf,txt,doc,docx,xls,xlsx:Allowed extensions (comma separated, no dots and spaces)
+exts=03:text::avif,bmp,gif,jpg,jpeg,heic,heif,png,tga,tpic,wbmp,webp,xbm,zip,rar,7z,gz,bz2,pdf,djvu,mp3,ogg,wma,avi,divx,mpg,mpeg,swf,txt,doc,docx,xls,xlsx:Allowed extensions (comma separated, no dots and spaces)
 filecheck=04:radio::1:
 nomimepass=05:radio::1:
 maxFoldersPerPage=07:string::15:
@@ -30,6 +30,7 @@ upl_separator=10:separator:::
 autoupload=11:radio::0:Start uploading automatically
 sequential=12:radio::0:Sequential uploading instead of concurrent
 chunkSize=13:string::2000000:Chunk size (in bytes) (0 - Disable chunked file uploads)
+fixExtensionsByMime=14:radio::1:Fix files extensions by mime type
 
 img_separator=20:separator:::
 
@@ -64,6 +65,7 @@ avatar_framing=53:select:height,width,inset,outbound:outbound:Default avatar fra
 
 /**
  * @todo test extrafields
+ * @todo min PHP version 7.4
  *
  * module Files for Cotonti Siena
  *
@@ -83,5 +85,8 @@ avatar_framing=53:select:height,width,inset,outbound:outbound:Default avatar fra
  * user_id    = id пользователя реально добавившего файл или 0 для sfs
  *
  * В свой pfs добавлять файлы пользователь может только сам
+ *
+ * Flysystem adapter для Яндекс.Диск
+ * https://github.com/jack-theripper/yandex-disk-flysystem
  */
 defined('COT_CODE') or die('Wrong URL');

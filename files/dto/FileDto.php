@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace cot\modules\files\dto;
 
-use cot\modules\files\model\File;
+use Cot;
+use cot\modules\files\models\File;
 use cot\modules\files\services\FileService;
+use filesystem\LocalFilesystem;
 use image\Image;
 
 /**
@@ -12,31 +16,35 @@ use image\Image;
  */
 class FileDto
 {
-    private $errors = [];
+    private array $errors = [];
 
-    private $debug = [];
+    private array $debug = [];
 
     /**
      * @var File
      */
-    private $file;
+    private File $file;
 
     /**
      * @var string Full path to file relative to site root. (Note: File model use path relative to Cot::$cfg['files']['folder'])
      */
-    public $path;
-    public $file_name;
-    public $original_name;
-    public $ext;
-    public $isImage;
-    public $size;
-    public $mimeType;
+    public string $path;
+    public string $fileName;
+    public string $originalName;
+    public string $ext = '';
+    public bool $isImage = false;
+    public int $size;
+    public string $mimeType = '';
 
-    private $extraData = [];
+    public ?string $thumbnailUrl = null;
+    public ?bool $fileExists = null;
+    public ?int $lastModified = null;
+
+    private array $extraData = [];
 
     public function __get($name)
     {
-        return isset($this->extraData[$name]) ? $this->extraData[$name] : null;
+        return $this->extraData[$name] ?? null;
     }
 
     public function __isset($name)
@@ -70,7 +78,7 @@ class FileDto
         $this->debug = [];
     }
 
-    public function getDebug()
+    public function getDebug(): array
     {
         return $this->debug;
     }
@@ -80,57 +88,61 @@ class FileDto
         $this->errors[] = $error;
     }
 
-    public function getErrors()
+    public function getErrors(): array
     {
         return $this->errors;
     }
 
-    public function getFullName()
+    public function getFullName(): string
     {
-        return $this->path . '/' . $this->file_name;
+        return $this->path . '/' . $this->fileName;
     }
 
-    public function setFullName($fullPath)
+    public function setFullName(string $fullPath): void
     {
         $this->path = dirname($fullPath);
-        $this->file_name = basename($fullPath);
-        $this->ext = mb_strtolower(cot_files_get_ext($this->file_name));
+        $this->fileName = basename($fullPath);
+        $this->ext = mb_strtolower(cot_filesGetExtension($this->fileName));
     }
 
-    /**
-     * @param File $file
-     * @return self
-     */
-    public static function createFromFile(File $file)
+    public static function createFromFile(File $file): FileDto
     {
         $dto = new FileDto();
         $dto->loadFromFile($file);
         return $dto;
     }
 
-    public function loadFromFile(File $file)
+    public function loadFromFile(File $file): void
     {
         $this->file = $file;
         $this->extraData['id'] = (int) $file->id;
-        $this->path = \Cot::$cfg['files']['folder'] . '/' . $file->path;
-        $this->file_name = $file->file_name;
+
+        //$this->path = \Cot::$cfg['files']['folder'] . '/' . $file->path;
+        $this->fileName = $file->file_name;
         if (isset($file->original_name)) {
-            $this->original_name = $file->original_name;
+            $this->originalName = $file->original_name;
         }
         if (isset($file->ext)) {
             $this->ext = mb_strtolower($file->ext);
         }
         if (isset($file->is_img)) {
-            $this->isImage = $file->is_img;
+            $this->isImage = (bool) $file->is_img;
         }
         if (isset($file->size)) {
             $this->size = $file->size;
         }
+
+        if (isset($file->mime_type)) {
+            $this->mimeType = $file->mime_type;
+        }
+
+        if (!empty($file->updated)) {
+            $this->lastModified = strtotime($file->updated);
+        }
+
         if (isset($file->title)) {
             $this->extraData['title'] = $file->title;
         }
-
-        $this->mimeType = cot_files_getMime($this->getFullName());
 
         // Extra fields
         if (!empty($cot_extrafields[File::tableName()])) {
@@ -145,9 +157,8 @@ class FileDto
     /**
      * Preparing data for frontend
      * path и file_name не надо выводить. Это внутренние данные
-     * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
         $id = 0;
         if (!empty($this->extraData['id'])) {
@@ -158,16 +169,12 @@ class FileDto
 
         $result = !empty($this->extraData) ? $this->extraData : [];
 
-        $fileExists = false;
-        if (!empty($this->path) && !empty($this->file_name)) {
-            $fileExists = file_exists($this->getFullName());
-//            if (!$fileExists) {
-//                $this->addError('File is not exists');
-//            }
+        if ($this->fileExists !== null && !$this->fileExists) {
+            $this->addError('File is not exists');
         }
 
-        if (!empty($this->original_name)) {
-            $result['name'] = htmlspecialchars($this->original_name);
+        if (!empty($this->originalName)) {
+            $result['name'] = htmlspecialchars($this->originalName);
         }
 
         if (!empty($this->ext)) {
@@ -179,63 +186,83 @@ class FileDto
             //$result['size'] = $fileExists ? $this->size : 0;
         }
 
+        //$result['isImage'] = 0;
         if (isset($this->isImage)) {
-            $result['isImage'] = $this->isImage && in_array(mb_strtolower($this->ext), Image::supportedFormats()) ? 1 : 0;
+            $result['isImage'] = $this->isImage && !empty($this->ext) && in_array(mb_strtolower($this->ext), Image::supportedFormats()) ? 1 : 0;
         }
 
-        if (!empty($this->path) && !empty($this->file_name)) {
-            $result['url'] = \Cot::$cfg['mainurl'] . '/' . $this->getFullName();
+        if (!empty($this->file) && ($this->fileExists === null || $this->fileExists)) {
+            $fileSystem = FileService::getFilesystemByName($this->file->filesystem_name);
+            $result['url'] = $fileSystem->publicUrl($this->file->getFullName());
+        }
 
-            $thumbParam = null;
+        $thumbParam = null;
 
-            if (!empty($this->file) && $this->file->id > 0) {
-                $thumbParam = $this->file;
-            } elseif (!empty($this->extraData['id'])) {
-                $thumbParam = $this->extraData['id'];
-            }
+        if (!empty($this->file) && $this->file->id > 0) {
+            $thumbParam = $this->file;
+        } elseif (!empty($this->extraData['id'])) {
+            $thumbParam = $this->extraData['id'];
+        }
 
-            if (!$fileExists) {
-                $result['thumbnail'] = '';
-            } elseif (($result['isImage'] && $thumbParam)) {
-                $thumbPath = cot_files_thumb($thumbParam);
-                $result['thumbnail'] = '';
-                if ($thumbPath && file_exists($thumbPath)) {
-                    $result['thumbnailUrl'] = $result['thumbnail'] = \Cot::$cfg['mainurl'] . '/' . $thumbPath;
-                    $result['thumbnailUrl'] .= '?lastmod=' . filemtime($thumbPath);
+        $result['thumbnail'] = $result['thumbnailUrl'] = Cot::$cfg['mainurl'] . '/'
+            . FileService::typeIcon($this->ext ?? '', $this->mimeType ?? '');
+
+        if (
+            ($this->fileExists === null || $this->fileExists)
+            && isset($result['isImage'])
+            && $result['isImage']
+        ) {
+            //$result['thumbnailUrl'] ??= '';
+            if ($this->thumbnailUrl) {
+                $result['thumbnailUrl'] = $result['thumbnail'] = $this->thumbnailUrl;
+                if (!empty($this->lastModified)) {
+                    $result['thumbnailUrl'] .= '?lm=' . $this->lastModified;
                 }
-            } else {
-                $result['thumbnail'] = \Cot::$cfg['mainurl'] . '/' . FileService::typeIcon($this->ext);
             }
+        }
 
-            if ($fileExists) {
-                $result['lastmod'] = filemtime($this->getFullName());
+        if (!empty($this->ext) || !empty($this->mimeType)) {
+            $result['thumbnail'] = $result['thumbnailUrl'] = Cot::$cfg['mainurl'] . '/'
+                . FileService::typeIcon($this->ext ?? '', $this->mimeType ?? '');
+        }
+        if ($this->fileExists !== null && !$this->fileExists) {
+            unset($result['thumbnail'], $result['thumbnailUrl']);
+        } elseif (isset($result['isImage']) && $result['isImage']) {
+            $result['thumbnailUrl'] ??= '';
+            if ($this->thumbnailUrl) {
+                $result['thumbnailUrl'] = $result['thumbnail'] = $this->thumbnailUrl;
+                if (!empty($this->lastModified)) {
+                    $result['thumbnailUrl'] .= '?lm=' . $this->lastModified;
+                }
             }
+        }
+
+        if (!empty($this->lastModified)) {
+            $result['lastModified'] = $this->lastModified;
         }
 
         if ($id > 0) {
-            $result['deleteUrl'] = \Cot::$cfg['mainurl'] . '/index.php?e=files&m=upload&id=' . $id . '&_method=DELETE&x=' . \Cot::$sys['xk'];
+            $result['deleteUrl'] = Cot::$cfg['mainurl'] . '/index.php?e=files&m=upload&id=' . $id . '&_method=DELETE&x=' . Cot::$sys['xk'];
             $result['deleteType'] = 'POST';
 
             $result['editForm'] = [
                 [
-                    'title' => \Cot::$L['Title'],
+                    'title' => Cot::$L['Title'],
                     'element' => cot_inputbox(
                         'text',
                         'title',
-                        isset($this->extraData['title']) ? $this->extraData['title'] : '',
-                        ['class' => 'form-control file-edit', 'placeholder' => \Cot::$L['Title']]
+                        $this->extraData['title'] ?? '',
+                        ['class' => 'form-control file-edit', 'placeholder' => Cot::$L['Title']]
                     )
                 ]
             ];
 
             // Extra fields
-            if (!empty(\Cot::$extrafields[File::tableName()])) {
-                foreach (\Cot::$extrafields[File::tableName()] as $exfld) {
+            if (!empty(Cot::$extrafields[File::tableName()])) {
+                foreach (Cot::$extrafields[File::tableName()] as $exfld) {
                     $fieldName = $exfld['field_name'];
-                    $value = isset($this->extraData[$fieldName]) ? $this->extraData[$fieldName] : null;
-                    $title = isset(\Cot::$L['files_' . $exfld['field_name'] . '_title'])
-                        ? \Cot::$L['files_' . $exfld['field_name'] . '_title']
-                        : $exfld['field_description'];
+                    $value = $this->extraData[$fieldName] ?? null;
+                    $title = Cot::$L['files_' . $exfld['field_name'] . '_title'] ?? $exfld['field_description'];
 
                     $result[$fieldName] = cot_build_extrafields_data('files', $exfld, $value);
                     $result['editForm'][] = [
