@@ -35,7 +35,7 @@ fixExtensionsByMime=14:radio::1:Fix files extensions by mime type
 img_separator=20:separator:::
 
 image_convert=21:radio::1:Convert images to JPG on upload
-image_to_convert=22:text::avif,bmp,heic,tga,tpic,wbmp,xbm:Image extensions/types to convert to jpeg, if the option above is enabled. If empty, all images will be converted. (comma separated, no dots and spaces)
+image_to_convert=22:text::avif,bmp,heic,heif,tga,tpic,wbmp,xbm:Image extensions/types to convert to jpeg, if the option above is enabled. If empty, all images will be converted. (comma separated, no dots and spaces)
 image_resize=23:radio::0:auto:Resize uploaded images
 image_maxwidth=24:string::3840:Image max width for resize
 image_maxheight=25:string::2160:Image max height for resize
