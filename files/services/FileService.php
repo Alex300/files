@@ -235,7 +235,7 @@ class FileService
     {
         $driver = Image::currentDriver();
         if (!$driver) {
-            $file->addError(\Cot::$L['files_err_no_driver']);
+            $file->addError(Cot::$L['files_err_no_driver']);
             return $file;
         }
 
@@ -246,7 +246,7 @@ class FileService
         // Check the image size and try to calculate and allocate the required RAM amount
         // cot_img_check_memory() works correctly with GD. It does not support all image formats that Imagick supports
         if ($getImageSizeSupported && !cot_img_check_memory($file->getFullName())) {
-            $file->addError(\Cot::$L['files_err_toobig']);
+            $file->addError(Cot::$L['files_err_toobig']);
             return $file;
         }
 
@@ -280,16 +280,16 @@ class FileService
                         (int) ceil($neededWidth * $neededHeight * 4 / 1048576)
                     )
                 ) {
-                    $file->addError(\Cot::$L['files_err_toobig']);
+                    $file->addError(Cot::$L['files_err_toobig']);
                     unset($image);
                     return $file;
                 }
 
                 try {
                     $image->thumbnail($neededWidth, $neededHeight, Image::THUMBNAIL_INSET);
-                } catch (\Exception $e) {
+                } catch (Throwable $e) {
                     $message = "Can't resize image";
-                    if (\Cot::$usr['isadmin']) {
+                    if (Cot::$usr['isadmin']) {
                         $msg = $e->getMessage();
                         if (!empty($msg)) {
                             $message .= ': ' . $msg;
