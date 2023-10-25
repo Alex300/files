@@ -21,22 +21,45 @@
             $(function () {
                 'use strict';
 
-                var uplId = 'pfs_0_';
+                function showError(message) {
+                    const progressElement = $('#files-avatar-upload #progress');
 
-                $('#fileupload').fileupload({
+                    progressElement.addClass('hidden');
+                    $('<div id="files-avatar-upload-error"><span class="label label-danger">Error</span> ' + message +
+                        '</div>').
+                        insertAfter(progressElement);
+                }
+
+                let options = {
                     dataType: 'json',
-                    maxChunkSize: filesConfig[uplId]['chunk'],
+                    maxChunkSize: {UPLOAD_CHUNK},
                     formData: {
-                        param: filesConfig[uplId].param,
-                        x: filesConfig['x']
+                        param: '{UPLOAD_PARAM}',
+                        x: '{UPLOAD_X}'
                     },
-                    acceptFileTypes: /(\.|\/)(gif|jpe?g|png)$/i
-                }).on('fileuploadprocessalways', function (e, data) {
+                    acceptFileTypes: /(\.|\/)(avif|bmp|gif|jpe?g|heic|heif|png|svg|tga|webp)$/i,
+                    disableValidation: false
+                };
 
-                    // Обработка перед загрузкой. Пока не нужна
+                <!-- IF {PHP.cfg.files.image_resize} == 1 AND {PHP.cfg.files.image_maxwidth} > 0 AND {PHP.cfg.files.image_maxheight} > 0 -->
+                options.loadImageFileTypes = /^image\/(avif|bmp|gif|jpeg|heic|heif|png|svg\+xml|x-tga|webp)$/;
+                options.loadImageMaxFileSize = 60000000; // 60MB
+                options.disableImageResize = false;
+                options.imageMaxWidth = {PHP.cfg.files.image_maxwidth};
+                options.imageMaxHeight = {PHP.cfg.files.image_maxheight};
+                <!-- ENDIF -->
+
+                $('#fileupload').fileupload(options)
+                .on('fileuploadprocessalways', function (e, data) {
+                    // Validation result
+                    let currentFile = data.files[data.index];
+                    if (data.files.error && currentFile.error) {
+                        // there was an error
+                        showError(currentFile.error);
+                    }
 
                 }).on('fileuploadprogressall', function (e, data) {
-                    var progress = parseInt(data.loaded / data.total * 100, 10);
+                    const progress = parseInt(data.loaded / data.total * 100, 10);
 
                     $('#files-avatar-upload-error').remove();
 
@@ -48,53 +71,31 @@
                     $('#files-avatar-upload #progress').addClass('hidden');
 
                     $.each(data.result.files, function (index, file) {
-                        var error =  file.error || false;
-                        if(error){
-                            $('<div id="files-avatar-upload-error"><span class="label label-danger">Error</span> '+ file.error +'</div>').
-                                insertAfter($('#files-avatar-upload #progress'));
+                        const error =  file.error || false;
+                        if (error) {
+                            showError(file.error);
                             return;
-                        }else{
+                        } else {
                             $('#files-avatar-upload-error').remove();
                         }
-                        $('#files-avatar').html('');
-                        $('<img/>', {src: file.thumbnailUrl, alt: file.name, 'class': 'avatar' }).appendTo('#files-avatar');
+
+                        const avatarTemplate = '{PHP|str_replace("'", "\'", {PHP.R.files_user_avatar})}';
+                        let avatarElement = document.getElementById('files-avatar');
+                        if (avatarElement !== null) {
+                            avatarElement.innerHTML = avatarTemplate.replace('{$src}', file.thumbnailUrl)
+                                .replace('{$alt}', file.name);
+                        }
                     });
 
                 }).on('fileuploadfail', function (e, data) {
+                    showError('File upload error');
 
-                    $('#files-avatar-upload #progress').addClass('hidden');
-
-                    $('<div id="files-avatar-upload-error"><span class="label label-danger">Error</span> File upload error</div>').
-                            insertAfter($('#files-avatar-upload #progress'));
                 }).prop('disabled', !$.support.fileInput)
                         .parent().addClass($.support.fileInput ? undefined : 'disabled');
             });
         </script>
     </div>
 </div>
-
-<!-- Cotonti config -->
-<script type="text/javascript">
-
-if (filesConfig === undefined) {
-    var filesConfig = {
-        exts: $.map('{UPLOAD_EXTS}'.split(','), $.trim),
-        //accept: '{UPLOAD_ACCEPT}',
-        maxsize: {UPLOAD_MAXSIZE},
-        autoUpload: {PHP.cfg.files.autoupload},
-        sequential: {PHP.cfg.files.sequential},
-        'x':    '{UPLOAD_X}'
-    };
-}
-filesConfig.{UPLOAD_ID} = {
-    source: '{UPLOAD_SOURCE}',
-    item:   {UPLOAD_ITEM},
-    field:  '{UPLOAD_FIELD}',
-    limit:  {UPLOAD_LIMIT},
-    chunk:  {UPLOAD_CHUNK},
-    param:  '{UPLOAD_PARAM}'
-};
-</script>
 <!-- The XDomainRequest Transport is included for cross-domain file deletion for IE 8 and IE 9 -->
 <!--[if (gte IE 8)&(lt IE 10)]>
 <script src="js/cors/jquery.xdr-transport.js"></script>

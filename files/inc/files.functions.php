@@ -613,7 +613,25 @@ function cot_filesAvatarBox($userId = null, $tpl = 'files.avatarbox')
     // The jQuery UI widget factory, can be omitted if jQuery UI is already included
     Resources::linkFileFooter($modUrl . '/lib/upload/js/vendor/jquery.ui.widget.js?nc=' . $nc, 'js');
     Resources::linkFileFooter($modUrl . '/lib/upload/js/jquery.iframe-transport.js?nc=' . $nc);
+
+    if (Cot::$cfg['files']['image_resize'] && Cot::$cfg['files']['image_maxwidth'] > 0 && Cot::$cfg['files']['image_maxheight'] > 0) {
+        // The Load Image plugin is included for the preview images and image resizing functionality
+        Resources::linkFileFooter($modUrl . '/lib/JavaScript-Load-Image/js/load-image.all.min.js?nc=' . $nc);
+    }
+
+    // The basic File Upload plugin
     Resources::linkFileFooter($modUrl . '/lib/upload/js/jquery.fileupload.js?nc=' . $nc);
+
+    // The File Upload file processing plugin
+    Resources::linkFileFooter($modUrl . '/lib/upload/js/jquery.fileupload-process.js?nc='.$nc);
+
+    if (Cot::$cfg['files']['image_resize'] && Cot::$cfg['files']['image_maxwidth'] > 0 && Cot::$cfg['files']['image_maxheight'] > 0) {
+        // The File Upload image preview & resize plugin
+        Resources::linkFileFooter($modUrl . '/lib/upload/js/jquery.fileupload-image.js?nc=' . $nc);
+    }
+
+    // The File Upload validation plugin
+    Resources::linkFileFooter($modUrl . '/lib/upload/js/jquery.fileupload-validate.js?nc='.$nc);
 
     $formId = "{$source}_{$item}_{$filed}";
     $type = ['image'];

@@ -5,17 +5,19 @@ var dndOffset = 0;
 $(function () {
     'use strict';
 
-    var x = filesConfig['x'],
-        fileUpload = $('.fileupload');
+    const x = filesConfig['x'];
+    const fileUpload = $('.fileupload');
 
     // Initialize the jQuery File Upload widget:
     fileUpload.each(function () {
-        var fileInput = $(this);
+        let fileInput = $(this);
 
-        var uplId = $(this).attr('id');
+        let uplId = $(this).attr('id');
         uplId = uplId.replace('fileupload_', '');
 
-        $(this).fileupload({
+        let options = {
+            loadImageFileTypes: /^image\/(avif|bmp|gif|jpeg|heic|heif|png|svg\+xml|x-tga|webp)$/,
+            loadImageMaxFileSize: 60000000, // 60MB
             dropZone: $(this),
             formData: {
                 param: filesConfig[uplId].param,
@@ -26,7 +28,15 @@ $(function () {
             previewMaxHeight: filesConfig.previewMaxHeight,
             maxChunkSize: filesConfig[uplId]['chunk'],
             sequentialUploads: filesConfig.sequential
-        });
+        };
+
+        if (typeof filesConfig.imageResize !== 'undefined' && filesConfig.imageResize === true) {
+            options.disableImageResize = false;
+            options.imageMaxWidth = filesConfig.imageMaxWidth;
+            options.imageMaxHeight = filesConfig.imageMaxHeight;
+        }
+
+        $(this).fileupload(options);
 
         // Enable iframe cross-domain access via redirect option:
         $(this).fileupload(

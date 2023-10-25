@@ -78,26 +78,33 @@
 
 <!-- Cotonti config -->
 <script type="text/javascript">
-    if (filesConfig === undefined) {
-        var filesConfig = {
-            exts: $.map('{UPLOAD_EXTS}'.split(','), $.trim),
-            //accept: '{UPLOAD_ACCEPT}',
-            maxsize: {UPLOAD_MAXSIZE},
-            previewMaxWidth: {UPLOAD_THUMB_WIDTH},
-            previewMaxHeight: {UPLOAD_THUMB_HEIGHT},
-            autoUpload: {PHP.cfg.files.autoupload},
-            sequential: {PHP.cfg.files.sequential},
-            'x':    '{UPLOAD_X}'
-        };
-    }
-    filesConfig.{UPLOAD_ID} = {
-        source: '{UPLOAD_SOURCE}',
-        item:   {UPLOAD_ITEM},
-        field:  '{UPLOAD_FIELD}',
-        limit:  {UPLOAD_LIMIT},
-        chunk:  {UPLOAD_CHUNK},
-        param:  '{UPLOAD_PARAM}'
+if (filesConfig === undefined) {
+    var filesConfig = {
+        exts: $.map('{UPLOAD_EXTS}'.split(','), $.trim),
+        //accept: '{UPLOAD_ACCEPT}',
+        maxsize: {UPLOAD_MAXSIZE},
+        previewMaxWidth: {UPLOAD_THUMB_WIDTH},
+        previewMaxHeight: {UPLOAD_THUMB_HEIGHT},
+        autoUpload: {PHP.cfg.files.autoupload},
+        sequential: {PHP.cfg.files.sequential},
+        'x':    '{UPLOAD_X}'
     };
+
+    <!-- IF {PHP.cfg.files.image_resize} == 1 AND {PHP.cfg.files.image_maxwidth} > 0 AND {PHP.cfg.files.image_maxheight} > 0 -->
+    filesConfig.imageResize = true;
+    filesConfig.imageMaxWidth = {PHP.cfg.files.image_maxwidth};
+    filesConfig.imageMaxHeight = {PHP.cfg.files.image_maxheight};
+    <!-- ENDIF -->
+
+}
+filesConfig.{UPLOAD_ID} = {
+    source: '{UPLOAD_SOURCE}',
+    item:   {UPLOAD_ITEM},
+    field:  '{UPLOAD_FIELD}',
+    limit:  {UPLOAD_LIMIT},
+    chunk:  {UPLOAD_CHUNK},
+    param:  '{UPLOAD_PARAM}'
+};
 </script>
 <!-- The XDomainRequest Transport is included for cross-domain file deletion for IE 8 and IE 9 -->
 <!--[if (gte IE 8)&(lt IE 10)]>
