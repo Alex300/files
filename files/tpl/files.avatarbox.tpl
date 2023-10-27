@@ -21,13 +21,16 @@
             $(function () {
                 'use strict';
 
-                function showError(message) {
-                    const progressElement = $('#files-avatar-upload #progress');
+                let progressElement = document.querySelector('#files-avatar-upload #progress');
 
-                    progressElement.addClass('hidden');
-                    $('<div id="files-avatar-upload-error"><span class="label label-danger">Error</span> ' + message +
-                        '</div>').
-                        insertAfter(progressElement);
+                function showError(message) {
+                    progressElement.classList.add('hidden');
+
+                    let div = document.createElement('div');
+                    div.className = 'files-avatar-upload-error';
+                    div.innerHTML = '<span class="label label-danger">Error</span> ' + message;
+
+                    progressElement.after(div);
                 }
 
                 let options = {
@@ -41,7 +44,7 @@
                     disableValidation: false
                 };
 
-                <!-- IF {PHP.cfg.files.image_resize} == 1 AND {PHP.cfg.files.image_maxwidth} > 0 AND {PHP.cfg.files.image_maxheight} > 0 -->
+                <!-- IF {PHP.cfg.files.image_resize} == 1 AND {PHP.cfg.files.imageResizeInBrowser} == 1 AND {PHP.cfg.files.image_maxwidth} > 0 AND {PHP.cfg.files.image_maxheight} > 0 -->
                 options.loadImageFileTypes = /^image\/(avif|bmp|gif|jpeg|heic|heif|png|svg\+xml|x-tga|webp)$/;
                 options.loadImageMaxFileSize = 60000000; // 60MB
                 options.disableImageResize = false;
@@ -61,14 +64,13 @@
                 }).on('fileuploadprogressall', function (e, data) {
                     const progress = parseInt(data.loaded / data.total * 100, 10);
 
-                    $('#files-avatar-upload-error').remove();
+                    $('.files-avatar-upload-error').remove();
 
                     $('#files-avatar-upload #progress').removeClass('hidden');
                     $('#files-avatar-upload #progress .progress-bar').css( 'width', progress + '%' );
 
                 }).on('fileuploaddone', function (e, data) {
-
-                    $('#files-avatar-upload #progress').addClass('hidden');
+                    progressElement.classList.add('hidden');
 
                     $.each(data.result.files, function (index, file) {
                         const error =  file.error || false;
@@ -76,7 +78,7 @@
                             showError(file.error);
                             return;
                         } else {
-                            $('#files-avatar-upload-error').remove();
+                            $('.files-avatar-upload-error').remove();
                         }
 
                         const avatarTemplate = '{PHP|str_replace("'", "\'", {PHP.R.files_user_avatar})}';

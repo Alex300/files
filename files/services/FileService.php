@@ -666,7 +666,7 @@ class FileService
      */
     public static function isExtensionAllowed(string $ext): bool
     {
-        if (!Cot::$cfg['files']['filecheck']) {
+        if (!Cot::$cfg['files']['checkAllowedType']) {
             return true;
         }
 

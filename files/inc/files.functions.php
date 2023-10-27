@@ -895,7 +895,7 @@ function cot_filesFileBox(
         }
     }
 
-    $nc = $cot_modules['files']["version"];
+    $nc = $cot_modules['files']['version'];
 
     // Подключаем jQuery-templates только один раз
     static $jQtemplatesOut = false;
@@ -1090,7 +1090,7 @@ function cot_filesGallery(string $source, $item, string $field = '', string $tpl
  * @param string $frame
  * @return string
  */
-function cot_filesUserAvatar($file_id = 0, $urr = 0, $width = 0, $height = 0, $frame = '')
+function cot_filesUserAvatar($file_id = 0, $urr = 0, $width = 0, $height = 0, $frame = ''): string
 {
     $avatar = cot_rc('files_user_default_avatar');
     if ($file_id == 0 && is_array($urr) && isset($urr['user_avatar'])) {

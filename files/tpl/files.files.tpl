@@ -90,7 +90,7 @@ if (filesConfig === undefined) {
         'x':    '{UPLOAD_X}'
     };
 
-    <!-- IF {PHP.cfg.files.image_resize} == 1 AND {PHP.cfg.files.image_maxwidth} > 0 AND {PHP.cfg.files.image_maxheight} > 0 -->
+    <!-- IF {PHP.cfg.files.image_resize} == 1 AND {PHP.cfg.files.imageResizeInBrowser} == 1 AND {PHP.cfg.files.image_maxwidth} > 0 AND {PHP.cfg.files.image_maxheight} > 0 -->
     filesConfig.imageResize = true;
     filesConfig.imageMaxWidth = {PHP.cfg.files.image_maxwidth};
     filesConfig.imageMaxHeight = {PHP.cfg.files.image_maxheight};

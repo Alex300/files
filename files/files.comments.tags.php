@@ -10,9 +10,8 @@ Tags=comments.tpl:{COMMENTS_FORM_PFS},{COMMENTS_FORM_SFS}
  * PFS link on page.add
  *
  * @package Files
- * @author Cotonti Team
- * @copyright Copyright (c) Cotonti Team 2014
- * @license BSD
+ * @author Kalnov Alexey <kalnovalexey@yandex.ru>
+ * @copyright (c) Lily Software https://lily-software.com
  */
 defined('COT_CODE') or die('Wrong URL.');
 

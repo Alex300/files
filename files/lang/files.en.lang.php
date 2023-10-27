@@ -113,11 +113,9 @@ $L['files_saved'] = 'Saved.';
  */
 $L['cfg_folder'] = 'Directory for files';
 $L['cfg_prefix'] = 'File prefix';
-$L['cfg_exts'] = 'Allowed extensions (comma separated, no dots and spaces)';
-$L['cfg_filecheck'] = 'File Check';
-$L['cfg_filecheck_hint'] = 'If Enabled will check any uploaded files through the '.$L['PFS'].', or images through the profile. To insure they are valid files. &quot;Yes&quot; recommended, for security reasons.';
-$L['cfg_nomimepass'] = 'No Mimetype Pass';
-$L['cfg_nomimepass_hint'] = 'If Enabled will it will allow uploaded files to pass even if there is no mimetype in the config file.';
+$L['cfg_checkAllowedType'] = 'Check uploading file types';
+$L['cfg_checkAllowedType_hint'] = 'Check uploaded files against the list of allowed file types below. It is recommended to enable it for security reasons.';
+$L['cfg_exts'] = 'Allowed extensions/types (comma separated, no dots and spaces)';
 $L['cfg_maxFoldersPerPage'] = 'Max folders count per page';
 $L['cfg_pfs_winclose'] = 'Close popup window after file insert into editor';
 
@@ -135,10 +133,14 @@ $L['cfg_img_separator'] = 'Image options';
 $L['cfg_image_convert'] = 'Convert images to JPEG on upload';
 $L['cfg_image_to_convert'] = 'Image extensions/types to convert to JPEG';
 $L['cfg_image_to_convert_hint'] = 'If the option above is enabled. If empty, all images will be converted. (comma separated, no dots and spaces)';
-$L['cfg_image_resize'] = ['Reduce uploaded images', 'Loaded images will be proportionally reduced In accordance with the following parameters'];
+$L['cfg_image_resize'] = 'Downscale uploading images';
+$L['cfg_image_resize_hint'] = 'Loaded images will be proportionally downscaled In accordance with the following parameters';
 $L['cfg_image_maxwidth']  = 'Reduce image width to';
 $L['cfg_image_maxheight'] = 'Reduce image height to';
 $L['cfg_image_maxheight_hint'] = 'UltraHD (4k): 3840x2160, FullHd (2k): 1920x1080';
+$L['cfg_imageResizeInBrowser'] = 'Downscale in browser';
+$L['cfg_imageResizeInBrowser_hint'] = 'If "Downscale uploading images" is enabled, downscale them in the user\'s browser, if possible, and '
+    . 'send the downscaled image to the server';
 $L['cfg_quality'] = 'JPEG quality in %';
 
 $L['cfg_th_separator'] = 'Thumbnails options';
