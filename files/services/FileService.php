@@ -169,10 +169,6 @@ class FileService
             }
         }
 
-        if ($fileSystemName === 'default' && empty(Cot::$cfg['filesystem']['default'])) {
-            $fileSystemName = 'local';
-        }
-
         return $fileSystemName;
     }
 
@@ -438,11 +434,6 @@ class FileService
                     return $fileName;
                 }
             }
-
-//            $icon = '';
-//            switch ($mimeParts[0]) {
-//
-//            }
         }
 
         return Cot::$cfg['modules_dir'] . "/files/img/types/$size/archive.png";
