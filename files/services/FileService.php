@@ -8,7 +8,7 @@ use Cot;
 use cot\modules\files\dto\FileDto;
 use cot\modules\files\models\File;
 use filesystem\exceptions\UnableToMoveFile;
-use fileSystem\FilesystemFactory;
+use filesystem\FilesystemFactory;
 use filesystem\LocalFilesystem;
 use image\exceptions\ImageException;
 use image\Image;

@@ -136,7 +136,9 @@ class File extends \Som_Model_ActiveRecord
         }
 
         try {
-            $filesystem->delete($filePath);
+            if ($filesystem->fileExists($filePath)) {
+                $filesystem->delete($filePath);
+            }
         } catch (Throwable $e) {
             return false;
         }

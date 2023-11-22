@@ -6,8 +6,8 @@ use Cot;
 use cot\modules\files\dto\FileDto;
 use cot\modules\files\models\File;
 use cot\modules\files\services\FileService;
-use cot\modules\files\services\FilesystemFactory;
 use cot\modules\files\services\ThumbnailService;
+use filesystem\exceptions\UnableToMoveFile;
 use filesystem\LocalFilesystem;
 use Throwable;
 
@@ -597,8 +597,8 @@ class UploadController
         //}
         $targetFileSystem = FileService::getFilesystemByName($objFile->filesystem_name);
 
-        // Local filesystem without root directory set
-        $localFileSystem = new LocalFileSystem();
+        // Local filesystem relative to upload directory
+        $uploadDirFileSystem = new LocalFileSystem($fileData->path);
 
         // Path relative to site root directory
         $fileFullName = Cot::$cfg['files']['folder'] . '/' . $relativeFileName;
@@ -615,12 +615,19 @@ class UploadController
         try {
             if ($targetFileSystem instanceof LocalFileSystem) {
                 // Save file locally
-                $localFileSystem->move($fileData->getFullName(), $fileFullName);
+                $targetDirectory = dirname($fileFullName);
+                if (!$targetFileSystem->directoryExists($targetDirectory)) {
+                    $targetFileSystem->createDirectory($targetDirectory);
+                }
+                if (!@rename($fileData->getFullName(), $fileFullName)) {
+                    throw UnableToMoveFile::fromLocationTo($fileData->getFullName(), $fileFullName);
+                }
             } else {
                 // Upload to remote server
-                $resource = $localFileSystem->readStream($fileData->getFullName());
+                $resource = $uploadDirFileSystem->readStream($fileData->fileName);
                 $targetFileSystem->writeStream($relativeFileName, $resource);
                 fclose($resource);
+                $uploadDirFileSystem->delete($fileData->getFullName());
             }
         } catch (Throwable $e) {
             // Fail to move file from temporary directory to the files directory
