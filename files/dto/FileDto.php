@@ -129,7 +129,7 @@ class FileDto
             $this->isImage = (bool) $file->is_img;
         }
         if (isset($file->size)) {
-            $this->size = $file->size;
+            $this->size = (int) $file->size;
         }
 
         if (isset($file->mime_type)) {

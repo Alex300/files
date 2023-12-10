@@ -485,8 +485,8 @@ class UploadController
         unset($file_path);
 
         if (Cot::$cfg['files']['fixExtensionsByMime']) {
-            // При загрузке файла чанками, невозможно определить mime-тип куска файла. Только если с первого чанка либо используя файл,
-            // куда сливаются чанки.
+            // При загрузке файла чанками, невозможно определить mime-тип куска файла. Только если с первого чанка либо
+            // используя файл, куда сливаются чанки.
             // По этому проверяем расширение только после полной загрузки файла
             try {
                 FileService::fixFileExtensionByDTO($fileData);
@@ -600,9 +600,6 @@ class UploadController
         // Local filesystem relative to upload directory
         $uploadDirFileSystem = new LocalFileSystem($fileData->path);
 
-        // Path relative to site root directory
-        $fileFullName = Cot::$cfg['files']['folder'] . '/' . $relativeFileName;
-
         // Until the file is sent to remote storage, we need to make a thumbnail
         $thumbnail = null;
         if ($objFile->is_img) {
@@ -615,10 +612,12 @@ class UploadController
         try {
             if ($targetFileSystem instanceof LocalFileSystem) {
                 // Save file locally
-                $targetDirectory = dirname($fileFullName);
+                $targetDirectory = dirname($relativeFileName);
                 if (!$targetFileSystem->directoryExists($targetDirectory)) {
                     $targetFileSystem->createDirectory($targetDirectory);
                 }
+                // Path relative to site root directory
+                $fileFullName = Cot::$cfg['files']['folder'] . '/' . $relativeFileName;
                 if (!@rename($fileData->getFullName(), $fileFullName)) {
                     throw UnableToMoveFile::fromLocationTo($fileData->getFullName(), $fileFullName);
                 }

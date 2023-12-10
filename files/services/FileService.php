@@ -459,18 +459,19 @@ class FileService
         if ($file->source === 'pfs') {
             $uid = (int) $file->user_id;
             if ($uid === 0) {
-                $uid = \Cot::$usr['id'];
+                $uid = Cot::$usr['id'];
             }
             $filesPath = $file->source . '/'. $uid. '/' . $sourceId;
         }
         $hash = mb_substr(
             md5(
-                $file->source . $sourceId . $file->original_name . $file->id . \Cot::$cfg['files']['prefix'] . \Cot::$cfg['site_id'] . mt_rand()
+                $file->source . $sourceId . $file->original_name . $file->id . Cot::$cfg['files']['prefix']
+                . Cot::$cfg['site_id'] . mt_rand()
             ),
             0,
             20
         );
-        return $filesPath . '/' . \Cot::$cfg['files']['prefix'] . $file->id . 'a' . $hash . '.' . $file->ext;
+        return $filesPath . '/' . Cot::$cfg['files']['prefix'] . $file->id . 'a' . $hash . '.' . $file->ext;
     }
 
     /**

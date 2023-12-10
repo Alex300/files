@@ -280,6 +280,20 @@ class AdminMainController
             }
         }
 
+        $condition = [
+            ['file_name', ''],
+            ['file_name', null, null, 'OR']
+        ];
+
+        // Delete  all records from DB with empty file name
+        $files = File::findByCondition($condition);
+        if ($files) {
+            foreach($files as $fileRow){
+                $fileRow->delete();
+                $count++;
+            }
+        }
+
         $count += FileService::formGarbageCollect();
 
         cot_message(Cot::$L['files_items_removed'].': ' . $count);

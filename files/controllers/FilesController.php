@@ -7,6 +7,7 @@ use cot\modules\files\dto\FileDto;
 use cot\modules\files\models\File;
 use cot\modules\files\services\FileService;
 use cot\modules\files\services\ThumbnailService;
+use filesystem\exceptions\UnableToMoveFile;
 use filesystem\LocalFilesystem;
 use Throwable;
 
@@ -284,6 +285,8 @@ class FilesController
             cot_ajaxResult(null, 404);
         }
 
+        [Cot::$usr['auth_read'], Cot::$usr['auth_write'], Cot::$usr['isadmin']] = cot_auth('files', 'a');
+
         $fileData = new FileDto();
         $fileData->originalName = $this->getFilename('file');
         $fileData->ext = mb_strtolower(cot_filesGetExtension($fileData->originalName));
@@ -377,16 +380,6 @@ class FilesController
         }
 
         $file->removeThumbnails();
-        $fileSystem = FileService::getFilesystemByName($file->filesystem_name);
-        try {
-            $fileSystem->delete($file->getFullName());
-        } catch (Throwable $e) {
-            if (file_exists($fileData->getFullName())) {
-                @unlink($fileData->getFullName());
-            }
-            $response['error'] = Cot::$L['files_err_replace'];
-            cot_ajaxResult($response);
-        }
 
         // Fill new data
         $file->size = $fileData->size;
@@ -404,32 +397,58 @@ class FilesController
             }
         }
 
-        // Local filesystem without root directory set
-        $localFileSystem = new LocalFileSystem();
+        // Local filesystem relative to upload directory
+        $uploadDirFileSystem = new LocalFileSystem($fileData->path);
+        $targetFileSystem = FileService::getFilesystemByName($file->filesystem_name);
+        $oldFilePath = $file->getFullName();
 
         $relativeFileName = FileService::generateFileRelativePath($file);
         $file->path = dirname($relativeFileName);
         $file->file_name = basename($relativeFileName);
 
-        // Path relative to site root directory
-        $fileFullName = Cot::$cfg['files']['folder'] . '/' . $relativeFileName;
-
         try {
-            if ($fileSystem instanceof LocalFileSystem) {
+            if ($targetFileSystem instanceof LocalFileSystem) {
                 // Save file locally
-                $localFileSystem->move($fileData->getFullName(), $fileFullName);
+                $targetDirectory = dirname($relativeFileName);
+                if (!$targetFileSystem->directoryExists($targetDirectory)) {
+                    $targetFileSystem->createDirectory($targetDirectory);
+                }
+                // Path relative to site root directory
+                $fileFullName = Cot::$cfg['files']['folder'] . '/' . $relativeFileName;
+                if (!@rename($fileData->getFullName(), $fileFullName)) {
+                    throw UnableToMoveFile::fromLocationTo($fileData->getFullName(), $fileFullName);
+                }
             } else {
                 // Upload to remote server
-                $resource = $localFileSystem->readStream($fileData->getFullName());
-                $fileSystem->writeStream($relativeFileName, $resource);
+                $resource = $uploadDirFileSystem->readStream($fileData->getFullName());
+                $targetFileSystem->writeStream($relativeFileName, $resource);
                 fclose($resource);
+                $uploadDirFileSystem->delete($fileData->getFullName());
             }
         } catch (Throwable $e) {
             // Fail to move file from temporary directory to the files directory
             // Delete temporary file
             @unlink($fileData->getFullName());
             unset($fileData->path, $fileData->fileName, $fileData->ext);
+            $file->removeThumbnails();
+
+            $error = Cot::$L['files_err_replace'];
+            if (Cot::$usr['isadmin']) {
+                $errorMessage = $e->getMessage();
+                if (!empty($errorMessage)) {
+                    $error .= ': ' . $errorMessage;
+                }
+            }
+            $response = ['error' => $error];
+
             cot_ajaxResult($response);
+        }
+
+        // New file is uploaded. Let's delete the old one
+        try {
+            $targetFileSystem->delete($oldFilePath);
+        } catch (Throwable $e) {
+            // Can't delete old file. But the new one is uploaded successfully.
         }
 
         $file->save();
