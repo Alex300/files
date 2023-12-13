@@ -129,7 +129,7 @@ class FileService
         $fileSystemName = 'default';
 
         // Calculate storage name
-        // разбор конфига
+        // Разбор конфига
         if (!empty(Cot::$cfg['files']['storages']) && !empty($fileSource)) {
             foreach (Cot::$cfg['files']['storages'] as $name => $storage) {
                 if (empty($storage) || !is_array($storage)) {
@@ -674,16 +674,16 @@ class FileService
     /**
      * Привязка ранее загруженных файлов к только что созданному объекту
      *
-     * @param $source
-     * @param $item
+     * @param string $source
+     * @param int $item
      */
-    public static function linkFiles($source, $item)
+    public static function linkFiles(string $source, int $item): void
     {
         $formId = "{$source}_0";
 
-        $unikey = cot_import('cf_'.$formId, 'P', 'TXT');
+        $unikey = cot_import('cf_' . $formId, 'P', 'TXT');
         if (!$unikey) {
-            $unikey = cot_import('cf_'.$formId, 'G', 'TXT');
+            $unikey = cot_import('cf_' . $formId, 'G', 'TXT');
         }
         //$unikey = cot_import_buffered('cf_'.$formId, $unikey);
 
@@ -715,6 +715,7 @@ class FileService
                             if (is_resource($stream) && get_resource_type($stream) === 'stream') {
                                 fclose($stream);
                             }
+                            $fileSystem->delete($fileRow->getFullName());
                         }
                     } catch (Throwable $e) {
                         cot_error(Cot::$L['files_err_upload']);

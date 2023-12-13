@@ -21,7 +21,8 @@ use cot\modules\files\services\FileService;
 defined('COT_CODE') or die('Wrong URL');
 
 if (cot_auth('files', 'a', 'W')) {
-    if ($id) {
-        FileService::linkFiles('page', $id);
+    $filesItemId = (int) $id;
+    if ($filesItemId) {
+        FileService::linkFiles('page', $filesItemId);
     }
 }
