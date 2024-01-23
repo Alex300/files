@@ -444,9 +444,9 @@ class FileService
      * Return path relative to Cot::$cfg['files']['folder']
      *
      * @param File $file
-     * @return ?string  Path for the file on disk
+     * @return ?string Path for the file on disk
      */
-    public static function generateFileRelativePath(File $file)
+    public static function generateFileRelativePath(File $file): ?string
     {
         if (empty($file->source) || empty($file->ext)) {
             return null;
