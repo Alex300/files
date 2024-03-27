@@ -690,37 +690,38 @@ function cot_filesAvatarBox($userId = null, $tpl = 'files.avatarbox')
 /**
  * Generates a link to PFS popup window
  *
- * @param int $uid User ID
+ * @param int $userId User ID
  * @param string $formName Form name
  * @param string $inputName Input name
  * @param string $title Link title
- * @param string $parser Custom parser (otional)
+ * @param string $parser Custom parser (optional)
  * @return string
+ * @todo посмотреть юзы. Убедиться, что везде int
  */
-function cot_filesBuildPfs($uid, $formName, $inputName, $title, $parser = '')
+function cot_filesBuildPfs(int $userId, string $formName, string $inputName, string $title, string $parser = ''): string
 {
-    if ($uid == 0)
-    {
+    if ($userId == 0) {
         $res = "<a href=\"javascript:files_pfs('0','" . $formName . "','" . $inputName . "','" . $parser . "')\">" . $title . "</a>";
-    }
-    elseif (cot_auth('files', 'a', 'R'))
-    {
-        $res = "<a href=\"javascript:files_pfs('" . $uid . "','" . $formName . "','" . $inputName . "','" . $parser . "')\">" . $title . "</a>";
-    }
-    else
-    {
+    } elseif (cot_auth('files', 'a', 'R')) {
+        $res = "<a href=\"javascript:files_pfs('" . $userId . "','" . $formName . "','" . $inputName . "','" . $parser . "')\">" . $title . "</a>";
+    } else {
         $res = '';
     }
 
     static $jsOut = false;
 
-    if ($res != '' && !$jsOut) {
-//        $jsFunc = (!defined('COT_HEADER_COMPLETE')) ? 'cot_rc_link_file': 'cot_rc_link_footer';
-        $jsFunc = (!defined('COT_HEADER_COMPLETE')) ? 'cot_rc_embed': 'cot_rc_embed_footer';
+    if ($res !== '' && !$jsOut) {
+        $jsCode = "function files_pfs(id, c1, c2, parser) { \n"
+            . "window.open(getBaseHref() + 'index.php?e=files&m=pfs&uid=' + id + '&c1=' + c1 + '&c2=' + c2 + '&parser=' + parser, 'PFS', 'status=1,"
+            . "toolbar=0,location=0,directories=0,menuBar=0,resizable=1,scrollbars=yes,width=754,height=512,left=32,top=16'); \n"
+            . "}";
 
-        $jsFunc("function files_pfs(id, c1, c2, parser){
-    window.open(getBaseHref() + 'index.php?e=files&m=pfs&uid=' + id + '&c1=' + c1 + '&c2=' + c2 + '&parser=' + parser, 'PFS', 'status=1, toolbar=0,location=0,directories=0,menuBar=0,resizable=1,scrollbars=yes,width=754,height=512,left=32,top=16');
-    }");
+        if (!defined('COT_HEADER_COMPLETE')) {
+            Resources::embed($jsCode);
+        } else {
+            Resources::embedFooter($jsCode);
+        }
+
         $jsOut = true;
     }
 

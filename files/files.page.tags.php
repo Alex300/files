@@ -7,40 +7,44 @@ Tags=page.add.tpl:{PAGEADD_FORM_PFS},{PAGEADD_FORM_SFS},{PAGEADD_FORM_URL_PFS},{
 ==================== */
 
 /**
- * PFS link on page.add
+ * PFS link for page add/edit
  *
  * @package Files
- * @author Cotonti Team
- * @copyright Copyright (c) Cotonti Team 2014
- * @license BSD
+ * @author Kalnov Alexey <kalnovalexey@yandex.ru>
+ * @copyright (c) Lily Software https://lily-software.com
+ *
+ * @var XTemplate $t
  */
 defined('COT_CODE') or die('Wrong URL.');
 
-if(cot_auth('files', 'a', 'W')){
+if (cot_auth('files', 'a', 'W')) {
 
     require_once cot_incfile('files', 'module');
 
-    if (cot_get_caller() == 'page.add')
-    {
-        $pfs_tag = 'PAGEADD';
-    }
-    else
-    {
-        $pfs_tag = 'PAGEEDIT';
+    if (cot_get_caller() === 'page.add') {
+        $pfsTagPrefix = 'PAGEADD';
+    } else {
+        $pfsTagPrefix = 'PAGEEDIT';
     }
 
-    $t->assign(array(
-        $pfs_tag . '_FORM_PFS' => cot_filesBuildPfs($usr['id'], 'pageform', 'rpagetext',$L['Mypfs'], $sys['parser']),
-        $pfs_tag . '_FORM_SFS' => (cot_auth('files', 'a', 'A')) ? cot_filesBuildPfs(0, 'pageform', 'rpagetext',
-                                $L['SFS'], $sys['parser']) : '',
-        $pfs_tag . '_FORM_URL_PFS' => cot_filesBuildPfs($usr['id'], 'pageform', 'rpageurl', $L['Mypfs']),
-        $pfs_tag . '_FORM_URL_SFS' => (cot_auth('files', 'a', 'A')) ? cot_filesBuildPfs(0, 'pageform', 'rpageurl',
-                                $L['SFS']) : '',
+    // Унифицированные теги
+    $tags = [
+        'PAGE_FORM_PFS' => cot_filesBuildPfs(Cot::$usr['id'], 'pageform', 'rpagetext', Cot::$L['Mypfs'], Cot::$sys['parser']),
+        'PAGE_FORM_SFS' => (cot_auth('files', 'a', 'A'))
+            ? cot_filesBuildPfs(0, 'pageform', 'rpagetext', Cot::$L['SFS'], Cot::$sys['parser'])
+            : '',
+        'PAGE_FORM_URL_PFS' => cot_filesBuildPfs(Cot::$usr['id'], 'pageform', 'rpageurl', Cot::$L['Mypfs']),
+        'PAGE_FORM_URL_SFS' => (cot_auth('files', 'a', 'A'))
+            ? cot_filesBuildPfs(0, 'pageform', 'rpageurl',  Cot::$L['SFS'])
+            : ''
+    ];
 
-        // Унифицированные теги
-        'PAGE_FORM_PFS' => cot_filesBuildPfs($usr['id'], 'pageform', 'rpagetext',$L['Mypfs'], $sys['parser']),
-        'PAGE_FORM_SFS' => (cot_auth('files', 'a', 'A')) ? cot_filesBuildPfs(0, 'pageform', 'rpagetext', $L['SFS'], $sys['parser']) : '',
-        'PAGE_FORM_URL_PFS' => cot_filesBuildPfs($usr['id'], 'pageform', 'rpageurl', $L['Mypfs']),
-        'PAGE_FORM_URL_SFS' => (cot_auth('files', 'a', 'A')) ? cot_filesBuildPfs(0, 'pageform', 'rpageurl',  $L['SFS']) : ''
-    ));
+    $t->assign($tags);
+
+    $t->assign([
+        $pfsTagPrefix . '_FORM_PFS' => $tags['PAGE_FORM_PFS'],
+        $pfsTagPrefix . '_FORM_SFS' => $tags['PAGE_FORM_SFS'],
+        $pfsTagPrefix . '_FORM_URL_PFS' => $tags['PAGE_FORM_URL_PFS'],
+        $pfsTagPrefix . '_FORM_URL_SFS' => $tags['PAGE_FORM_URL_SFS'],
+    ]);
 }
