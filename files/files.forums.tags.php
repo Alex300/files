@@ -37,7 +37,7 @@ if (cot_auth('files', 'a', 'W')) {
 
     $t->assign([
         'FORUMS_' . $pfsTag . '_PFS' => cot_filesBuildPfs(Cot::$usr['id'], $pfsSrc, $pfsName, Cot::$L['Mypfs']),
-        'FORUMS_' . $pfsTag . '_SFS' => (cot_auth('files', 'a', 'A'))
+        'FORUMS_' . $pfsTag . '_SFS' => cot_auth('files', 'a', 'A')
             ? cot_filesBuildPfs(0, $pfsSrc, $pfsName, Cot::$L['SFS'])
             : '',
     ]);

@@ -696,7 +696,6 @@ function cot_filesAvatarBox($userId = null, $tpl = 'files.avatarbox')
  * @param string $title Link title
  * @param string $parser Custom parser (optional)
  * @return string
- * @todo посмотреть юзы. Убедиться, что везде int
  */
 function cot_filesBuildPfs(int $userId, string $formName, string $inputName, string $title, string $parser = ''): string
 {

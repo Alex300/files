@@ -23,7 +23,7 @@ $pfsTagPrefix = cot_get_caller() === 'pm.send' ? 'PMSEND_FORM' : 'PM_FORM';
 
 $t->assign([
     $pfsTagPrefix . '_PFS' => cot_filesBuildPfs(Cot::$usr['id'], 'newlink', 'newpmtext', Cot::$L['Mypfs']),
-    $pfsTagPrefix . '_SFS' => (cot_auth('files', 'a', 'A'))
+    $pfsTagPrefix . '_SFS' => cot_auth('files', 'a', 'A')
         ? cot_filesBuildPfs(0, 'newlink', 'newpmtext', Cot::$L['SFS'])
         : '',
 ]);

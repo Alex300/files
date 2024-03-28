@@ -30,11 +30,11 @@ if (cot_auth('files', 'a', 'W')) {
     // Унифицированные теги
     $tags = [
         'PAGE_FORM_PFS' => cot_filesBuildPfs(Cot::$usr['id'], 'pageform', 'rpagetext', Cot::$L['Mypfs'], Cot::$sys['parser']),
-        'PAGE_FORM_SFS' => (cot_auth('files', 'a', 'A'))
+        'PAGE_FORM_SFS' => cot_auth('files', 'a', 'A')
             ? cot_filesBuildPfs(0, 'pageform', 'rpagetext', Cot::$L['SFS'], Cot::$sys['parser'])
             : '',
         'PAGE_FORM_URL_PFS' => cot_filesBuildPfs(Cot::$usr['id'], 'pageform', 'rpageurl', Cot::$L['Mypfs']),
-        'PAGE_FORM_URL_SFS' => (cot_auth('files', 'a', 'A'))
+        'PAGE_FORM_URL_SFS' => cot_auth('files', 'a', 'A')
             ? cot_filesBuildPfs(0, 'pageform', 'rpageurl',  Cot::$L['SFS'])
             : ''
     ];
