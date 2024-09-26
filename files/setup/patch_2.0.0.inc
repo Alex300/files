@@ -84,6 +84,9 @@ $thumbnailDirectory = Cot::$cfg['files']['folder'] . '/_thumbs'; //FileService::
 
 if (file_exists($thumbnailDirectory)) {
     // Remove all thumbnails
+    if (!function_exists('cot_removeDirectoryRecursive')) {
+        require_once Cot::$cfg['plugins_dir'] . '/cotontilib/cotontilib.global.php';
+    }
     cot_removeDirectoryRecursive($thumbnailDirectory);
 
     // Let's clear the cache so the thumbnails can be regenerated
