@@ -19,7 +19,7 @@ class AdminMainController
      */
     public function indexAction()
     {
-        global $adminpath, $adminhelp, $cot_yesno, $adminsubtitle;
+        global $adminPath, $adminHelp, $cot_yesno, $adminSubtitle;
 
         $tpl = new \XTemplate(cot_tplfile('files.admin.main'));
 
@@ -28,7 +28,7 @@ class AdminMainController
         $currentDriver = Image::currentDriver();
 
         if (!$imagickIsAvailable && !$gdIsAvailable) {
-            cot_message(\Cot::$L['files_err_no_driver'], 'warning');
+            cot_message(Cot::$L['files_err_no_driver'], 'warning');
         } else {
             if ($imagickIsAvailable) {
                 $data = [
@@ -63,21 +63,21 @@ class AdminMainController
             }
         }
 
-        $pfsUrl = cot_url('files', ['m' => 'pfs', 'uid' => \Cot::$usr['id']]);
-        $filesUrl = cot_url('files', ['uid' => \Cot::$usr['id']]);
-        $albumUrl = cot_url('files', ['a' => 'album', 'uid' => \Cot::$usr['id']]);
-        $adminhelp  = \Cot::$L['files_userfilespace'] . ": <a href=\"{$pfsUrl}\" target=\"_blank\">{$pfsUrl}</a> (".
-            \Cot::$L['files_userfilespace_desc'].")<br />";
-        $adminhelp .= \Cot::$L['files_userpublic_files'] . ": <a href=\"{$filesUrl}\" target=\"_blank\">{$filesUrl}</a><br />";
-        $adminhelp .= \Cot::$L['files_userpublic_albums'] . ": <a href=\"{$albumUrl}\" target=\"_blank\">{$albumUrl}</a><br /><br />";
+        $pfsUrl = cot_url('files', ['m' => 'pfs', 'uid' => Cot::$usr['id']]);
+        $filesUrl = cot_url('files', ['uid' => Cot::$usr['id']]);
+        $albumUrl = cot_url('files', ['a' => 'album', 'uid' => Cot::$usr['id']]);
+        $adminHelp  = Cot::$L['files_userfilespace'] . ": <a href=\"{$pfsUrl}\" target=\"_blank\">{$pfsUrl}</a> (".
+            Cot::$L['files_userfilespace_desc'].")<br />";
+        $adminHelp .= Cot::$L['files_userpublic_files'] . ": <a href=\"{$filesUrl}\" target=\"_blank\">{$filesUrl}</a><br />";
+        $adminHelp .= Cot::$L['files_userpublic_albums'] . ": <a href=\"{$albumUrl}\" target=\"_blank\">{$albumUrl}</a><br /><br />";
 
-        $adminhelp .= "<strong>«".\Cot::$L['files_cleanup'] . "»</strong> " . \Cot::$L['files_cleanup_desc'].".<br />";
-        $adminhelp .= \Cot::$L['files_deleteallthumbs_desc'];
+        $adminHelp .= "<strong>«". Cot::$L['files_cleanup'] . "»</strong> " . Cot::$L['files_cleanup_desc'].".<br />";
+        $adminHelp .= Cot::$L['files_deleteallthumbs_desc'];
 
-        $adminsubtitle = \Cot::$L['Files'];
+        $adminSubtitle = Cot::$L['Files'];
 
         $tpl->assign(array(
-            'PAGE_TITLE' => \Cot::$L['Files'] . ": " . \Cot::$L['Administration'],
+            'PAGE_TITLE' => Cot::$L['Files'] . ": " . Cot::$L['Administration'],
         ));
         $tpl->parse('MAIN');
         return $tpl->text();
@@ -89,14 +89,14 @@ class AdminMainController
      */
     public function allpfsAction()
     {
-        global $adminpath, $adminhelp, $adminsubtitle, $db_files, $db_users, $cot_extrafields;
+        global $adminPath, $adminHelp, $adminSubtitle, $db_files, $db_users, $cot_extrafields;
 
-        $adminpath[] = array(cot_url('admin', 'm=files&s=allpfs'), \Cot::$L['files_allpfs']);
-        $adminhelp = \Cot::$L['adm_help_allpfs'] ?? '';
-        $adminsubtitle = \Cot::$L['files_allpfs'] ?? '';
+        $adminPath[] = array(cot_url('admin', 'm=files&s=allpfs'), Cot::$L['files_allpfs']);
+        $adminHelp = Cot::$L['adm_help_allpfs'] ?? '';
+        $adminSubtitle = Cot::$L['files_allpfs'] ?? '';
 
         $urlParams = array('m'=>'files', 'a'=> 'allpfs');
-        $perPage = \Cot::$cfg['maxrowsperpage'];
+        $perPage = Cot::$cfg['maxrowsperpage'];
         [$pg, $d, $durl] = cot_import_pagenav('d', $perPage);
 
         /* === Hook === */
@@ -106,10 +106,10 @@ class AdminMainController
         }
         /* ===== */
 
-        $totalitems = \Cot::$db->query("SELECT COUNT(DISTINCT user_id) FROM $db_files
+        $totalitems = Cot::$db->query("SELECT COUNT(DISTINCT user_id) FROM $db_files
             WHERE source = 'pfs'")->fetchColumn();
 
-        $pagenav = cot_pagenav('admin', $urlParams, $d, $totalitems, $perPage, 'd', '', \Cot::$cfg['jquery'] && \Cot::$cfg['turnajax']);
+        $pagenav = cot_pagenav('admin', $urlParams, $d, $totalitems, $perPage, 'd', '', Cot::$cfg['jquery'] && Cot::$cfg['turnajax']);
 
         $sqlOrder = $order = 'u.user_name ASC';
 
@@ -146,7 +146,7 @@ class AdminMainController
         }
         // /Если есть экстраполя ФИО, то сортировать по ним
 
-        $sql_pfs = \Cot::$db->query("SELECT DISTINCT f.user_id as uid, u.*, COUNT(*) as count FROM $db_files AS f
+        $sql_pfs = Cot::$db->query("SELECT DISTINCT f.user_id as uid, u.*, COUNT(*) as count FROM $db_files AS f
 	        LEFT JOIN $db_users AS u ON f.user_id=u.user_id
 	        WHERE source = 'pfs' GROUP BY f.user_id ORDER BY $sqlOrder LIMIT $d, ".$perPage);
 
@@ -192,7 +192,7 @@ class AdminMainController
             'ALLPFS_PAGINATION_NEXT' => $pagenav['next'],
             'ALLPFS_TOTALITEMS' => $totalitems,
             'ALLPFS_ON_PAGE' => $ii,
-            'PAGE_TITLE' => \Cot::$L['files_allpfs'],
+            'PAGE_TITLE' => Cot::$L['files_allpfs'],
         ));
 
         /* === Hook  === */

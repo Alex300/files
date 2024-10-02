@@ -18,16 +18,16 @@ Hooks=admin
  */
 (defined('COT_CODE') && defined('COT_ADMIN')) or die('Wrong URL.');
 
-list(\Cot::$usr['auth_read'], \Cot::$usr['auth_write'], \Cot::$usr['isadmin']) = cot_auth('files', 'a');
-cot_block(\Cot::$usr['isadmin']);
+list(Cot::$usr['auth_read'], Cot::$usr['auth_write'], Cot::$usr['isadmin']) = cot_auth('files', 'a');
+cot_block(Cot::$usr['isadmin']);
 
 // Self requirements
 require_once cot_incfile('files', 'module');
 
-$adminpath[] = [cot_url('admin', ['m' => 'extensions']), \Cot::$L['Extensions']];
-$adminpath[] = array(cot_url('admin', ['m' => 'extensions', 'a' => 'details', 'mod' => $m]), $cot_modules[$m]['title']);
-$adminpath[] = [cot_url('admin', ['m' => $m]), \Cot::$L['Administration']];
-$adminhelp = '';
+$adminPath[] = [cot_url('admin', ['m' => 'extensions']), Cot::$L['Extensions']];
+$adminPath[] = array(cot_url('admin', ['m' => 'extensions', 'a' => 'details', 'mod' => $m]), $cot_modules[$m]['title']);
+$adminPath[] = [cot_url('admin', ['m' => $m]), Cot::$L['Administration']];
+$adminHelp = '';
 
 
 // TODO кеширование
