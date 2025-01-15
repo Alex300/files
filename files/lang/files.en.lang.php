@@ -130,7 +130,13 @@ $L['cfg_fixExtensionsByMime_hint'] = 'Will work better with '
     . 'https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/</a> installed';
 
 $L['cfg_img_separator'] = 'Image options';
-$L['cfg_image_convert'] = 'Convert images to JPEG on upload';
+$L['cfg_image_convert'] = 'Convert images when uploading to';
+$L['cfg_image_convert_params'] = [
+    'jpg' => 'JPEG',
+    'png' => 'PNG',
+    'webp' => 'WEBP',
+    'no' => "don't convert",
+];
 $L['cfg_image_to_convert'] = 'Image extensions/types to convert to JPEG';
 $L['cfg_image_to_convert_hint'] = 'If the option above is enabled. If empty, all images will be converted. (comma separated, no dots and spaces)';
 $L['cfg_image_resize'] = 'Downscale uploading images';

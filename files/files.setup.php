@@ -5,10 +5,10 @@ Code=files
 Name=Files
 Description=Personal File Space and attach files to posts and pages
 Category=files-media
-Version=2.0.1
-Date=2024-10-02
+Version=2.0.2
+Date=2025-01-15
 Author=Cotonti Team, Alexey Kalnov https://github.com/Alex300
-Copyright=(c) Cotonti Team, 2014-2024 Lily Software https://lily-software.com
+Copyright=(c) Cotonti Team, 2014-2025 Lily Software https://lily-software.com
 Notes=DO NOT FORGET to create a writable folder for the files
 Auth_guests=R
 Lock_guests=12345A
@@ -33,7 +33,7 @@ chunkSize=13:string::2000000:Chunk size (in bytes) (0 - Disable chunked file upl
 
 img_separator=20:separator:::
 
-image_convert=21:radio::1:Convert images to JPG on upload
+image_convert=21:select:jpg,png,webp,no:jpg:Convert images
 image_to_convert=22:text::avif,bmp,heic,heif,tga,tpic,wbmp,xbm:Image extensions/types to convert to jpeg, if the option above is enabled. If empty, all images will be converted. (comma separated, no dots and spaces)
 image_resize=23:radio::0:Resize uploading images
 image_maxwidth=24:string::3840:Image max width for resize
@@ -72,7 +72,7 @@ avatar_framing=53:select:height,width,inset,outbound:outbound:Default avatar fra
  * @package Files
  *
  * @author Alexey Kalnov <kalnovalexey@yandex.ru>
- * @copyright (c) 2014-2024 Lily Software https://lily-software.com (ex. Portal30 Studio)
+ * @copyright (c) 2014-2025 Lily Software https://lily-software.com (ex. Portal30 Studio)
  *
  * В настройках все размеры указываются в байтах
  * в ограничениях 0 - не ограничено, -1 - запрещено
