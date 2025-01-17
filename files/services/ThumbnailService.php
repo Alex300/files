@@ -6,7 +6,6 @@ namespace cot\modules\files\services;
 
 use Cot;
 use cot\modules\files\models\File;
-use filesystem\FilesystemFactory;
 use filesystem\LocalFilesystem;
 use image\Image;
 use League\Flysystem\Filesystem;
@@ -29,7 +28,7 @@ class ThumbnailService
      */
     public static function fileThumbnailDirectory(int $id, bool $relative = false): string
     {
-        $hash = mb_substr(md5($id . \Cot::$cfg['site_id']), 0, 20);
+        $hash = mb_substr(md5($id . Cot::$cfg['site_id']), 0, 20);
         return static::thumbnailDirectory($relative) . '/' . $id . 'a' . $hash;
     }
 
@@ -52,8 +51,8 @@ class ThumbnailService
         $width = str_replace('%', 'p', (string) $width);
         $height = str_replace('%', 'p', (string) $height);
 
-        $hash = mb_substr(md5($id . \Cot::$cfg['files']['prefix'] . \Cot::$cfg['site_id'] . $width . $height . $frame), 0, 20);
-        return static::fileThumbnailDirectory($id, $relative) . '/' . \Cot::$cfg['files']['prefix'] . $hash . '-' . $width . 'x' . $height
+        $hash = mb_substr(md5($id . Cot::$cfg['files']['prefix'] . Cot::$cfg['site_id'] . $width . $height . $frame), 0, 20);
+        return static::fileThumbnailDirectory($id, $relative) . '/' . Cot::$cfg['files']['prefix'] . $hash . '-' . $width . 'x' . $height
             . '-' . $frame . '.' . $extension;
     }
 
@@ -186,7 +185,7 @@ class ThumbnailService
                 $image = Image::load($resource);
                 fclose($resource);
             }
-            $image->thumbnail($width, $height, $frame, (bool) \Cot::$cfg['files']['upscale']);
+            $image->thumbnail($width, $height, $frame, (bool) Cot::$cfg['files']['upscale']);
         } catch (\Throwable $e) {
             return null;
         }
@@ -194,12 +193,12 @@ class ThumbnailService
         // Watermark
         if (
             $watermark
-            && !empty(\Cot::$cfg['files']['thumb_watermark'])
-            && is_readable(\Cot::$cfg['files']['thumb_watermark'])
-            && $image->getWidth() >= \Cot::$cfg['files']['thumb_wm_widht']
-            && $image->getHeight() >= \Cot::$cfg['files']['thumb_wm_height']
+            && !empty(Cot::$cfg['files']['thumb_watermark'])
+            && is_readable(Cot::$cfg['files']['thumb_watermark'])
+            && $image->getWidth() >= Cot::$cfg['files']['thumb_wm_widht']
+            && $image->getHeight() >= Cot::$cfg['files']['thumb_wm_height']
         ) {
-            $watermarkImage = Image::load(\Cot::$cfg['files']['thumb_watermark']);
+            $watermarkImage = Image::load(Cot::$cfg['files']['thumb_watermark']);
             $imageWidth = $image->getWidth();
             $imageHeight = $image->getHeight();
             $wmWidth = $watermarkImage->getWidth();

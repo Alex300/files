@@ -147,7 +147,7 @@ $L['cfg_image_maxheight_hint'] = 'UltraHD (4k): 3840x2160, FullHd (2k): 1920x108
 $L['cfg_imageResizeInBrowser'] = 'Downscale in browser';
 $L['cfg_imageResizeInBrowser_hint'] = 'If "Downscale uploading images" is enabled, downscale them in the user\'s browser, if possible, and '
     . 'send the downscaled image to the server';
-$L['cfg_quality'] = 'JPEG quality in %';
+$L['cfg_quality'] = 'Image quality in %';
 
 $L['cfg_th_separator'] = 'Thumbnails options';
 $L['cfg_thumbs'] = 'Display image thumbnails?';
