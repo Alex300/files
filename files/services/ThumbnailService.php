@@ -66,7 +66,6 @@ class ThumbnailService
      * @param string $localFileFullPath The full path to the local file. If passed, this file will be used to generate a thumbnail
      * @return array{path: string, url: string, fileSystem: LocalFilesystem|Filesystem}|null Thumbnail path and url on success or null on error
      *
-     * @todo Проверка на конвертирование в JPEG. Если файл подлежит конвертированию, то миниатюра должна быть в JPEG.
      * @todo можно вообще кешировать. Но тут вопрос, как зачищать кеш? Например при удалении всех миниатюр...
      */
     public static function thumbnail(
@@ -143,13 +142,19 @@ class ThumbnailService
         } else {
             $thumbnailFileSystem = FileService::getFilesystemByName($fileSystemName);
         }
-        $thumbRelativePath = ThumbnailService::thumbnailPath($id, $width, $height, $frame, $file->ext, true);
+
+        $extension = $file->ext;
+        if (FileService::isNeedToConvert($file->file_name)) {
+            $extension = Cot::$cfg['files']['image_convert'];
+        }
+
+        $thumbRelativePath = ThumbnailService::thumbnailPath($id, $width, $height, $frame, $extension, true);
 
         if (!($thumbnailFileSystem instanceof LocalFilesystem)) {
             if ($thumbnailFileSystem->fileExists($thumbRelativePath)) {
                 try {
                     $thumbnailUrl = $thumbnailFileSystem->publicUrl($thumbRelativePath);
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     $thumbnailUrl = '';
                 }
                 return [
@@ -186,7 +191,7 @@ class ThumbnailService
                 fclose($resource);
             }
             $image->thumbnail($width, $height, $frame, (bool) Cot::$cfg['files']['upscale']);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return null;
         }
 
@@ -225,7 +230,7 @@ class ThumbnailService
                 $thumbPath = ThumbnailService::thumbnailPath($id, $width, $height, $frame, $file->ext, false);
                 $image->save($thumbPath, (int) Cot::$cfg['files']['quality']);
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             unset($image);
             return null;
         }

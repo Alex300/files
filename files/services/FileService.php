@@ -313,7 +313,7 @@ class FileService
             }
         }
 
-        // Convert to JPEG
+        // Convert image
         if (FileService::isNeedToConvert($file->fileName)) {
             $file->ext = Cot::$cfg['files']['image_convert'];
             $file->fileName = pathinfo($file->fileName, PATHINFO_FILENAME) . '.' . $file->ext;
