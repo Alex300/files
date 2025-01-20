@@ -9,6 +9,7 @@ use cot\modules\files\models\File;
 use filesystem\LocalFilesystem;
 use image\Image;
 use League\Flysystem\Filesystem;
+use Throwable;
 
 class ThumbnailService
 {
