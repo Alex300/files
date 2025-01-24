@@ -10,6 +10,7 @@
 use cot\modules\files\models\File;
 use cot\modules\files\services\FileService;
 use cot\modules\files\services\ThumbnailService;
+use filesystem\exceptions\UnableToRetrieveMetadata;
 use filesystem\LocalFilesystem;
 use image\Image;
 use League\MimeTypeDetection\ExtensionMimeTypeDetector;
@@ -418,8 +419,14 @@ function cot_filesThumbnailUrl($id, $width = 0, $height = 0, string $frame = '',
 
     if ($addLastMod) {
         // FancyBox does not work this way
-        return $thumbnail['url'] . '?lm=' . ($lastModified ?? $thumbnail['fileSystem']->lastModified($thumbnail['path']));
+        try {
+            return $thumbnail['url'] . '?lm='
+                . ($lastModified ?? $thumbnail['fileSystem']->lastModified($thumbnail['path']));
+        } catch (UnableToRetrieveMetadata $e) {
+            // Для только что созданных файлов может быть ошибка получения данных
+        }
     }
+
     return $thumbnail['url'];
 }
 

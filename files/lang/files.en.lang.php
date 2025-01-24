@@ -137,7 +137,7 @@ $L['cfg_image_convert_params'] = [
     'webp' => 'WEBP',
     'no' => "don't convert",
 ];
-$L['cfg_image_to_convert'] = 'Image extensions/types to convert to JPEG';
+$L['cfg_image_to_convert'] = 'Image extensions/types to convert';
 $L['cfg_image_to_convert_hint'] = 'If the option above is enabled. If empty, all images will be converted. (comma separated, no dots and spaces)';
 $L['cfg_image_resize'] = 'Downscale uploading images';
 $L['cfg_image_resize_hint'] = 'Loaded images will be proportionally downscaled In accordance with the following parameters';

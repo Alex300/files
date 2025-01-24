@@ -144,12 +144,12 @@ class ThumbnailService
             $thumbnailFileSystem = FileService::getFilesystemByName($fileSystemName);
         }
 
-        $extension = $file->ext;
+        $thumbExtension = $file->ext;
         if (FileService::isNeedToConvert($file->file_name)) {
-            $extension = Cot::$cfg['files']['image_convert'];
+            $thumbExtension = Cot::$cfg['files']['image_convert'];
         }
 
-        $thumbRelativePath = ThumbnailService::thumbnailPath($id, $width, $height, $frame, $extension, true);
+        $thumbRelativePath = ThumbnailService::thumbnailPath($id, $width, $height, $frame, $thumbExtension, true);
 
         if (!($thumbnailFileSystem instanceof LocalFilesystem)) {
             if ($thumbnailFileSystem->fileExists($thumbRelativePath)) {
@@ -222,13 +222,16 @@ class ThumbnailService
         $saveToRemote = !($thumbnailFileSystem instanceof LocalFilesystem);
         try {
             if ($saveToRemote) {
-                $thumbnailFileSystem->write($thumbRelativePath, $image->encode($file->ext, (int) Cot::$cfg['files']['quality']));
+                $thumbnailFileSystem->write(
+                    $thumbRelativePath,
+                    $image->encode($thumbExtension, (int) Cot::$cfg['files']['quality'])
+                );
             } else {
                 $thumbRelativeDir = dirname($thumbRelativePath);
                 if (!$thumbnailFileSystem->directoryExists($thumbRelativeDir)) {
                     $thumbnailFileSystem->createDirectory($thumbRelativeDir);
                 }
-                $thumbPath = ThumbnailService::thumbnailPath($id, $width, $height, $frame, $file->ext, false);
+                $thumbPath = ThumbnailService::thumbnailPath($id, $width, $height, $frame, $thumbExtension, false);
                 $image->save($thumbPath, (int) Cot::$cfg['files']['quality']);
             }
         } catch (Throwable $e) {
