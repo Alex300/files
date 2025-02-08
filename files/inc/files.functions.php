@@ -47,10 +47,10 @@ cot_extrafields_register_table('files_folders');
  */
 function cot_filesCount($source, $sourceId, $sourceField = '', $type = 'all')
 {
-    static $a_cache = [];
+    static $countCache = [];
 
     $cacheField = ($sourceField != '') ? $sourceField : '_empty_field_name_';
-    if (!isset($a_cache[$source][$sourceId][$cacheField][$type])) {
+    if (!isset($countCache[$source][$sourceId][$cacheField][$type])) {
         $cond = [
             ['source', $source],
             ['source_id', $sourceId],
@@ -74,9 +74,9 @@ function cot_filesCount($source, $sourceId, $sourceField = '', $type = 'all')
             $cond[] = ['source_field', $sourceField];
         }
 
-        $a_cache[$source][$sourceId][$cacheField][$type] = File::count($cond);
+        $countCache[$source][$sourceId][$cacheField][$type] = File::count($cond);
     }
-    return $a_cache[$source][$sourceId][$cacheField][$type];
+    return $countCache[$source][$sourceId][$cacheField][$type];
 }
 
 /**
@@ -85,15 +85,17 @@ function cot_filesCount($source, $sourceId, $sourceField = '', $type = 'all')
  * @param int $sourceId Target item id.
  * @param string $sourceField Target item field
  * @param string $column Empty string to return full row, one of the following to return a single value: 'id',
- *                              'user_id', 'path', 'file_name', 'original_name', 'ext', 'is_img', 'size', 'title', 'downloads_count'
- * @param string $number Attachment number within item, or one of these values: 'first', 'rand' or 'last'. Defines which image is selected.
+ *    'user_id', 'path', 'file_name', 'original_name', 'ext', 'is_img', 'size', 'title', 'downloads_count'
+ * @param string $number Attachment number within item, or one of these values: 'first', 'rand' or 'last'.
+ *    Defines which image is selected.
  * @return File|int|string|null Scalar column value, File object or NULL if no attachments found.
  */
 function cot_filesGet($source, $sourceId, $sourceField = '', $column = '', $number = 'first')
 {
-    static $a_cache;
+    static $fileCache;
 
-    if (!isset($a_cache[$source][$sourceId][$number])) {
+    $cacheField = !empty($sourceField) ? $sourceField : '_empty_field_name_';
+    if (!isset($fileCache[$source][$sourceId][$cacheField][$number])) {
         $order_by = $number == 'rand' ? 'RAND()' : 'sort_order';
         if ($number == 'last') {
             $order_by .= ' DESC';
@@ -105,18 +107,26 @@ function cot_filesGet($source, $sourceId, $sourceField = '', $column = '', $numb
             ['source_id', $sourceId],
         ];
 
-        if ($sourceField != '_all_') {
+        if ($sourceField !== '_all_') {
             $cond[] = ['source_field', $sourceField];
         }
+
         $file = File::findByCondition($cond, 1, $offset, $order_by);
         if (!$file) {
-            return null;
+            $fileCache[$source][$sourceId][$cacheField][$number] = false;
+        } else {
+            $fileCache[$source][$sourceId][$cacheField][$number] = current($file);
         }
-        $a_cache[$source][$sourceId][$number] = current($file);
 
     }
 
-    return empty($column) ? $a_cache[$source][$sourceId][$number] : $a_cache[$source][$sourceId][$number]->{$column};
+    if ($fileCache[$source][$sourceId][$cacheField][$number] === false) {
+        return null;
+    }
+
+    return empty($column)
+        ? $fileCache[$source][$sourceId][$cacheField][$number]
+        : $fileCache[$source][$sourceId][$cacheField][$number]->{$column};
 }
 
 /**
