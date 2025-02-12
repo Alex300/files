@@ -33,7 +33,7 @@
 
 .dropzone .progress{ margin-bottom: 10px; }
 
-#task-processing{
+#task-processing {
     position: absolute;
     left: 50%;
     top: 0;

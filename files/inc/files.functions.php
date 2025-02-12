@@ -685,6 +685,7 @@ function cot_filesAvatarBox($userId = null, $tpl = 'files.avatarbox')
     // Metadata
     $t->assign([
         'AVATAR'         => $avatar,
+        'AVATAR_TEMPLATE' => str_replace(['{$', '}'], '__', Cot::$R['files_user_avatar']),
         'UPLOAD_ID'      => $formId,
         'UPLOAD_SOURCE'  => $source,
         'UPLOAD_ITEM'    => $item,

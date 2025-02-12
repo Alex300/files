@@ -7,8 +7,11 @@
 <!--[if lt IE 9]><script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
 
 <div class="row" id="files-avatar-upload">
-    <div class="col-xs-4" id="files-avatar">{AVATAR}</div>
-    <div class="col-xs-8">
+    <div id="files-avatar-container">
+        <div class="files-avatar">{AVATAR}</div>
+        <span id="task-processing"></span>
+    </div>
+    <div>
         <span class="btn btn-success fileinput-button">
             <i class="glyphicon glyphicon-plus"></i>
             <span>{PHP.L.files_select_avatar}...</span>
@@ -17,89 +20,136 @@
         <div class="progress progress-striped active hidden margintop10" id="progress">
             <div class="progress-bar progress-bar-success"></div>
         </div>
-        <script>
-            $(function () {
-                'use strict';
-
-                let progressElement = document.querySelector('#files-avatar-upload #progress');
-
-                function showError(message) {
-                    progressElement.classList.add('hidden');
-
-                    let div = document.createElement('div');
-                    div.className = 'files-avatar-upload-error';
-                    div.innerHTML = '<span class="label label-danger">Error</span> ' + message;
-
-                    progressElement.after(div);
-                }
-
-                let options = {
-                    dataType: 'json',
-                    maxChunkSize: {UPLOAD_CHUNK},
-                    formData: {
-                        param: '{UPLOAD_PARAM}',
-                        x: '{UPLOAD_X}'
-                    },
-                    acceptFileTypes: /(\.|\/)(avif|bmp|gif|jpe?g|heic|heif|png|svg|tga|webp)$/i,
-                    disableValidation: false
-                };
-
-                <!-- IF {PHP.cfg.files.image_resize} == 1 AND {PHP.cfg.files.imageResizeInBrowser} == 1 AND {PHP.cfg.files.image_maxwidth} > 0 AND {PHP.cfg.files.image_maxheight} > 0 -->
-                options.loadImageFileTypes = /^image\/(avif|bmp|gif|jpeg|heic|heif|png|svg\+xml|x-tga|webp)$/;
-                options.loadImageMaxFileSize = 60000000; // 60MB
-                options.disableImageResize = false;
-                options.imageMaxWidth = {PHP.cfg.files.image_maxwidth};
-                options.imageMaxHeight = {PHP.cfg.files.image_maxheight};
-                <!-- ENDIF -->
-
-                $('#fileupload').fileupload(options)
-                .on('fileuploadprocessalways', function (e, data) {
-                    // Validation result
-                    let currentFile = data.files[data.index];
-                    if (data.files.error && currentFile.error) {
-                        // there was an error
-                        showError(currentFile.error);
-                    }
-
-                }).on('fileuploadprogressall', function (e, data) {
-                    const progress = parseInt(data.loaded / data.total * 100, 10);
-
-                    $('.files-avatar-upload-error').remove();
-
-                    $('#files-avatar-upload #progress').removeClass('hidden');
-                    $('#files-avatar-upload #progress .progress-bar').css( 'width', progress + '%' );
-
-                }).on('fileuploaddone', function (e, data) {
-                    progressElement.classList.add('hidden');
-
-                    $.each(data.result.files, function (index, file) {
-                        const error =  file.error || false;
-                        if (error) {
-                            showError(file.error);
-                            return;
-                        } else {
-                            $('.files-avatar-upload-error').remove();
-                        }
-
-                        const avatarTemplate = '{PHP|str_replace("'", "\'", {PHP.R.files_user_avatar})}';
-                        let avatarElement = document.getElementById('files-avatar');
-                        if (avatarElement !== null) {
-                            avatarElement.innerHTML = avatarTemplate.replace('{$src}', file.thumbnailUrl)
-                                .replace('{$alt}', file.name);
-                        }
-                    });
-
-                }).on('fileuploadfail', function (e, data) {
-                    showError('File upload error');
-
-                }).prop('disabled', !$.support.fileInput)
-                        .parent().addClass($.support.fileInput ? undefined : 'disabled');
-            });
-        </script>
     </div>
 </div>
-<!-- The XDomainRequest Transport is included for cross-domain file deletion for IE 8 and IE 9 -->
-<!--[if (gte IE 8)&(lt IE 10)]>
-<script src="js/cors/jquery.xdr-transport.js"></script>
-<![endif]-->
+<style>
+    /* @todo Удалить после генерации общей CSS */
+    #files-avatar-upload {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start
+    }
+
+    #files-avatar-container {
+        position: relative;
+    }
+
+    #task-processing {
+        position: absolute;
+        display: none;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 60px;
+        height: 60px;
+        background: url(modules/files/lib/upload/img/loading.gif) center no-repeat;
+        background-size: contain;
+    }
+</style>
+<script>
+    $(function () {
+        'use strict';
+
+        const progressElement = document.querySelector('#files-avatar-upload #progress');
+        const preloaderElement = document.querySelector('#task-processing');
+        const uploaderElement = document.querySelector('#fileupload');
+
+        function showError(message) {
+            progressElement.classList.add('hidden');
+
+            let div = document.createElement('div');
+            div.className = 'files-avatar-upload-error';
+            div.innerHTML = '<span class="label label-danger">Error</span> ' + message;
+
+            progressElement.after(div);
+        }
+
+        function onUploadStart() {
+            const avatarImageElement = document.querySelector('#files-avatar-container img.avatar');
+            if (avatarImageElement !== null) {
+                avatarImageElement.style.opacity = .4;
+            }
+            preloaderElement.style.display = 'inline-block';
+            uploaderElement.disabled = true;
+            $('#files-avatar-upload #progress').removeClass('hidden');
+        }
+
+        function onUploadEnd() {
+            const avatarImageElement = document.querySelector('#files-avatar-container img.avatar');
+            if (avatarImageElement !== null) {
+                avatarImageElement.style.opacity = 1;
+            }
+            preloaderElement.style.display = 'none';
+            uploaderElement.disabled = false;
+            progressElement.classList.add('hidden');
+        }
+
+        let options = {
+            dataType: 'json',
+            maxChunkSize: {UPLOAD_CHUNK},
+            formData: {
+                param: '{UPLOAD_PARAM}',
+                x: '{UPLOAD_X}'
+            },
+            acceptFileTypes: /(\.|\/)(avif|bmp|gif|jpe?g|heic|heif|png|svg|tga|webp)$/i,
+            disableValidation: false
+        };
+
+        <!-- IF {PHP.cfg.files.image_resize} == 1 AND {PHP.cfg.files.imageResizeInBrowser} == 1 AND {PHP.cfg.files.image_maxwidth} > 0 AND {PHP.cfg.files.image_maxheight} > 0 -->
+        options.loadImageFileTypes = /^image\/(avif|bmp|gif|jpeg|heic|heif|png|svg\+xml|x-tga|webp)$/;
+        options.loadImageMaxFileSize = 60000000; // 60MB
+        options.disableImageResize = false;
+        options.imageMaxWidth = {PHP.cfg.files.image_maxwidth};
+        options.imageMaxHeight = {PHP.cfg.files.image_maxheight};
+        <!-- ENDIF -->
+
+        $(uploaderElement).fileupload(options)
+            .on('fileuploadprocessstart', function (e) {
+                onUploadStart();
+            })
+            .on('fileuploadprocessalways', function (e, data) {
+                // Validation result
+                let currentFile = data.files[data.index];
+                if (data.files.error && currentFile.error) {
+                    // there was an error
+                    showError(currentFile.error);
+                }
+            })
+            .on('fileuploadprogressall', function (e, data) {
+                const progress = parseInt(data.loaded / data.total * 100, 10);
+
+                $('.files-avatar-upload-error').remove();
+                $('#files-avatar-upload #progress .progress-bar').css( 'width', progress + '%' );
+
+            })
+            .on('fileuploaddone', function (e, data) {
+                onUploadEnd();
+
+                $.each(data.result.files, function (index, file) {
+                    const error =  file.error || false;
+                    if (error) {
+                        showError(file.error);
+                        return;
+                    } else {
+                        $('.files-avatar-upload-error').remove();
+                    }
+
+                    let avatarElement = document.getElementById('files-avatar');
+                    if (avatarElement !== null) {
+                        const avatarTemplate = '{AVATAR_TEMPLATE}';
+                        let avatarRendered = avatarTemplate.replace('__src__', file.thumbnailUrl);
+                        avatarRendered = avatarRendered.replace('__alt__', file.name);
+                        avatarElement.innerHTML = avatarRendered;
+                    }
+                });
+
+            })
+            .on('fileuploadfail', function (e, data) {
+                showError('File upload error');
+                onUploadEnd();
+            })
+            .prop('disabled', !$.support.fileInput)
+            .parent().addClass($.support.fileInput ? undefined : 'disabled');
+    });
+</script>
 <!-- END: MAIN -->
