@@ -22,8 +22,8 @@
     <!-- BEGIN: ALLPFS_ROW -->
     <tr>
         <td>
-            <a href="{ALLPFS_ROW_USER_DETAILSLINK}">{ALLPFS_ROW_USER_DISPLAY_NAME}</a>
-            <!-- IF {ALLPFS_ROW_USER_DISPLAY_NAME} != {ALLPFS_ROW_USER_NICKNAME} -->
+            <a href="{ALLPFS_ROW_USER_DETAILS_URL}">{ALLPFS_ROW_USER_FULL_NAME}</a>
+            <!-- IF {ALLPFS_ROW_USER_FULL_NAME} != {ALLPFS_ROW_USER_NICKNAME} -->
             <em>({ALLPFS_ROW_USER_NICKNAME})</em>
             <!-- ENDIF -->
         </td>

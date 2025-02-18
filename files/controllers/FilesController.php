@@ -19,7 +19,7 @@ defined('COT_CODE') or die('Wrong URL.');
  * Функционал для работы с файлами, который не входит в стандартный jQuery Uploader
  * 
  * @package Files
- * @author Kalnov Alexey <kalnovalexey@yandex.ru>
+ * @author Kalnov Alexey <kalnovalexey@yandex.ru> https://github.com/Alex300
  */
 class FilesController
 {

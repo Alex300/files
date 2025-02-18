@@ -1,28 +1,14 @@
-@charset "UTF-8";
-
-.fileupload .filesTable p{ margin-bottom: 5px; }
-.fileupload .filesTable .form-control{ margin-bottom: 10px; }
-.fileupload .filesTable .files-replace-file{ margin-bottom: 5px; }
-.fileupload-progress{ margin: 10px 10px 0 10px; }
-.dropzone .progress{ margin-bottom: 10px; }
-
-#task-processing{
-    position: absolute;
-    left: 50%;
-    top: 0;
-    width: 128px;
-    height: 128px;
-    background: url(../lib/upload/img/loading.gif) center no-repeat;
-}
-
+/**
+ @todo проверить и перенести в modules/files/assets/source/src/scss/files.scss
+ */
 @media (max-width: 767px) {
     .files .name, .att-edit-title {
         width: 100%;
     }
-    .files .name{
+    .files .name {
         overflow-x: hidden;
     }
-    .files .preview{
+    .files .preview {
         display: inline-block;
         width: 100px;
     }

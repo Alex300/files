@@ -1,5 +1,3 @@
-@charset "UTF-8";
-
 .dropzone {
     text-align: center;
     font-weight: bold;
@@ -19,12 +17,13 @@
     opacity: 1;
 }
 
-.fileupload .filesTable p{ margin-bottom: 5px; }
-.fileupload .filesTable .form-control{ margin-bottom: 10px; }
-.fileupload .filesTable .files-replace-file{ margin-bottom: 5px; }
-.fileupload-progress{ margin: 10px 10px 0 10px; }
+.file-upload .filesTable p { margin-bottom: 5px; }
+.file-upload .filesTable .form-control { margin-bottom: 10px; }
+.file-upload .filesTable .files-replace-file { margin-bottom: 5px; }
 
-.fileupload .filesTable .files .name {
+.fileupload-progress { margin: 10px 10px 0 10px; }
+
+.file-upload .filesTable .files .name {
     /*width: 80px;*/
     word-wrap: break-word;
     max-width: 99%;
@@ -33,39 +32,53 @@
 
 .dropzone .progress{ margin-bottom: 10px; }
 
-#task-processing {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    width: 128px;
-    height: 128px;
-    background: url(../lib/upload/img/loading.gif) center no-repeat;
+.template-download {
+    position: relative;
 }
 
-.preview img, .preview canvas{
+.file-upload-preloader {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background: url(../img/loading.gif) center no-repeat;
+    background-size: contain;
+}
+
+.preview img, .preview canvas {
     max-width: 140px;
 }
+
+.file-upload-avatar {
+    .files-avatar-container {
+        position: relative;
+        width: max-content;
+    }
+}
+
 @media (max-width: 769px) {
     .files .preview img,
-    .files .preview canvas{
+    .files .preview canvas {
         max-width: 60px;
     }
-    .fileupload .filesTable .form-control{
+    .file-upload .filesTable .form-control {
         max-width: 160px;
     }
-    .fileupload .filesTable .files .name {
+    .file-upload .filesTable .files .name {
         max-width: 160px;
     }
-    .files-replace-file{
+    .files-replace-file {
         max-width: 160px;
     }
-    .dropzone{
+    .dropzone {
         background: none;
         border: none;
         box-shadow: none;
         padding: 0;
     }
-    .dropzone .fileupload-progress{
+    .dropzone .fileupload-progress {
         margin: 0;
     }
 }

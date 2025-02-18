@@ -1,14 +1,16 @@
 <!-- BEGIN: MAIN -->
-<!-- CSS adjustments for browsers with JavaScript disabled -->
-<noscript><link rel="stylesheet" href="css/jquery.fileupload-noscript.css"></noscript>
-<noscript><link rel="stylesheet" href="css/jquery.fileupload-ui-noscript.css"></noscript>
-
-<!-- Shim to make HTML5 elements usable in older Internet Explorer versions -->
-<!--[if lt IE 9]><script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
-
 <div class="row">
     <!-- The file upload form used as target for the file upload widget -->
-    <div class="col-xs-12 fileupload" id="fileupload_{UPLOAD_SOURCE}_{UPLOAD_ITEM}_{UPLOAD_FIELD}" data-url="{UPLOAD_ACTION}">
+    <div
+            class="col-xs-12 file-upload"
+            id="file-upload_{UPLOAD_SOURCE}_{UPLOAD_ITEM}_{UPLOAD_FIELD}"
+            data-url="{UPLOAD_ACTION}"
+            data-files-form-param="{UPLOAD_PARAM}"
+            data-files-form-x="{UPLOAD_X}"
+            data-files-source="{UPLOAD_SOURCE}"
+            data-files-source-id="{UPLOAD_ITEM}"
+            data-files-field="{UPLOAD_FIELD}"
+    >
         <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
         <div class="row fileupload-buttonbar">
             <div class="col-xs-12">
@@ -60,35 +62,20 @@
 
 <!-- Cotonti config -->
 <script type="text/javascript">
-if (filesConfig === undefined) {
-    var filesConfig = {
-        exts: $.map('{UPLOAD_EXTS}'.split(','), $.trim),
-        //accept: '{UPLOAD_ACCEPT}',
-        maxsize: {UPLOAD_MAXSIZE},
-        previewMaxWidth: {UPLOAD_THUMB_WIDTH},
-        previewMaxHeight: {UPLOAD_THUMB_HEIGHT},
-        autoUpload: {PHP.cfg.files.autoupload},
-        sequential: {PHP.cfg.files.sequential},
-        'x': '{UPLOAD_X}'
-    };
+    if (window.filesConfig === undefined) {
+        window.filesConfig = {};
+    }
 
-    <!-- IF {PHP.cfg.files.image_resize} == 1 AND {PHP.cfg.files.imageResizeInBrowser} == 1 AND {PHP.cfg.files.image_maxwidth} > 0 AND {PHP.cfg.files.image_maxheight} > 0 -->
-    filesConfig.imageResize = true;
-    filesConfig.imageMaxWidth = {PHP.cfg.files.image_maxwidth};
-    filesConfig.imageMaxHeight = {PHP.cfg.files.image_maxheight};
-    <!-- ENDIF -->
-}
-filesConfig.{UPLOAD_ID} = {
-    source: '{UPLOAD_SOURCE}',
-    item:   {UPLOAD_ITEM},
-    field:  '{UPLOAD_FIELD}',
-    limit:  {UPLOAD_LIMIT},
-    chunk:  {UPLOAD_CHUNK},
-    param:  '{UPLOAD_PARAM}'
-};
+    window.filesConfig.maxsize = {UPLOAD_MAXSIZE};
+    window.filesConfig.x = '{UPLOAD_X}';
+
+    filesConfig.{UPLOAD_ID} = {
+        source: '{UPLOAD_SOURCE}',
+        item:   {UPLOAD_ITEM},
+        field:  '{UPLOAD_FIELD}',
+        limit:  {UPLOAD_LIMIT},
+        // chunk:  {UPLOAD_CHUNK},
+        param:  '{UPLOAD_PARAM}'
+    };
 </script>
-<!-- The XDomainRequest Transport is included for cross-domain file deletion for IE 8 and IE 9 -->
-<!--[if (gte IE 8)&(lt IE 10)]>
-<script src="js/cors/jquery.xdr-transport.js"></script>
-<![endif]-->
 <!-- END: MAIN -->

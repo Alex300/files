@@ -17,13 +17,28 @@ use League\MimeTypeDetection\GeneratedExtensionToMimeTypeMap;
 use Throwable;
 
 /**
+ * Files service
  * @package Files
- *
- * @todo при загрузке файлов проверять временную директорию и удалять фалы старше 2-х дней? \cot_filesTempDir()
- * c:/ospanel/userdata/temp\files_bd4fd02e3abc35abf77622_upload/
+ * @author Alexey Kalnov <kalnovalexey@yandex.ru> https://github.com/Alex300
+ * @copyright (c) 2014-2025 Lily Software https://lily-software.com
  */
 class FileService
 {
+    private static $classInstances = [];
+
+    /**
+     * @return static
+     * @todo use system GetInstanceTrait after 0.9.26 release
+     */
+    public static function getInstance(): self
+    {
+        $class = static::class;
+        if (!isset(self::$classInstances[$class])) {
+            self::$classInstances[$class] = new static();
+        }
+        return self::$classInstances[$class];
+    }
+
     public const FILE_UPLOAD_ERRORS = [
         UPLOAD_ERR_OK => 'There is no error, the file uploaded with success',
         UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini',
@@ -94,6 +109,23 @@ class FileService
         'odt' => 'application/vnd.oasis.opendocument.text',
         'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
     ];
+
+    public function getAllowedExtensions(): array
+    {
+        $extensions = str_replace(' ', '', Cot::$cfg['files']['exts']);
+        if ($extensions === '') {
+            return [];
+        }
+        $result = explode(',', Cot::$cfg['files']['exts']);
+        foreach ($result as $key => $item) {
+            $item = trim($item);
+            if ($item === '') {
+                unset($result[$key]);
+            }
+        }
+
+        return array_unique($result);
+    }
 
     /**
      * Configuration example
@@ -324,7 +356,7 @@ class FileService
         if ($imageChanged) {
             try {
                 $image->save($file->getFullName(), (int) Cot::$cfg['files']['quality']);
-            } catch (\Exception $e) {
+            } catch (Throwable $e) {
                 $message = "Can't save image '" . $file->getFullName() . "'";
                 if (Cot::$usr['isadmin']) {
                     $msg = $e->getMessage();

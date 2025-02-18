@@ -8,6 +8,7 @@ use cot\modules\files\services\FileService;
 use cot\modules\files\services\ThumbnailService;
 use image\Image;
 use Throwable;
+use XTemplate;
 
 /**
  * @package Files
@@ -21,7 +22,7 @@ class AdminMainController
     {
         global $adminPath, $adminHelp, $cot_yesno, $adminSubtitle;
 
-        $tpl = new \XTemplate(cot_tplfile('files.admin.main'));
+        $tpl = new XTemplate(cot_tplfile('files.admin.main'));
 
         $imagickIsAvailable = (new \image\imagick\Image())->isAvailable();
         $gdIsAvailable = (new \image\gd\Image())->isAvailable();
@@ -133,13 +134,19 @@ class AdminMainController
             isset($cot_extrafields[$db_users]['middle_name'])){
 
             $sqlOrder = '';
-            if (isset($cot_extrafields[$db_users]['last_name'])) $sqlOrder .= 'u.user_last_name ASC';
-            if (isset($cot_extrafields[$db_users]['first_name'])){
-                if($sqlOrder != '') $sqlOrder .= ', ';
+            if (isset($cot_extrafields[$db_users]['last_name'])) {
+                $sqlOrder .= 'u.user_last_name ASC';
+            }
+            if (isset($cot_extrafields[$db_users]['first_name'])) {
+                if ($sqlOrder != '') {
+                    $sqlOrder .= ', ';
+                }
                 $sqlOrder .= ' u.user_first_name ASC';
             }
             if (isset($cot_extrafields[$db_users]['middle_name'])){
-                if($sqlOrder != '') $sqlOrder .= ', ';
+                if ($sqlOrder != '') {
+                    $sqlOrder .= ', ';
+                }
                 $sqlOrder .= ' u.user_middle_name ASC';
             }
 
@@ -150,27 +157,22 @@ class AdminMainController
 	        LEFT JOIN $db_users AS u ON f.user_id=u.user_id
 	        WHERE source = 'pfs' GROUP BY f.user_id ORDER BY $sqlOrder LIMIT $d, ".$perPage);
 
-        $t = new \XTemplate(cot_tplfile('files.admin.allpfs'));
+        $t = new XTemplate(cot_tplfile('files.admin.allpfs'));
 
         $ii = 0;
         /* === Hook - Part1 : Set === */
         $extp = cot_getextplugins('admin.files.allpfs.loop');
         /* ===== */
-        while ($row = $sql_pfs->fetch()){
-
+        while ($row = $sql_pfs->fetch()) {
             $t->assign(cot_generate_usertags($row, 'ALLPFS_ROW_USER_'));
 
-            $t->assign(array(
-                'ALLPFS_ROW_URL' => cot_url('files', array('m'=>'pfs', 'uid'=>$row['user_id'])),
-                // @deprecated use ...USER_FULL_NAME
-                'ALLPFS_ROW_USER_DISPLAY_NAME' => cot_user_full_name($row),
-                'ALLPFS_ROW_USER_FULL_NAME' => cot_user_full_name($row),
-                'ALLPFS_ROW_COUNT' => $row['count']
-            ));
+            $t->assign([
+                'ALLPFS_ROW_URL' => cot_url('files', ['m' => 'pfs', 'uid' => $row['user_id']]),
+                'ALLPFS_ROW_COUNT' => $row['count'],
+            ]);
 
             /* === Hook - Part2 : Include === */
-            foreach ($extp as $pl)
-            {
+            foreach ($extp as $pl) {
                 include $pl;
             }
             /* ===== */
@@ -186,25 +188,23 @@ class AdminMainController
             $t->parse('MAIN.SFS');
         }
 
-        $t->assign(array(
+        $t->assign([
             'ALLPFS_PAGINATION_PREV' => $pagenav['prev'],
             'ALLPFS_PAGNAV' => $pagenav['main'],
             'ALLPFS_PAGINATION_NEXT' => $pagenav['next'],
             'ALLPFS_TOTALITEMS' => $totalitems,
             'ALLPFS_ON_PAGE' => $ii,
             'PAGE_TITLE' => Cot::$L['files_allpfs'],
-        ));
+        ]);
 
         /* === Hook  === */
-        foreach (cot_getextplugins('admin.files.allpfs.tags') as $pl)
-        {
+        foreach (cot_getextplugins('admin.files.allpfs.tags') as $pl) {
             include $pl;
         }
         /* ===== */
 
         $t->parse('MAIN');
         return $t->text();
-
     }
 
     /**

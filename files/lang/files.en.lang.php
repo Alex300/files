@@ -116,6 +116,12 @@ $L['cfg_prefix'] = 'File prefix';
 $L['cfg_checkAllowedType'] = 'Check uploading file types';
 $L['cfg_checkAllowedType_hint'] = 'Check uploaded files against the list of allowed file types below. It is recommended to enable it for security reasons.';
 $L['cfg_exts'] = 'Allowed extensions/types (comma separated, no dots and spaces)';
+$L['cfg_fixExtensionsByMime'] = 'Fix files extensions by mime type';
+$L['cfg_fixExtensionsByMime_hint'] = 'Will work better with '
+    . '<a href="https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/" target="_blank">'
+    . 'https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/</a> installed';
+$L['cfg_loadAssetsGlobally'] = "Load module's JS and CSS modules globally";
+$L['cfg_loadAssetsGlobally_hint'] = 'Useful when initializing the loader dynamically (AJAX, SPA)';
 $L['cfg_maxFoldersPerPage'] = 'Max folders count per page';
 $L['cfg_pfs_winclose'] = 'Close popup window after file insert into editor';
 
@@ -124,10 +130,6 @@ $L['cfg_autoupload'] = 'Start uploading automatically';
 $L['cfg_sequential'] = 'Sequential uploading instead of concurrent';
 $L['cfg_chunkSize'] = 'Upload files by chunks (in bytes)';
 $L['cfg_chunkSize_hint'] = 'Large files can be uploaded in smaller chunks with browsers supporting the Blob API. (Leave empty to disable)';
-$L['cfg_fixExtensionsByMime'] = 'Fix files extensions by mime type';
-$L['cfg_fixExtensionsByMime_hint'] = 'Will work better with '
-    . '<a href="https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/" target="_blank">'
-    . 'https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/</a> installed';
 
 $L['cfg_img_separator'] = 'Image options';
 $L['cfg_image_convert'] = 'Convert images when uploading to';

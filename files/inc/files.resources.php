@@ -86,4 +86,4 @@ Cot::$R['files_pfs_link_addfile'] =
 
 
 $R['files_user_avatar'] = '<img src="{$src}" alt="{$alt}" class="avatar img-responsive" />';
-$R['files_user_default_avatar'] = '<img src="datas/defaultav/blank.png" alt="'.Cot::$L['Avatar'].'" class="avatar img-responsive" />';
+$R['files_user_default_avatar'] = '<img src="images/blank-avatar.png" alt="'.Cot::$L['Avatar'].'" class="avatar img-responsive" />';

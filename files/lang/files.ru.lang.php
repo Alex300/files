@@ -113,6 +113,12 @@ $L['cfg_prefix'] = 'Префикс имен файлов';
 $L['cfg_checkAllowedType'] = 'Проверять тип загружаемых файлов';
 $L['cfg_checkAllowedType_hint'] = 'Проверять загружаемые файлы на соответствие списку разрешенных типов ниже. Рекомендуется включить в целях безопасности.';
 $L['cfg_exts'] = 'Разрешенные типы файлов (через запятую, без точек и пробелов)';
+$L['cfg_fixExtensionsByMime'] = 'Исправлять расширения файлов в соответствии с Mime-типом';
+$L['cfg_fixExtensionsByMime_hint'] = 'Лучше работает с установленным '
+    . '<a href="https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/" target="_blank">'
+    . 'https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/</a>';
+$L['cfg_loadAssetsGlobally'] = 'Загружать JS и CSS модуля глобально';
+$L['cfg_loadAssetsGlobally_hint'] = 'Полезно при инициализации загрузчика динамически (ajax, SPA)';
 $L['cfg_maxFoldersPerPage'] = 'Максимальное количество папок на страницу';
 $L['cfg_pfs_winclose'] = 'Закрывать всплывающее окно после вставки файла в редактор';
 
@@ -123,10 +129,6 @@ $L['cfg_chunkSize'] = 'Загружать файлы чанками по (бай
 $L['cfg_chunkSize_hint'] = 'Большие файлы могут быть загружены небольшими частями.
     Это позволяет загружать файлы большего размера, чем указано в ограничениях на загрузку файлов через $_POST.
     (Оставьте пустым для отключения)';
-$L['cfg_fixExtensionsByMime'] = 'Исправлять расширения файлов в соответствии с Mime-типом';
-$L['cfg_fixExtensionsByMime_hint'] = 'Лучше работает с установленным '
-    . '<a href="https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/" target="_blank">'
-    . 'https://flysystem.thephpleague.com/docs/advanced/mime-type-detection/</a>';
 
 $L['cfg_img_separator'] = 'Настройки изображений';
 $L['cfg_image_convert'] = 'Конвертировать изображения при загрузке в';
