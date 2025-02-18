@@ -14,10 +14,12 @@ class Files
     #uploaderSelector = '.file-upload';
     #avatarUploaderSelector = '.file-upload-avatar';
 
-    init(config) {
-        Object.assign(this.#config, config);
+    init(config = null) {
+        if (config !== null) {
+            Object.assign(this.#config, config);
+        }
 
-        if (this.#config.loadImageFileTypes !== undefined) {
+        if (this.#config.loadImageFileTypes !== undefined && (typeof this.#config.loadImageFileTypes === 'string')) {
             this.#config.loadImageFileTypes = new RegExp(this.#config.loadImageFileTypes);
         }
 
