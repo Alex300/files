@@ -148,6 +148,8 @@ export class FileUploader {
         });
 
         element.addEventListener('click', (event) => {
+            const row = event.target.closest('.template-download');
+
             let target = event.target.closest('button.files-replace-button');
             if (target !== null && this.#element.contains(target)) {
                 event.preventDefault();
@@ -156,7 +158,7 @@ export class FileUploader {
             }
 
             target = event.target.closest('.delete');
-            if (target !== null && this.#element.contains(target)) {
+            if (row !== null && target !== null && this.#element.contains(target)) {
                 this.#onClickDelete(target);
                 return;
             }
