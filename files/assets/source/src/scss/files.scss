@@ -21,6 +21,18 @@
 .file-upload .filesTable .form-control { margin-bottom: 10px; }
 .file-upload .filesTable .files-replace-file { margin-bottom: 5px; }
 
+.file-upload {
+    &[data-files-source-id="0"] {
+        .file-id {
+            display: none;
+        }
+        // Do not show "Replace file" for unsaved (new) objects.
+        .files-replace-file {
+            display: none;
+        }
+    }
+}
+
 .fileupload-progress { margin: 10px 10px 0 10px; }
 
 .file-upload .filesTable .files .name {

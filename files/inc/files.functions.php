@@ -884,9 +884,9 @@ function cot_filesFileBox(
     $jQtemplates = '';
     if (!$jQtemplatesOut) {
         $templates = new XTemplate(cot_tplfile('files.templates', 'module'));
-        $templates->assign(array(
+        $templates->assign([
             'IS_STANDALONE' => ($standalone == 1) ? 1 : 0,
-        ));
+        ]);
         $templates->parse();
         $jQtemplates = $templates->text();
         $jQtemplatesOut = true;

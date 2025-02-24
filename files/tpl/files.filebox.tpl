@@ -59,23 +59,4 @@
         <table id="filesTable_" role="presentation" class="table table-striped filesTable"><tbody class="files"></tbody></table>
     </div>
 </div>
-
-<!-- Cotonti config -->
-<script type="text/javascript">
-    if (window.filesConfig === undefined) {
-        window.filesConfig = {};
-    }
-
-    window.filesConfig.maxsize = {UPLOAD_MAXSIZE};
-    window.filesConfig.x = '{UPLOAD_X}';
-
-    filesConfig.{UPLOAD_ID} = {
-        source: '{UPLOAD_SOURCE}',
-        item:   {UPLOAD_ITEM},
-        field:  '{UPLOAD_FIELD}',
-        limit:  {UPLOAD_LIMIT},
-        // chunk:  {UPLOAD_CHUNK},
-        param:  '{UPLOAD_PARAM}'
-    };
-</script>
 <!-- END: MAIN -->
