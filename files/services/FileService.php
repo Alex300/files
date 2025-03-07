@@ -711,9 +711,9 @@ class FileService
      * Привязка ранее загруженных файлов к только что созданному объекту
      *
      * @param string $source
-     * @param int $item
+     * @param int $sourceId
      */
-    public static function linkFiles(string $source, int $item): void
+    public static function linkFiles(string $source, int $sourceId): void
     {
         $formId = "{$source}_0";
 
@@ -723,7 +723,7 @@ class FileService
         }
         //$unikey = cot_import_buffered('cf_'.$formId, $unikey);
 
-        if ($unikey && $item > 0) {
+        if ($unikey && $sourceId > 0) {
             $condition = [
                 ['source', $source],
                 ['source_id', 0],
@@ -734,7 +734,7 @@ class FileService
 
             if ($files) {
                 foreach ($files as $fileRow) {
-                    $fileRow->source_id = $item;
+                    $fileRow->source_id = $sourceId;
 
                     $newRelativePath = FileService::generateFileRelativePath($fileRow);
 
