@@ -73,7 +73,7 @@ class ThumbnailService
         $id,
         $width = 0,
         $height = 0,
-        string $frame = '',
+        ?string $frame = null,
         bool $watermark = true,
         string $localFileFullPath = '',
         ?string $fileSystemName = null

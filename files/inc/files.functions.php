@@ -402,7 +402,7 @@ function cot_filesSafeName($basename, $underscore = true, $postfix = '')
  *
  * @see ThumbnailService::thumbnail()
  */
-function cot_filesThumbnailUrl($id, $width = 0, $height = 0, string $frame = '', $watermark = true, $lastMod = null): string
+function cot_filesThumbnailUrl($id, $width = 0, $height = 0, ?string $frame = null, $watermark = true, $lastMod = null): string
 {
     if ($watermark === '0' || mb_strtolower($watermark) === 'false') {
         $watermark = false;

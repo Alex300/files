@@ -38,10 +38,16 @@ if (!function_exists('files_thumb_bbcode')) {
 		parse_str(htmlspecialchars_decode($m[1]), $params);
 
 		if (!isset($params['id']) || !is_numeric($params['id']) || $params['id'] <= 0) {
-			return $m[0].'err';
+			return $m[0] . 'err';
 		}
 		$params['id'] = (int) $params['id'];
-		$src = cot_filesThumbnailUrl($params['id'], $params['width'], $params['height'], $params['frame']);
+
+		$src = cot_filesThumbnailUrl(
+            $params['id'],
+            $params['width'] ?? null,
+            $params['height'] ?? null,
+            $params['frame'] ?? null
+        );
 		if (!$src) {
 			return $m[0].'err2';
 		}
@@ -56,7 +62,7 @@ if (!function_exists('files_thumb_bbcode')) {
 			}
 			$params['alt'] = $files_item_cache[$params['id']]->file_title;
 		}
-		$html .= ' alt="' . htmlspecialchars($params['alt']) . '"';
+		$html .= ' alt="' . htmlspecialchars($params['alt'] ?? '') . '"';
 		if (!empty($params['class'])) {
 			$html .= ' class="' . $params['class'] . '"';
 		}
@@ -114,14 +120,18 @@ if (!function_exists('files_thumb_bbcode')) {
         }
         $params['f'] = (int) $params['f'];
         $folder = files_models_Folder::getById($params['f']);
-        if(!$folder) return $m[0].'err - NotFound';
+        if (!$folder) {
+            return $m[0].'err - NotFound';
+        }
         $source = $folder->user_id > 0 ? 'pfs' : 'sfs';
 
         $tpl = 'files.gallery';
-        if(!empty($params['tpl'])) $tpl = $params['tpl'];
+        if (!empty($params['tpl'])) {
+            $tpl = $params['tpl'];
+        }
 
         $order = '';
-        if(!empty($params['order'])){
+        if (!empty($params['order'])){
             if($params['order'] == 'desc'){
                 $order = 'file_order DESC';
             }elseif($params['order'] == 'rand'){
